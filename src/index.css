@@ -1,0 +1,103 @@
+@import '@fontsource-variable/inter';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Every colour is an RGB triple so Tailwind can apply alpha: rgb(var(--x) / a) */
+:root {
+  --page: 250 247 240;      /* #FAF7F0 warm cream */
+  --card: 255 255 255;
+  --line: 236 231 221;      /* soft warm border */
+  --ink: 17 17 17;          /* #111 */
+  --muted: 120 113 104;     /* warm grey */
+  --faint: 170 163 153;
+  --shadow: 60 50 30;
+
+  --lav: 228 221 251;       /* #E4DDFB */
+  --lav-fg: 107 78 230;     /* #6B4EE6 */
+  --sky: 220 233 251;       /* #DCE9FB */
+  --sky-fg: 59 130 246;     /* #3B82F6 */
+  --butter: 251 239 196;    /* #FBEFC4 */
+  --butter-fg: 212 160 23;  /* #D4A017 */
+  --coral: 251 224 222;     /* #FBE0DE */
+  --coral-fg: 229 72 77;    /* #E5484D */
+  --mint: 221 243 230;      /* #DDF3E6 */
+  --mint-fg: 34 160 107;    /* #22A06B */
+  --peach: 253 235 214;     /* #FDEBD6 */
+  --peach-fg: 222 128 36;   /* #DE8024 */
+  --rose: 251 224 238;      /* #FBE0EE */
+  --rose-fg: 214 51 108;    /* #D6336C */
+  --teal: 214 241 240;      /* #D6F1F0 */
+  --teal-fg: 15 139 141;    /* #0F8B8D */
+}
+
+.dark {
+  --page: 22 21 19;
+  --card: 32 31 28;
+  --line: 52 50 45;
+  --ink: 245 242 236;
+  --muted: 160 153 143;
+  --faint: 110 104 96;
+  --shadow: 0 0 0;
+
+  --lav: 58 49 96;
+  --lav-fg: 176 158 255;
+  --sky: 36 55 84;
+  --sky-fg: 125 172 255;
+  --butter: 78 66 26;
+  --butter-fg: 240 196 74;
+  --coral: 84 40 40;
+  --coral-fg: 255 122 125;
+  --mint: 30 68 48;
+  --mint-fg: 86 212 150;
+  --peach: 84 54 26;
+  --peach-fg: 255 164 86;
+  --rose: 84 36 58;
+  --rose-fg: 255 128 170;
+  --teal: 24 66 66;
+  --teal-fg: 78 208 210;
+}
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  body {
+    @apply bg-page text-ink font-sans;
+    transition: background-color 200ms ease, color 200ms ease;
+  }
+  ::selection {
+    @apply bg-lav text-lav-fg;
+  }
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(var(--line)) transparent;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-card rounded-card border border-line shadow-soft;
+  }
+  .h-display {
+    @apply font-bold tracking-tight text-ink;
+  }
+  .btn-black {
+    @apply inline-flex items-center justify-center gap-2 rounded-full bg-ink text-page
+      px-4 py-2 text-sm font-semibold transition
+      hover:opacity-90 active:scale-[0.98] disabled:opacity-40 disabled:pointer-events-none;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-full border border-line
+      bg-card px-4 py-2 text-sm font-semibold text-ink transition hover:bg-page active:scale-[0.98];
+  }
+  .input {
+    @apply w-full rounded-xl border border-line bg-page px-3 py-2 text-sm text-ink
+      placeholder:text-faint outline-none transition focus:border-lav-fg/60 focus:ring-2 focus:ring-lav-fg/20;
+  }
+  .pill {
+    @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold leading-5;
+  }
+}
