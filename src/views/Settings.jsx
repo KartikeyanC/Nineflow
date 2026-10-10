@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react'
 import { Plus, Trash2, Download, Upload, Sparkles, AlertTriangle, CalendarPlus, LogOut } from 'lucide-react'
 import { downloadIcs } from '../lib/calendar'
-import { currentProfile, updateProfile, deleteProfile, signOut, listProfiles, initials, OCCUPATIONS } from '../lib/profiles'
+import { currentProfile, updateProfile, deleteProfile, signOut, listProfiles, initials, OCCUPATIONS, setProfilePin } from '../lib/profiles'
 import { usePlanner } from '../store/PlannerContext'
 import { COLOR_IDS, colorOf } from '../lib/colors'
 import { validateBackup } from '../lib/storage'
@@ -235,6 +235,13 @@ export default function Settings() {
 // Local profile: edit details, switch, sign out, delete.
 function ProfileSection() {
   const [p, setP] = useState(() => currentProfile())
+  const [newPin, setNewPin] = useState('')
+  // The stored PIN is a hash, so the field only ever takes a new one.
+  const changePin = async (pin) => {
+    await setProfilePin(p.id, pin)
+    setP(listProfiles().find((x) => x.id === p.id))
+    setNewPin('')
+  }
   const [confirmDelete, setConfirmDelete] = useState(false)
   if (!p) return null
   const c = colorOf(p.color)
@@ -254,7 +261,15 @@ function ProfileSection() {
         <label className="block"><span className="block text-xs font-semibold text-muted mb-1">Email</span><input type="email" className="input" value={p.email} onChange={(e) => save({ email: e.target.value })} /></label>
         <label className="block"><span className="block text-xs font-semibold text-muted mb-1">Occupation</span>
           <select className="input" value={p.occupation} onChange={(e) => save({ occupation: e.target.value })}><option value="">—</option>{OCCUPATIONS.map((o) => <option key={o} value={o}>{o}</option>)}</select></label>
-        <label className="block"><span className="block text-xs font-semibold text-muted mb-1">PIN (4 digits, blank for none)</span><input inputMode="numeric" maxLength={4} className="input w-32 text-center tracking-[0.3em]" value={p.pin} onChange={(e) => save({ pin: e.target.value.replace(/\D/g, '').slice(0, 4) })} /></label>
+        <div className="block">
+          <label htmlFor="profile-pin" className="block text-xs font-semibold text-muted mb-1">PIN {p.pin ? '· set' : '· none'}</label>
+          <div className="flex items-center gap-2">
+            <input id="profile-pin" inputMode="numeric" maxLength={4} className="input w-32 text-center tracking-[0.3em]" placeholder={p.pin ? '••••' : '4 digits'}
+              value={newPin} onChange={(e) => { const v = e.target.value.replace(/\D/g, '').slice(0, 4); setNewPin(v); if (v.length === 4) changePin(v) }} />
+            {p.pin && <button type="button" className="btn-ghost h-9 py-0" onClick={() => changePin('')}>Remove</button>}
+          </div>
+          <p className="text-[11px] text-faint mt-1">Type 4 digits to set a new PIN. It locks the profile on this browser; it doesn't encrypt your data.</p>
+        </div>
       </div>
       <div className="mt-4 flex items-center gap-2">
         {confirmDelete ? (

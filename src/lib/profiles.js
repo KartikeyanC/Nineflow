@@ -34,7 +34,7 @@ export function createProfile(fields) {
   const id = `p${Date.now().toString(36)}`
   const profile = {
     id, name: fields.name.trim(), email: (fields.email || '').trim(), occupation: fields.occupation || '', occupationOther: fields.occupationOther || '',
-    reasons: fields.reasons || [], needs: fields.needs || [], pin: fields.pin || '', createdAt: new Date().toISOString(),
+    reasons: fields.reasons || [], needs: fields.needs || [], pin: '', createdAt: new Date().toISOString(),
     color: AVATAR_COLORS[profiles.length % AVATAR_COLORS.length],
   }
   write(PROFILES_KEY, [...profiles, profile])
@@ -49,6 +49,37 @@ export function deleteProfile(id) {
   write(PROFILES_KEY, listProfiles().filter((p) => p.id !== id))
   for (const k of LEGACY_KEYS) { try { localStorage.removeItem(`daily-planner:${id}:${k}`) } catch { /* ignore */ } }
   if (currentProfileId() === id) signOut()
+}
+
+// A PIN keeps other people on this browser out of a profile. It is stored as
+// a SHA-256 hash salted with the profile id, never as the digits. It is a
+// lock on a shared device, not encryption of the profile's data.
+async function digest(text) {
+  try {
+    if (globalThis.crypto?.subtle) {
+      const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text))
+      return `sha256:${[...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('')}`
+    }
+  } catch { /* fall through */ }
+  // No Web Crypto (an insecure origin): a plain FNV-1a hash still keeps the digits out of storage.
+  let h = 0x811c9dc5
+  for (const ch of text) { h ^= ch.codePointAt(0); h = Math.imul(h, 0x01000193) >>> 0 }
+  return `fnv:${h.toString(16)}`
+}
+const hashPin = (id, pin) => digest(`daily-planner:${id}:${pin}`)
+const isHashed = (v) => /^(sha256|fnv):/.test(v || '')
+
+export async function setProfilePin(id, pin) {
+  updateProfile(id, { pin: pin ? await hashPin(id, pin) : '' })
+}
+
+export async function checkPin(profile, pin) {
+  if (!profile.pin) return true
+  if (isHashed(profile.pin)) return profile.pin === await hashPin(profile.id, pin)
+  // Profiles made before hashing stored the digits: accept once, then hash.
+  if (profile.pin !== pin) return false
+  await setProfilePin(profile.id, pin)
+  return true
 }
 
 export function signIn(id) { try { localStorage.setItem(CURRENT_KEY, id) } catch { /* ignore */ } }

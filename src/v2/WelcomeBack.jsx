@@ -1,10 +1,11 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { differenceInCalendarDays, parseISO } from 'date-fns'
 import { Inbox, X } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
 import { dateKey, isOverdue } from '../lib/tasks'
 import { storageKey, currentProfile, firstName } from '../lib/profiles'
 import { openRitual } from './ritualBus'
+import { useDialogFocus } from '../components/ui'
 
 // After a few days away, unfinished work piles up and the app feels like a
 // debt; people who stay away 8+ days rarely come back. Offer a fresh start:
@@ -27,14 +28,16 @@ export default function WelcomeBack() {
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const stale = useMemo(() => tasks.filter((t) => isOverdue(t, now)), [tasks, now])
+  const dialogRef = useRef(null)
+  useDialogFocus(dialogRef, !!(away && stale.length))
   if (!away || !stale.length) return null
   const close = () => setAway(0)
   const name = firstName(currentProfile()?.name)
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-6 bg-ink/30 backdrop-blur-sm animate-fade-in" onMouseDown={close}>
-      <div role="dialog" aria-modal="true" aria-labelledby="welcome-title" onMouseDown={(e) => e.stopPropagation()}
-        className="w-full sm:max-w-md rounded-t-[28px] sm:rounded-[28px] bg-card shadow-modal animate-modal-in p-6 sm:p-7 grid gap-4">
+      <div ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="welcome-title" onMouseDown={(e) => e.stopPropagation()}
+        className="outline-none w-full sm:max-w-md rounded-t-[28px] sm:rounded-[28px] bg-card shadow-modal animate-modal-in p-6 sm:p-7 grid gap-4">
         <div className="flex items-start justify-between gap-3">
           <h2 id="welcome-title" className="font-serif text-[34px] leading-none">Welcome back{name ? <>, <em className="text-accent">{name}</em></> : ''}.</h2>
           <button type="button" onClick={close} aria-label="Close" className="h-9 w-9 shrink-0 rounded-full inline-flex items-center justify-center text-muted hover:bg-subtle hover:text-ink transition"><X size={16} /></button>

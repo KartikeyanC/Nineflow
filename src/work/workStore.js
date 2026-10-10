@@ -1,5 +1,6 @@
 // Work OS storage: one key holding settings + the three input tables.
 // Everything else in the module is derived from these.
+import { addDays, format } from 'date-fns'
 import { uid, reportSave } from '../lib/storage'
 import { storageKey } from '../lib/profiles'
 
@@ -95,30 +96,35 @@ export const DEFAULT_STANDARD_TIMES = [
   ['Ad campaigns', 'Weekly ad optimisation', 1.5],
 ].map(([area, taskType, hours], i) => ({ id: `st${i + 1}`, area, taskType, hours }))
 
-// Example rows: shown with a badge and kept out of every total.
-const EXAMPLES = {
-  task: {
-    id: 'T-EX', example: true, requestDate: '2026-10-01', area: 'Poster design', taskType: 'Poster / flyer', task: 'Diwali offer poster',
-    project: 'Festive campaign', requestedBy: 'Marketing lead', priority: 'High', dueDate: '2026-10-03', standardHours: 3, plannedHours: 3,
-    workDate: '2026-10-02', actualHours: 3.5, status: 'Done', revisions: 1, completedDate: '2026-10-03', notes: '',
-  },
-  post: {
-    id: 'P-EX', example: true, date: '2026-10-03', platform: 'Instagram', postType: 'Reel', pillar: 'Promo', topic: 'Diwali offer teaser',
-    captionReady: true, creativeReady: true, status: 'Published', link: 'https://instagram.com/p/example', likes: 240, comments: 18, shares: 12, reach: 6200,
-  },
-  campaign: {
-    id: 'C-EX', example: true, campaign: 'Diwali leads', platform: 'Meta', objective: 'Leads', product: 'Festive bundle', startDate: '2026-10-01', endDate: '2026-10-15',
-    budget: 300, spend: 180, impressions: 42000, clicks: 910, leads: 38, targetCpl: 5, status: 'Active',
-  },
+// Example rows: shown with a badge and kept out of every total. Dated
+// around today so they never look stale.
+const examples = () => {
+  const d = (n) => format(addDays(new Date(), n), 'yyyy-MM-dd')
+  return {
+    task: {
+      id: 'T-EX', example: true, requestDate: d(-9), area: 'Poster design', taskType: 'Poster / flyer', task: 'Diwali offer poster',
+      project: 'Festive campaign', requestedBy: 'Marketing lead', priority: 'High', dueDate: d(-7), standardHours: 3, plannedHours: 3,
+      workDate: d(-8), actualHours: 3.5, status: 'Done', revisions: 1, completedDate: d(-7), notes: '',
+    },
+    post: {
+      id: 'P-EX', example: true, date: d(-7), platform: 'Instagram', postType: 'Reel', pillar: 'Promo', topic: 'Diwali offer teaser',
+      captionReady: true, creativeReady: true, status: 'Published', link: 'https://instagram.com/p/example', likes: 240, comments: 18, shares: 12, reach: 6200,
+    },
+    campaign: {
+      id: 'C-EX', example: true, campaign: 'Diwali leads', platform: 'Meta', objective: 'Leads', product: 'Festive bundle', startDate: d(-9), endDate: d(5),
+      budget: 300, spend: 180, impressions: 42000, clicks: 910, leads: 38, targetCpl: 5, status: 'Active',
+    },
+  }
 }
 
 export function emptyWork() {
+  const ex = examples()
   return {
     settings: structuredClone(DEFAULT_WORK_SETTINGS),
     standardTimes: structuredClone(DEFAULT_STANDARD_TIMES),
-    tasks: [structuredClone(EXAMPLES.task)],
-    posts: [structuredClone(EXAMPLES.post)],
-    campaigns: [structuredClone(EXAMPLES.campaign)],
+    tasks: [ex.task],
+    posts: [ex.post],
+    campaigns: [ex.campaign],
     dayNotes: {}, // 'yyyy-MM-dd': { target, blockers, tomorrow }
     nextTaskNo: 1,
   }

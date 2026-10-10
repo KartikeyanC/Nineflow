@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react'
 import { format, parseISO } from 'date-fns'
 import { Bar, BarChart, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from 'recharts'
 import { useWork } from '../WorkContext'
+import { usePlanner } from '../../store/PlannerContext'
 import { rangeStats, presets, key, fmtKpi, fmtTarget, h1 } from '../workCalc'
 import { Section, Pill, STATUS_TONE } from '../ui'
 import { DateField } from '../../components/DatePicker'
@@ -14,7 +15,8 @@ const STATUS_COLORS = { 'Not started': '--faint', 'In progress': '--sky-fg', 'In
 export default function WorkDashboard() {
   const { work } = useWork()
   const today = new Date()
-  const P = presets(today)
+  const { settings: { weekStart } } = usePlanner()
+  const P = presets(today, weekStart)
   const [range, setRange] = useState(() => P['This week'].map(key))
   const [from, to] = range
   const stats = useMemo(() => rangeStats(work, parseISO(from), parseISO(to), today), [work, from, to]) // eslint-disable-line react-hooks/exhaustive-deps

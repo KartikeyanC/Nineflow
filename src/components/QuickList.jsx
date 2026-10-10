@@ -2,13 +2,13 @@ import React, { useMemo, useState } from 'react'
 import { addDays } from 'date-fns'
 import { ListTodo, PanelRight, PanelTop, PanelBottom, ChevronDown, ChevronUp, ChevronRight, Plus, Sparkles, PictureInPicture2, AppWindow } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
-import { dateKey, dueLabel, fmtMinutes, isOverdue, sortByTime } from '../lib/tasks'
+import { carriedLabel, dateKey, dueLabel, fmtMinutes, isOverdue, sortByTime } from '../lib/tasks'
 import { parseQuickAdd } from '../lib/nlp'
 import { CategoryTag, CheckCircle, cx } from './ui'
 
 const FILTERS = [
   { id: 'today', label: 'Today' },
-  { id: 'overdue', label: 'Overdue' },
+  { id: 'overdue', label: 'Carried over' },
   { id: 'week', label: '7 days' },
 ]
 const POSITIONS = [
@@ -121,13 +121,14 @@ export default function QuickList({ layout = 'column', onCollapse, collapseIcon 
             {list.map((t) => {
               const od = isOverdue(t, now)
               return (
-                <li key={t.id} onClick={() => open(t.id)}
-                  className="flex items-center gap-2.5 px-2 py-1.5 rounded-xl cursor-pointer hover:bg-page transition">
+                <li key={t.id} onClick={() => open(t.id)} tabIndex={0} role="button"
+                  onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && e.target === e.currentTarget) { e.preventDefault(); open(t.id) } }}
+                  className="flex items-center gap-2.5 px-2 py-1.5 rounded-xl cursor-pointer hover:bg-page focus-visible:bg-page outline-none transition">
                   <CheckCircle checked={false} onToggle={() => toggleComplete(t.id)} size="sm" />
                   <div className="min-w-0 flex-1">
                     <p className="text-[13px] font-semibold truncate">{t.title}</p>
-                    <p className={cx('text-[10px] truncate', od ? 'text-coral-fg font-semibold' : 'text-faint')}>
-                      {dueLabel(t, now)} · {fmtMinutes(t.durationMinutes)}
+                    <p className="text-[10px] truncate text-faint">
+                      {od ? carriedLabel(t.date, now) : dueLabel(t, now)} · {fmtMinutes(t.durationMinutes)}
                       {t.status === 'working' && <span className="text-sky-fg font-semibold"> · working</span>}
                     </p>
                   </div>

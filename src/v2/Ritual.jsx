@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { addDays } from 'date-fns'
 import { X, ArrowRight, ArrowLeft, Sunrise, Moon, Copy, Check, Target, Inbox, Plus } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
@@ -7,7 +7,7 @@ import { dayReport } from '../lib/report'
 import { currentProfile } from '../lib/profiles'
 import { readDayNote, updateDayNote } from '../work/workStore'
 import { colorOf } from '../lib/colors'
-import { cx } from '../components/ui'
+import { cx, useDialogFocus } from '../components/ui'
 import { CapacityBar, CarriedOver } from './views/Planning'
 import { EVENT, dueRitual, openRitual, useRitualState, writeState } from './ritualBus'
 
@@ -43,6 +43,8 @@ export function RitualPrompt() {
 
 export default function Ritual() {
   const [mode, setMode] = useState(null)
+  const dialogRef = useRef(null)
+  useDialogFocus(dialogRef, !!mode)
   const [step, setStep] = useState(0)
   useEffect(() => {
     const on = (e) => { setMode(e.detail); setStep(0) }
@@ -59,8 +61,8 @@ export default function Ritual() {
   const Flow = mode === 'plan' ? PlanFlow : ShutdownFlow
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-6 bg-ink/30 backdrop-blur-sm animate-fade-in" onMouseDown={() => setMode(null)}>
-      <div role="dialog" aria-modal="true" aria-label={mode === 'plan' ? 'Plan your day' : 'Shut down'} onMouseDown={(e) => e.stopPropagation()}
-        className="w-full sm:max-w-2xl max-h-[92dvh] flex flex-col rounded-t-[28px] sm:rounded-[28px] bg-page shadow-modal animate-modal-in overflow-hidden">
+      <div ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label={mode === 'plan' ? 'Plan your day' : 'Shut down'} onMouseDown={(e) => e.stopPropagation()}
+        className="outline-none w-full sm:max-w-2xl max-h-[92dvh] flex flex-col rounded-t-[28px] sm:rounded-[28px] bg-page shadow-modal animate-modal-in overflow-hidden">
         <Flow step={step} setStep={setStep} close={() => setMode(null)} />
       </div>
     </div>

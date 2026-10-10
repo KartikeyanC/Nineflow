@@ -1,5 +1,7 @@
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
+import { format, parseISO } from 'date-fns'
 import { Plus, Download } from 'lucide-react'
+import { usePlanner } from '../../store/PlannerContext'
 import { useWork } from '../WorkContext'
 import { AREAS, PRIORITIES, TASK_STATUSES } from '../workStore'
 import { taskDerived, h1, key } from '../workCalc'
@@ -16,7 +18,15 @@ export function download(name, text) {
 }
 
 export default function TaskLog() {
-  const { work, updateRow, removeRow, addTask } = useWork()
+  const { work, updateRow, removeRow, addTask, addFromPlanner } = useWork()
+  const { tasks: plannerTasks } = usePlanner()
+  // Planner tasks from the last two weeks and the next one, for linking.
+  const linkable = useMemo(() => {
+    const from = key(new Date(Date.now() - 14 * 864e5)), to = key(new Date(Date.now() + 7 * 864e5))
+    return plannerTasks.filter((t) => t.date && t.date >= from && t.date <= to).sort((a, b) => b.date.localeCompare(a.date))
+  }, [plannerTasks])
+  const linkedIds = new Set(work.tasks.map((t) => t.plannerTaskId).filter(Boolean))
+  const label = (p) => `${p.title} · ${format(parseISO(p.date), 'EEE d MMM')}`
   const [filter, setFilter] = useState('open')
   const today = new Date()
   const typesFor = (area) => work.standardTimes.filter((s) => s.area === area).map((s) => s.taskType)
@@ -43,7 +53,7 @@ export default function TaskLog() {
   ].map(([label, get]) => ({ label, get }))
 
   return (
-    <Section title="Task log" hint="One line per task. Standard hours fill in from the task type; planned hours start equal to standard and you can change them. Completed date fills in when you set the status to Done."
+    <Section title="Task log" hint="One line per task. Standard hours fill in from the task type; planned hours start equal to standard and you can change them. Link a row to a planner task and its actual hours come from your focus sessions."
       right={
         <div className="flex flex-wrap items-center gap-2">
           <div className="inline-flex rounded-full bg-page p-0.5 gap-0.5">
@@ -52,13 +62,18 @@ export default function TaskLog() {
             ))}
           </div>
           <button type="button" className="btn-ghost h-9 py-0" onClick={() => download('task-log.csv', toCsv(work.tasks.filter((t) => !t.example), cols))}><Download size={14} /> CSV</button>
+          <select className="input w-auto h-9 py-0" value="" aria-label="Add a row from a planner task"
+            onChange={(e) => { const p = plannerTasks.find((t) => t.id === e.target.value); if (p) addFromPlanner(p) }}>
+            <option value="">Add from planner…</option>
+            {linkable.filter((p) => !linkedIds.has(p.id)).map((p) => <option key={p.id} value={p.id}>{label(p)}</option>)}
+          </select>
           <button type="button" className="btn-black h-9 py-0" onClick={addTask}><Plus size={14} /> New task</button>
         </div>
       }>
       <div className="mb-3"><Legend /></div>
-      <Table minWidth={2400}>
+      <Table minWidth={2620}>
         <thead><tr>
-          <Th calc>ID</Th><Th fill>Request date</Th><Th fill>Work area</Th><Th fill>Task type</Th><Th fill>Task</Th><Th fill>Project / product</Th><Th fill>Requested by</Th><Th fill>Priority</Th><Th fill>Due date</Th>
+          <Th calc>ID</Th><Th fill>Request date</Th><Th fill>Work area</Th><Th fill>Task type</Th><Th fill>Task</Th><Th fill>Planner task</Th><Th fill>Project / product</Th><Th fill>Requested by</Th><Th fill>Priority</Th><Th fill>Due date</Th>
           <Th calc>Standard h</Th><Th fill>Planned h</Th><Th fill>Work date</Th><Th fill>Actual h</Th><Th fill>Status</Th><Th fill>Revisions</Th><Th fill>Completed</Th>
           <Th calc>Variance</Th><Th calc>Delivery</Th><Th calc>Days late</Th><Th />
         </tr></thead>
@@ -72,6 +87,16 @@ export default function TaskLog() {
                 <Td><SelectIn value={t.area} options={AREAS} onChange={(v) => set(t, { area: v })} /></Td>
                 <Td><SelectIn value={t.taskType} options={typesFor(t.area)} allowEmpty className="w-44" onChange={(v) => set(t, { taskType: v })} /></Td>
                 <Td><TextIn value={t.task} className="w-52" placeholder="What exactly" onChange={(v) => set(t, { task: v })} /></Td>
+                <Td>
+                  <select className="rounded-lg border border-line bg-card px-2 py-1 text-sm w-48" value={t.plannerTaskId || ''} aria-label="Linked planner task"
+                    onChange={(e) => set(t, { plannerTaskId: e.target.value || null })}>
+                    <option value="">Not linked</option>
+                    {t.plannerTaskId && !linkable.some((p) => p.id === t.plannerTaskId) && (
+                      <option value={t.plannerTaskId}>{plannerTasks.find((p) => p.id === t.plannerTaskId)?.title || 'Removed from planner'}</option>
+                    )}
+                    {linkable.filter((p) => p.id === t.plannerTaskId || !linkedIds.has(p.id)).map((p) => <option key={p.id} value={p.id}>{label(p)}</option>)}
+                  </select>
+                </Td>
                 <Td><TextIn value={t.project} className="w-36" onChange={(v) => set(t, { project: v })} /></Td>
                 <Td><TextIn value={t.requestedBy} className="w-32" onChange={(v) => set(t, { requestedBy: v })} /></Td>
                 <Td><SelectIn value={t.priority} options={PRIORITIES} className="w-24" onChange={(v) => set(t, { priority: v })} /></Td>
@@ -79,7 +104,9 @@ export default function TaskLog() {
                 <Td calc className="text-right">{h1(t.standardHours || 0)}</Td>
                 <Td><NumIn value={t.plannedHours} onChange={(v) => set(t, { plannedHours: v })} /></Td>
                 <Td><DateIn value={t.workDate} onChange={(v) => set(t, { workDate: v })} /></Td>
-                <Td><NumIn value={t.actualHours} onChange={(v) => set(t, { actualHours: v })} /></Td>
+                <Td>{t.linked
+                  ? <span className="inline-flex items-center gap-1.5 text-sm font-semibold tabular-nums" title="From the planner's focus sessions">{h1(t.actualHours)} <span className="pill bg-sky text-sky-fg py-0 text-[10px]">planner</span></span>
+                  : <NumIn value={t.actualHours} onChange={(v) => set(t, { actualHours: v })} />}</Td>
                 <Td><SelectIn value={t.status} options={TASK_STATUSES} className="w-32" onChange={(v) => set(t, { status: v })} /></Td>
                 <Td><NumIn value={t.revisions} step={1} className="w-16" onChange={(v) => set(t, { revisions: v })} /></Td>
                 <Td><DateIn value={t.completedDate} onChange={(v) => set(t, { completedDate: v })} /></Td>

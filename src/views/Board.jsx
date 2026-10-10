@@ -8,7 +8,7 @@ import { CSS } from '@dnd-kit/utilities'
 import { addDays, parseISO } from 'date-fns'
 import { Plus, MoreHorizontal, Search, LayoutGrid, List, ArrowUpDown, CalendarClock, CalendarCheck, Trash2 } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
-import { STATUSES, STATUS_LABEL, PRIORITIES, PRIORITY_LABEL, dateKey, dueLabel, fmtMinutes, isDueToday, isOverdue } from '../lib/tasks'
+import { STATUSES, STATUS_LABEL, PRIORITIES, PRIORITY_LABEL, carriedLabel, dateKey, dueLabel, fmtMinutes, isOverdue } from '../lib/tasks'
 import { CategoryTag, CheckCircle, ConfirmDialog, Menu, PriorityPill, cx } from '../components/ui'
 import TaskCard from '../components/TaskCard'
 
@@ -142,7 +142,7 @@ export default function Board() {
       <header className="flex flex-wrap items-end justify-between gap-4 mb-6">
         <div>
           <h1 className="h-display text-3xl">Board</h1>
-          <p className="text-sm text-muted mt-1">Drag cards between columns. Moving to Working starts the focus timer.</p>
+          <p className="text-sm text-muted mt-1">Drag cards between columns. Moving a card to Working starts tracking its time.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <label className="relative flex-1 min-w-[140px] sm:flex-none">
@@ -153,7 +153,7 @@ export default function Board() {
             <option value="all">All tasks</option>
             <option value="today">Today</option>
             <option value="week">This week</option>
-            <option value="overdue">Overdue</option>
+            <option value="overdue">Carried over</option>
             <optgroup label="Category">
               {settings.categories.map((c) => <option key={c.id} value={`cat:${c.id}`}>{c.name}</option>)}
             </optgroup>
@@ -195,7 +195,7 @@ export default function Board() {
                   'divider',
                   s === 'completed'
                     ? { label: 'Clear completed', icon: Trash2, danger: true, onSelect: () => setConfirmClear(true) }
-                    : { label: 'Move overdue to today', icon: CalendarCheck, onSelect: () => moveOverdueToToday(s) },
+                    : { label: 'Move carried-over to today', icon: CalendarCheck, onSelect: () => moveOverdueToToday(s) },
                 ]}
                 footer={
                   s === 'completed' && hiddenDone > 0 && !showAllDone ? (
@@ -295,18 +295,18 @@ function ListView({ columns }) {
                 {list.map((t) => {
                   const done = t.status === 'completed'
                   const overdue = isOverdue(t, now)
-                  const red = !done && (overdue || isDueToday(t, now))
                   return (
-                    <li key={t.id} onClick={() => setSelectedId(t.id)}
-                      className="flex items-center gap-3 px-5 py-3 cursor-pointer hover:bg-page transition">
+                    <li key={t.id} onClick={() => setSelectedId(t.id)} tabIndex={0} role="button"
+                      onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && e.target === e.currentTarget) { e.preventDefault(); setSelectedId(t.id) } }}
+                      className="flex items-center gap-3 px-5 py-3 cursor-pointer hover:bg-page focus-visible:bg-page outline-none transition">
                       <CheckCircle checked={done} onToggle={() => toggleComplete(t.id)} />
                       <p className={cx('flex-1 min-w-0 text-sm font-semibold truncate', done && 'line-through text-muted')}>
                         {t.title}
-                        {overdue && <span className="pill bg-coral text-coral-fg text-[10px] px-1.5 py-0 ml-2">OVERDUE</span>}
+                        {overdue && <span className="pill bg-page text-muted border border-line text-[10px] px-1.5 py-0 ml-2">{carriedLabel(t.date, now)}</span>}
                       </p>
                       <CategoryTag category={categoryById(t.category)} className="hidden sm:inline-flex" />
                       <PriorityPill priority={t.priority} />
-                      <span className={cx('text-xs font-medium w-28 text-right', red ? 'text-coral-fg' : 'text-muted')}>{dueLabel(t, now) || '—'}</span>
+                      <span className="text-xs font-medium w-28 text-right text-muted">{dueLabel(t, now) || '—'}</span>
                       <span className="text-xs text-faint w-14 text-right">{fmtMinutes(t.durationMinutes)}</span>
                     </li>
                   )

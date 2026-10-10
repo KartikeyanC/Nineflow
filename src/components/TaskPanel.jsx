@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { format, parseISO } from 'date-fns'
 import { Activity, CalendarDays, Clock, Timer, Tag, Flag, Trash2, X, Repeat, ArrowRight, CalendarPlus } from 'lucide-react'
 import { googleCalendarUrl } from '../lib/calendar'
 import { usePlanner } from '../store/PlannerContext'
-import { STATUSES, STATUS_LABEL, fmtMinutes, isOverdue, todayKey, totalMinutes } from '../lib/tasks'
+import { STATUSES, STATUS_LABEL, carriedLabel, fmtMinutes, isOverdue, todayKey, totalMinutes } from '../lib/tasks'
 import { FREQS, FREQ_LABEL, describe } from '../lib/recurrence'
-import { CategoryPills, IconButton, PriorityPills, Segmented, cx } from './ui'
+import { CategoryPills, IconButton, PriorityPills, Segmented, cx, useDialogFocus } from './ui'
 import { DateField } from './DatePicker'
 import { TimeField } from './TimePicker'
 
@@ -17,6 +17,8 @@ export default function TaskPanel() {
   const { tasks, settings, selectedId, setSelectedId, updateTask, setStatus, removeTask, removeSeries, setRecurrence, applyToUpcoming, focus, startFocus, categoryById, now } = usePlanner()
   const task = tasks.find((t) => t.id === selectedId)
   const [confirm, setConfirm] = useState(false)
+  const panelRef = useRef(null)
+  useDialogFocus(panelRef, !!task)
 
   useEffect(() => { setConfirm(false) }, [selectedId])
   useEffect(() => {
@@ -41,11 +43,12 @@ export default function TaskPanel() {
   return (
     <div className="fixed inset-0 z-40">
       <div className="absolute inset-0 bg-ink/25 animate-fade-in" onClick={close} />
-      <aside className="absolute top-4 right-4 bottom-4 w-[min(460px,calc(100vw-2rem))] card shadow-modal animate-panel-in flex flex-col overflow-hidden">
+      <aside ref={panelRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label={`Task: ${task.title || 'Untitled'}`}
+        className="absolute top-4 right-4 bottom-4 w-[min(460px,calc(100vw-2rem))] card shadow-modal animate-panel-in flex flex-col overflow-hidden outline-none">
         <header className="flex items-center justify-between px-6 pt-5 pb-3">
           <div className="flex items-center gap-2">
             <span className={cx('pill', STATUS_PILL[task.status])}>{STATUS_LABEL[task.status]}</span>
-            {overdue && <span className="pill bg-coral text-coral-fg text-[10px] tracking-wide">OVERDUE</span>}
+            {overdue && <span className="pill bg-page text-muted border border-line text-[10px]">carried over {carriedLabel(task.date, now)}</span>}
             {task.recurrence && <span className="pill bg-page text-muted border border-line"><Repeat size={11} /> {describe(task.recurrence)}</span>}
           </div>
           <IconButton label="Close" onClick={close}><X size={16} /></IconButton>
@@ -149,6 +152,8 @@ export default function TaskPanel() {
             <dd className={cx('text-right font-semibold', task.status === 'working' ? 'text-lav-fg' : 'text-ink')}>{fmtMinutes(logged)}</dd>
           </dl>
 
+          <SessionLog task={task} now={now} />
+
           {task.date && (
             <a href={googleCalendarUrl(task, categoryById(task.category)?.name)} target="_blank" rel="noopener noreferrer"
               className="mt-3 btn-ghost w-full h-9 py-0 text-xs">
@@ -192,6 +197,60 @@ function Row({ icon: Icon, label, children, top }) {
       </span>
       <div className="flex-1 min-w-0">{children}</div>
     </div>
+  )
+}
+
+// Every logged stretch of time, editable: fix a timer left running, correct a
+// start or end, or delete an entry. Times keep the entry's own day.
+function SessionLog({ task, now }) {
+  const { setSessions } = usePlanner()
+  if (!task.sessions.length) return null
+  const at = (iso, hhmm) => {
+    const d = new Date(iso)
+    const [h, m] = hhmm.split(':').map(Number)
+    d.setHours(h, m, 0, 0)
+    return d.toISOString()
+  }
+  const edit = (i, patch) => {
+    const next = task.sessions.map((s, k) => (k === i ? { ...s, ...patch } : s))
+    const s = next[i]
+    if (s.end && new Date(s.end) <= new Date(s.start)) return // end must come after start
+    setSessions(task.id, next)
+  }
+  const rows = task.sessions.map((s, i) => ({ s, i })).reverse()
+  return (
+    <section className="mt-4">
+      <h3 className="text-xs font-semibold text-muted mb-1.5">Time log <span className="text-faint font-medium">· fix a forgotten timer here</span></h3>
+      <ul className="rounded-2xl border border-line divide-y divide-line">
+        {rows.map(({ s, i }) => {
+          const start = new Date(s.start)
+          const end = s.end ? new Date(s.end) : now
+          const mins = Math.max(0, Math.round((end - start) / 60000))
+          return (
+            <li key={`${s.start}-${i}`} className="flex flex-wrap items-center gap-2 px-3 py-2 text-xs">
+              <span className="w-14 text-faint">{format(start, 'd MMM')}</span>
+              <input type="time" aria-label="Start time" className="input w-[92px] py-1 px-2 text-xs" value={format(start, 'HH:mm')}
+                onChange={(e) => e.target.value && edit(i, { start: at(s.start, e.target.value) })} />
+              <span className="text-faint">–</span>
+              {s.end ? (
+                <input type="time" aria-label="End time" className="input w-[92px] py-1 px-2 text-xs" value={format(new Date(s.end), 'HH:mm')}
+                  onChange={(e) => e.target.value && edit(i, { end: at(s.end, e.target.value) })} />
+              ) : (
+                <button type="button" className="pill bg-sky text-sky-fg" onClick={() => setSessions(task.id, task.sessions.map((x, k) => (k === i ? { ...x, end: new Date().toISOString() } : x)), 'Stopped the running timer')}>
+                  Running · stop now
+                </button>
+              )}
+              <span className="ml-auto font-semibold tabular-nums">{fmtMinutes(mins)}</span>
+              <button type="button" aria-label="Delete this time entry" title="Delete this entry"
+                onClick={() => setSessions(task.id, task.sessions.filter((_, k) => k !== i), 'Deleted a time entry')}
+                className="h-6 w-6 rounded-full inline-flex items-center justify-center text-faint hover:text-coral-fg hover:bg-coral transition">
+                <Trash2 size={12} />
+              </button>
+            </li>
+          )
+        })}
+      </ul>
+    </section>
   )
 }
 

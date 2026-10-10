@@ -3,7 +3,7 @@ import {
   DEFAULT_SETTINGS, isOnboarded, loadFocus, loadHabits, loadSettings, loadTasks, markOnboarded, normalizeTasks,
   onSaveStatus, saveFocus, saveHabits, saveSettings, saveTasks, syncedKeys, uid,
 } from '../lib/storage'
-import { saveWork } from '../work/workStore'
+import { emptyWork, saveWork, workKey } from '../work/workStore'
 import { createTask, dateKey, todayKey, withSessionPaused, withSessionResumed, withStatus } from '../lib/tasks'
 import { generateSample } from '../lib/sample'
 import { ensureRecurrences } from '../lib/recurrence'
@@ -232,11 +232,20 @@ export function PlannerProvider({ children }) {
     setSelectedId(null)
   }, [settings.categories])
 
+  // Everything in this profile, Work OS included (it used to survive this).
   const clearAll = useCallback(() => {
     setTasks([])
     setHabits([])
     setSelectedId(null)
+    saveWork(emptyWork())
+    try { window.dispatchEvent(new StorageEvent('storage', { key: workKey() })) } catch { /* ignore */ }
   }, [])
+
+  // Replace a task's time log (edit or delete entries), with undo when labelled.
+  const setSessions = useCallback((id, sessions, label) => {
+    if (label) offerUndo(label)
+    setTasks((ts) => ts.map((t) => (t.id === id ? { ...t, sessions } : t)))
+  }, [offerUndo])
 
   const updateTask = useCallback((id, patch) => {
     setTasks((ts) => ts.map((t) => (t.id === id ? { ...t, ...patch } : t)))
@@ -564,6 +573,7 @@ export function PlannerProvider({ children }) {
       openDay,
       addTask,
       updateTask,
+      setSessions,
       setStatus,
       toggleComplete,
       moveTask,
@@ -613,7 +623,7 @@ export function PlannerProvider({ children }) {
     }),
     [
       tasks, settings, now, view, selectedId, quickAdd, dashboardDate, openDay,
-      addTask, updateTask, setStatus, toggleComplete, moveTask, sortStatus,
+      addTask, updateTask, setSessions, setStatus, toggleComplete, moveTask, sortStatus,
       moveOverdueToToday, clearCompleted, removeTask, setRecurrence, removeSeries, applyToUpcoming, planDay,
       previewPlan, applyPlan, moveTasksTo,
       focus, startFocus, pauseFocus, resumeFocus, advanceFocus, stopFocus, setFocusOpen,

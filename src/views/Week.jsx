@@ -1,16 +1,18 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { addDays, format, getISOWeek, isSameDay, isSameMonth, startOfWeek } from 'date-fns'
-import { DndContext, MouseSensor, TouchSensor, pointerWithin, useDraggable, useDroppable, useSensor, useSensors } from '@dnd-kit/core'
+import { DndContext, KeyboardSensor, MouseSensor, TouchSensor, pointerWithin, useDraggable, useDroppable, useSensor, useSensors } from '@dnd-kit/core'
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { ChevronLeft, ChevronRight, Plus, Check, CheckCircle2, Flame, Wand2 } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
-import { dateKey, fmtMinutes, tasksOn } from '../lib/tasks'
+import { dateKey, fmtMinutes, tasksOn, totalMinutes } from '../lib/tasks'
 import { unscheduledOn, describePlan } from '../lib/schedule'
 import { colorOf, cssVar } from '../lib/colors'
 import { PriorityPill, ProgressBar, Segmented, cx } from '../components/ui'
 
-const GRID_START = 7 * 60 // 07:00
-const GRID_END = 22 * 60 // 22:00
+// The whole day, so early and late tasks have a place; the grid opens
+// scrolled to now (or the start of your working day).
+const GRID_START = 0
+const GRID_END = 24 * 60
 const PX_PER_MIN = 1 // 60px per hour
 const GRID_HEIGHT = (GRID_END - GRID_START) * PX_PER_MIN
 const AXIS_W = 56
@@ -81,13 +83,15 @@ export default function Week() {
     return { day, key: dateKey(day), list, untimed, lanes: layoutLanes(timed) }
   }), [tasks, days])
 
-  // Scroll the grid so "now" sits ~160px from the top on load.
+  // Scroll the grid so "now" (or, outside 06:00–22:00, the start of your
+  // working day) sits ~160px from the top on load.
   const scrollRef = useRef(null)
   useEffect(() => {
     const el = scrollRef.current
     if (!el) return
     const nowMin = now.getHours() * 60 + now.getMinutes()
-    el.scrollTop = Math.max(0, (nowMin - GRID_START) * PX_PER_MIN - 160)
+    const anchor = nowMin >= 6 * 60 && nowMin <= 22 * 60 ? nowMin : toMin(settings.workHours.start)
+    el.scrollTop = Math.max(0, (anchor - GRID_START) * PX_PER_MIN - 160)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // The "now" line ticks every minute on its own.
@@ -103,6 +107,7 @@ export default function Week() {
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 180, tolerance: 8 } }),
+    useSensor(KeyboardSensor),
   )
   const onDragEnd = ({ active, over, delta }) => {
     const task = tasks.find((t) => t.id === active.id)
@@ -119,7 +124,8 @@ export default function Week() {
     const rows = byDay.map(({ day, list }) => ({
       day: format(day, mode === 'day' ? 'EEE d' : 'EEE'),
       planned: list.reduce((s, t) => s + t.durationMinutes, 0) / 60,
-      completed: list.filter((t) => t.status === 'completed').reduce((s, t) => s + t.durationMinutes, 0) / 60,
+      // Actual logged time where there is some, so the chart shows what really happened.
+      completed: list.filter((t) => t.status === 'completed').reduce((s, t) => s + (totalMinutes(t, now) || t.durationMinutes), 0) / 60,
       count: list.length,
       date: day,
     }))
@@ -318,6 +324,12 @@ function Block({ task, lane, lanes, onOpen }) {
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}
       onClick={onOpen}
+      // Enter opens; Space picks the block up, then arrow keys move it in time.
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' && e.target === e.currentTarget) { e.preventDefault(); onOpen(); return }
+        listeners?.onKeyDown?.(e)
+      }}
+      aria-label={`${task.title}, ${toHHMM(start)} to ${toHHMM(start + task.durationMinutes)}. Enter to open, Space to move.`}
       className={cx('absolute rounded-xl border-l-[3px] px-2 py-1 cursor-pointer overflow-hidden select-none transition-shadow',
         c.bg, isDragging ? 'shadow-lift' : 'hover:shadow-soft', done && 'opacity-60')}>
       <p className={cx('text-xs font-bold leading-tight line-clamp-2 flex items-start gap-1', c.text, done && 'line-through')}>

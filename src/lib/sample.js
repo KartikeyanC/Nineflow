@@ -104,7 +104,9 @@ export function generateSample(categories, now = new Date()) {
     running.status = 'working'
     running.startedAt = s.toISOString()
     running.completedAt = null
-    running.sessions = [{ start: s.toISOString(), end: null }]
+    // In progress, but the timer is stopped: an open session would keep
+    // counting for hours after the sample was loaded.
+    running.sessions = [{ start: s.toISOString(), end: now.toISOString() }]
   }
 
   // Two recurring series; the app fills their upcoming occurrences itself.

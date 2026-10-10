@@ -86,7 +86,36 @@ export function ProgressBar({ value, className, tone = 'bg-ink' }) {
   )
 }
 
+// Focus handling for dialogs: focus moves into the dialog (unless a field in
+// it already took focus), Tab cycles inside it, and focus returns to where
+// it was when the dialog closes.
+export function useDialogFocus(ref, active) {
+  useEffect(() => {
+    const node = ref.current
+    if (!active || !node) return
+    const prev = document.activeElement
+    const focusables = () => [...node.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])')]
+      .filter((el) => el.offsetParent !== null)
+    if (!node.contains(document.activeElement)) node.focus({ preventScroll: true })
+    const onKey = (e) => {
+      if (e.key !== 'Tab') return
+      const f = focusables()
+      if (!f.length) return
+      const first = f[0], last = f[f.length - 1]
+      if (e.shiftKey && (document.activeElement === first || document.activeElement === node)) { e.preventDefault(); last.focus() }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus() }
+    }
+    node.addEventListener('keydown', onKey)
+    return () => {
+      node.removeEventListener('keydown', onKey)
+      if (prev && typeof prev.focus === 'function' && document.contains(prev)) prev.focus({ preventScroll: true })
+    }
+  }, [active, ref])
+}
+
 export function Modal({ open, onClose, children, title, width = 'max-w-lg' }) {
+  const ref = useRef(null)
+  useDialogFocus(ref, open)
   useEffect(() => {
     if (!open) return
     const onKey = (e) => e.key === 'Escape' && onClose()
@@ -101,14 +130,18 @@ export function Modal({ open, onClose, children, title, width = 'max-w-lg' }) {
       onMouseDown={onClose}
     >
       <div
-        className={cx('card w-full shadow-modal animate-modal-in p-6', width)}
+        ref={ref}
+        tabIndex={-1}
+        className={cx('card w-full shadow-modal animate-modal-in p-6 outline-none', width)}
         onMouseDown={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
+        aria-labelledby={title ? 'modal-title' : undefined}
+        aria-label={title ? undefined : 'Dialog'}
       >
         {title && (
           <div className="flex items-center justify-between mb-4">
-            <h2 className="h-display text-lg">{title}</h2>
+            <h2 id="modal-title" className="h-display text-lg">{title}</h2>
             <IconButton onClick={onClose} label="Close">
               <X size={16} />
             </IconButton>

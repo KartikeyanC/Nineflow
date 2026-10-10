@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { Trash2, Pencil, FunctionSquare } from 'lucide-react'
 import { cx } from '../components/ui'
 import { DateField } from '../components/DatePicker'
@@ -56,11 +56,20 @@ export const CheckIn = ({ value, onChange }) => (
 )
 export const DateIn = ({ value, onChange }) => <DateField value={value} onChange={onChange} className="w-32" placeholder="—" />
 
+// Delete takes two clicks: the bin turns into "Delete?" for a few seconds.
 export function RowTools({ example, onDelete }) {
+  const [armed, setArmed] = useState(false)
+  useEffect(() => {
+    if (!armed) return
+    const id = setTimeout(() => setArmed(false), 4000)
+    return () => clearTimeout(id)
+  }, [armed])
   return (
     <span className="inline-flex items-center gap-1">
       {example && <span className="pill bg-butter text-butter-fg py-0 text-[10px]">Example</span>}
-      <button type="button" onClick={onDelete} title="Delete row" className="h-6 w-6 rounded-full inline-flex items-center justify-center text-faint hover:text-coral-fg hover:bg-coral transition"><Trash2 size={12} /></button>
+      {armed
+        ? <button type="button" onClick={onDelete} className="pill bg-coral text-coral-fg py-0 text-[11px]">Delete?</button>
+        : <button type="button" onClick={() => setArmed(true)} title="Delete row" aria-label="Delete row" className="h-6 w-6 rounded-full inline-flex items-center justify-center text-faint hover:text-coral-fg hover:bg-coral transition"><Trash2 size={12} /></button>}
     </span>
   )
 }

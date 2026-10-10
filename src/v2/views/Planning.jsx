@@ -1,8 +1,8 @@
 import React, { useMemo, useState } from 'react'
-import { addDays, differenceInCalendarDays, format, parseISO } from 'date-fns'
+import { addDays, parseISO } from 'date-fns'
 import { ArrowRight, Clock3, CornerDownRight, Inbox, Moon } from 'lucide-react'
 import { usePlanner } from '../../store/PlannerContext'
-import { dateKey, fmtMinutes, isOverdue } from '../../lib/tasks'
+import { carriedLabel, dateKey, fmtMinutes, isOverdue } from '../../lib/tasks'
 import { dayLoad, fitInto, hhmm, remainingMinutes, trimDay } from '../../lib/capacity'
 import { colorOf } from '../../lib/colors'
 import { cx } from '../../components/ui'
@@ -13,11 +13,7 @@ import { openRitual } from '../ritualBus'
 
 const rise = (i) => ({ className: 'animate-rise', style: { animationDelay: `${i * 70}ms` } })
 
-// "from Tue" for the last week, else "from Sep 28". Never "overdue".
-export function carriedLabel(key, now) {
-  const d = parseISO(key)
-  return differenceInCalendarDays(now, d) <= 6 ? `from ${format(d, 'EEE')}` : `from ${format(d, 'MMM d')}`
-}
+export { carriedLabel }
 
 export function CapacityBar({ dayKey, i = 0 }) {
   const { tasks, now, settings, moveTasksTo, setView } = usePlanner()

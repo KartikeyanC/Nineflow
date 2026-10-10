@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { format, parseISO } from 'date-fns'
 import { useWork } from '../WorkContext'
+import { usePlanner } from '../../store/PlannerContext'
 import { DAY_NAMES } from '../workStore'
 import { timePlan, isWorkingDay, weekStrip, real, taskDerived, campaignDerived, key, h1 } from '../workCalc'
 import { Section, Pill, DELIVERY_TONE } from '../ui'
@@ -21,7 +22,8 @@ export default function DateView() {
   const camps = real(work.campaigns).filter((c) => c.startDate <= k && (!c.endDate || c.endDate >= k) && c.status !== 'Planned')
   const note = work.dayNotes[k] || {}
   const suggestion = [...due].sort((a, b) => ['High', 'Medium', 'Low'].indexOf(a.priority) - ['High', 'Medium', 'Low'].indexOf(b.priority))[0]
-  const strip = weekStrip(work, d, 1)
+  const { settings: { weekStart } } = usePlanner()
+  const strip = weekStrip(work, d, weekStart)
 
   return (
     <div className="space-y-4">

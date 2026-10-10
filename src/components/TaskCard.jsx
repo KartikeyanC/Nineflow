@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { CalendarDays, Timer, ArrowRight, Repeat } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
-import { dueLabel, fmtMinutes, isDueToday, isOverdue, todayKey, totalMinutes } from '../lib/tasks'
+import { carriedLabel, dueLabel, fmtMinutes, isOverdue, todayKey, totalMinutes } from '../lib/tasks'
 import { describe } from '../lib/recurrence'
 import { CategoryTag, CheckCircle, PriorityPill, cx } from './ui'
 
@@ -12,7 +12,6 @@ export default function TaskCard({ task, dragging = false, handleProps, style, i
   const [leaving, setLeaving] = useState(false)
   const done = task.status === 'completed'
   const overdue = isOverdue(task, now)
-  const dueRed = !done && (overdue || isDueToday(task, now))
   const due = dueLabel(task, now)
   // Estimate vs actual, shown once a task is finished.
   const actual = done ? totalMinutes(task, now) : 0
@@ -33,6 +32,12 @@ export default function TaskCard({ task, dragging = false, handleProps, style, i
       style={style}
       {...handleProps}
       onClick={() => setSelectedId(task.id)}
+      // Enter opens the task; Space still picks the card up to move it.
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' && e.target === e.currentTarget) { e.preventDefault(); setSelectedId(task.id); return }
+        handleProps?.onKeyDown?.(e)
+      }}
+      aria-label={`${task.title || 'Untitled'}${overdue ? `, carried over ${carriedLabel(task.date, now)}` : ''}. Enter to open, Space to move.`}
       className={cx(
         'group bg-card rounded-2xl border border-line shadow-soft p-3.5 cursor-pointer select-none',
         'transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-lift',
@@ -48,9 +53,9 @@ export default function TaskCard({ task, dragging = false, handleProps, style, i
       </div>
 
       {due && (
-        <p className={cx('mt-2 inline-flex items-center gap-1.5 text-xs font-medium', dueRed ? 'text-coral-fg' : 'text-muted')}>
+        <p className="mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-muted">
           <CalendarDays size={13} /> {due}
-          {overdue && <span className="pill bg-coral text-coral-fg text-[10px] tracking-wide px-1.5 py-0 ml-1">OVERDUE</span>}
+          {overdue && <span className="pill bg-page text-muted border border-line text-[10px] px-1.5 py-0 ml-1">carried over</span>}
         </p>
       )}
 
@@ -58,7 +63,7 @@ export default function TaskCard({ task, dragging = false, handleProps, style, i
         <button
           type="button"
           onClick={(e) => { e.stopPropagation(); updateTask(task.id, { date: todayKey() }) }}
-          className="mt-2.5 w-full rounded-xl bg-coral text-coral-fg text-xs font-semibold py-1.5 inline-flex items-center justify-center gap-1 hover:opacity-90 transition"
+          className="mt-2.5 w-full rounded-xl bg-page border border-line text-ink text-xs font-semibold py-1.5 inline-flex items-center justify-center gap-1 hover:border-faint transition"
         >
           Move to today <ArrowRight size={12} />
         </button>
@@ -69,8 +74,8 @@ export default function TaskCard({ task, dragging = false, handleProps, style, i
         <span className="inline-flex items-center gap-1 text-[11px] text-faint font-medium" title={actual ? `Estimated ${fmtMinutes(task.durationMinutes)} · actual ${fmtMinutes(actual)}` : undefined}>
           <Timer size={12} /> {fmtMinutes(task.durationMinutes)}
           {actual > 0 && (
-            <span className={cx('font-semibold', actual > task.durationMinutes * 1.15 ? 'text-coral-fg' : 'text-mint-fg')}>
-              → {fmtMinutes(actual)}
+            <span className={cx('font-semibold', actual > task.durationMinutes * 1.15 ? 'text-peach-fg' : 'text-mint-fg')}>
+              → took {fmtMinutes(actual)}
             </span>
           )}
         </span>

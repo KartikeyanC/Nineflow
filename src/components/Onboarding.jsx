@@ -3,7 +3,7 @@ import {
   Sparkles, ArrowRight, ArrowLeft, Check, LogIn, UserPlus, Lock, ListChecks, Timer, BarChart3, Briefcase, Flame, Send,
   ShieldCheck, WifiOff, Clock3, CalendarDays, KeyRound, ChevronDown,
 } from 'lucide-react'
-import { NEEDS, OCCUPATIONS, REASONS, AVATAR_COLORS, listProfiles, createProfile, signIn, migrateLegacyInto, hasLegacyData, initials, firstName } from '../lib/profiles'
+import { NEEDS, OCCUPATIONS, REASONS, AVATAR_COLORS, listProfiles, createProfile, setProfilePin, checkPin, signIn, migrateLegacyInto, hasLegacyData, initials, firstName } from '../lib/profiles'
 import { loadSettings, saveSettings, saveTasks, saveHabits, markOnboarded, DEFAULT_CATEGORIES } from '../lib/storage'
 import { loadWork, saveWork, SATURDAY_RULES } from '../work/workStore'
 import { generateSample } from '../lib/sample'
@@ -106,7 +106,7 @@ function Login({ profiles, onSignup, onBack }) {
   const [pin, setPin] = useState('')
   const [error, setError] = useState(false)
   const go = (p) => { signIn(p.id); window.location.reload() }
-  const submit = (e) => { e.preventDefault(); if (picked.pin && pin !== picked.pin) { setError(true); setPin(''); return } go(picked) }
+  const submit = async (e) => { e.preventDefault(); if (picked.pin && !(await checkPin(picked, pin))) { setError(true); setPin(''); return } go(picked) }
   if (profiles.length === 0) return <Welcome onStart={onSignup} onLogin={() => {}} hasProfiles={false} />
   return (
     <Frame kicker="Welcome back" title={profiles.length === 1 ? `Hi ${firstName(profiles[0].name)}.` : 'Who\'s planning today?'} lead={profiles.length === 1 ? 'Tap your profile to continue.' : 'Choose your profile to continue.'}>
@@ -171,8 +171,9 @@ function Signup({ onLogin, onBack, hasProfiles }) {
     [`${a.startTime}–${a.endTime}, ${a.days.length} days a week (${dayHours.toFixed(1).replace('.0', '')} h/day after lunch)${a.days.includes(6) && a.saturdayRule !== 'all' ? ` · ${SATURDAY_RULES.find((r) => r.id === a.saturdayRule)?.label}` : ''}`, Clock3, 'butter'],
   ].filter(Boolean), [a, wantsWork, dayHours])
 
-  function finish() {
+  async function finish() {
     const profile = createProfile(a)
+    if (a.pin) await setProfilePin(profile.id, a.pin)
     const first = !hasProfiles
     signIn(profile.id)
     if (first && hasLegacyData()) migrateLegacyInto(profile.id)
@@ -298,7 +299,8 @@ function Signup({ onLogin, onBack, hasProfiles }) {
               ) })}
             </ul>
             <label className="mt-5 flex items-center gap-3 rounded-2xl border-2 border-line p-3.5 cursor-pointer hover:border-faint transition">
-              <span className={cx('h-6 w-11 rounded-full p-0.5 transition', a.sample ? 'bg-ink' : 'bg-line')} onClick={(e) => { e.preventDefault(); set({ sample: !a.sample }) }}><span className={cx('block h-5 w-5 rounded-full bg-card transition', a.sample && 'translate-x-5')} /></span>
+              <button type="button" role="switch" aria-checked={a.sample} aria-label="Start with sample data" onClick={() => set({ sample: !a.sample })}
+                className={cx('h-6 w-11 shrink-0 rounded-full p-0.5 transition', a.sample ? 'bg-ink' : 'bg-line')}><span className={cx('block h-5 w-5 rounded-full bg-card transition', a.sample && 'translate-x-5')} /></button>
               <span><span className="block text-sm font-bold">Start with sample data</span><span className="block text-xs text-muted">Six weeks of example tasks so every screen has something to show. Clear it in Settings whenever you like.</span></span>
             </label>
           </>

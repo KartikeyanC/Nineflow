@@ -336,6 +336,19 @@ function TaskList({ day, dayKey, className, i }) {
     return sortByTime(r).sort((a, b) => (a.date || '9').localeCompare(b.date || '9'))
   }, [tasks, tab, day, dayKey])
 
+  // Keyboard: ↑↓ or J/K move between rows, Enter opens, X completes, F focuses.
+  const onRowKey = (e, t) => {
+    if (e.target !== e.currentTarget) return
+    const els = [...e.currentTarget.parentElement.querySelectorAll('li[data-row]')]
+    const i = els.indexOf(e.currentTarget)
+    const k = e.key.toLowerCase()
+    if (k === 'arrowdown' || k === 'j') { e.preventDefault(); els[i + 1]?.focus() }
+    else if (k === 'arrowup' || k === 'k') { e.preventDefault(); els[i - 1]?.focus() }
+    else if (k === 'enter') { e.preventDefault(); setSelectedId(t.id) }
+    else if (k === 'x') { e.preventDefault(); toggleComplete(t.id) }
+    else if (k === 'f' && t.status !== 'completed') { e.preventDefault(); startFocus(t.id) }
+  }
+
   return (
     <Panel title="Tasks" meta={rows.length} className={className} i={i} bodyClass="px-2 pb-2"
       right={
@@ -350,14 +363,16 @@ function TaskList({ day, dayKey, className, i }) {
           Nothing here yet. Add a task
         </button>
       ) : (
-        <ul className="max-h-[440px] overflow-y-auto">
+        <>
+        <ul className="group/list max-h-[440px] overflow-y-auto">
           {rows.map((t) => {
             const done = t.status === 'completed'
             const od = isOverdue(t, now)
             const focused = focus?.taskId === t.id
             return (
-              <li key={t.id} onClick={() => setSelectedId(t.id)}
-                className="group flex items-center gap-3 px-3 h-[52px] rounded-2xl cursor-pointer hover:bg-subtle transition duration-300">
+              <li key={t.id} data-row onClick={() => setSelectedId(t.id)} tabIndex={0} onKeyDown={(e) => onRowKey(e, t)}
+                aria-label={`${t.title}${done ? ', done' : ''}`}
+                className="group flex items-center gap-3 px-3 h-[52px] rounded-2xl cursor-pointer hover:bg-subtle focus-visible:bg-subtle focus-visible:ring-2 focus-visible:ring-accent/40 outline-none transition duration-300">
                 <CheckCircle checked={done} onToggle={() => toggleComplete(t.id)} />
                 <div className="min-w-0 flex-1">
                   <p className={cx('text-[14px] font-semibold truncate transition', done && 'line-through text-faint')}>{t.title}</p>
@@ -382,6 +397,10 @@ function TaskList({ day, dayKey, className, i }) {
             )
           })}
         </ul>
+        <p className="px-3 pt-1 text-[11px] text-faint" aria-hidden="true">
+          <span className="kbd">↑</span> <span className="kbd">↓</span> move · <span className="kbd">Enter</span> open · <span className="kbd">X</span> done · <span className="kbd">F</span> focus
+        </p>
+        </>
       )}
     </Panel>
   )
@@ -458,7 +477,7 @@ function Timeline({ list, day, dayKey, isToday, className, i }) {
           <button type="button" onClick={() => { applyPlan(preview); setPreview(null) }}
             className="h-8 rounded-full px-3.5 text-[12px] font-semibold bg-accent text-white transition hover:-translate-y-px active:scale-[0.97]">Apply</button>
         </div>
-      ) : planMsg ? <span className="text-[11px] font-semibold text-muted animate-fade-in truncate">{planMsg}</span> : unscheduled.some((t) => t.status === 'todo') && (
+      ) : planMsg ? <span role="status" className="text-[11px] font-semibold text-muted animate-fade-in truncate">{planMsg}</span> : unscheduled.some((t) => t.status === 'todo') && (
         <button type="button" onClick={runPlan} title="Timebox unscheduled tasks into free slots"
           className="group h-8 inline-flex items-center gap-1.5 rounded-full pl-2.5 pr-3 text-[12px] font-semibold text-accent bg-accent-soft transition hover:-translate-y-px active:scale-[0.97]">
           <Wand2 size={13} className="transition duration-500 group-hover:-rotate-12" /> Plan my day

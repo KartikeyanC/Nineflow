@@ -233,6 +233,13 @@ export function dueLabel(task, now = new Date()) {
   return `${format(d, 'MMM d')}${time}`
 }
 
+// Calm label for unfinished work from an earlier day: "from Tue" within the
+// last week, else "from Sep 28". Used instead of a red "OVERDUE".
+export function carriedLabel(key, now = new Date()) {
+  const d = parseISO(key)
+  return differenceInCalendarDays(now, d) <= 6 ? `from ${format(d, 'EEE')}` : `from ${format(d, 'MMM d')}`
+}
+
 // Days ago, for relative chips: "yesterday", "3 days ago".
 export function daysAgoLabel(key, now = new Date()) {
   const n = differenceInCalendarDays(now, parseISO(key))

@@ -1,9 +1,10 @@
-import React, { useRef } from 'react'
+import React, { useRef, useState } from 'react'
 import { Download, Upload, RotateCcw } from 'lucide-react'
 import { useWork } from '../WorkContext'
 import { endTime, workMinutesPerDay, h1 } from '../workCalc'
 import { DAY_NAMES, SATURDAY_RULES } from '../workStore'
 import { Section, NumIn, TextIn } from '../ui'
+import { ConfirmDialog } from '../../components/ui'
 
 const ROUTINE = [
   ['2 min', 'Open the Date view for today. Read the main target and the time plan.'],
@@ -31,7 +32,19 @@ export default function Guide() {
   const fileRef = useRef(null)
   const setT = (k, v) => updateSettings({ targets: { ...T, [k]: v } })
   const exportJson = () => { const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(new Blob([JSON.stringify(work, null, 2)], { type: 'application/json' })), download: 'work-os-backup.json' }); a.click() }
-  const importJson = async (f) => { if (!f) return; try { const d = JSON.parse(await f.text()); if (d && Array.isArray(d.tasks) && confirm('Replace all Work OS data with this file?')) importWork(d) } catch { alert('Not a valid backup.') } }
+  const [pending, setPending] = useState(null) // parsed backup awaiting confirm
+  const [importError, setImportError] = useState(null)
+  const [confirmReset, setConfirmReset] = useState(false)
+  const importJson = async (f) => {
+    if (!f) return
+    setImportError(null)
+    try {
+      const d = JSON.parse(await f.text())
+      if (d && Array.isArray(d.tasks)) setPending(d)
+      else setImportError('That file is not a Work OS backup.')
+    } catch { setImportError('That file is not valid JSON.') }
+    if (fileRef.current) fileRef.current.value = ''
+  }
 
   return (
     <div className="space-y-4">
@@ -74,18 +87,25 @@ export default function Guide() {
         </div>
       </Section>
 
-      <Section title="What I added beyond the brief">
+      <Section title="Also included">
         <ul className="space-y-1 text-sm list-disc pl-5">{EXTRAS.map((e) => <li key={e}>{e}</li>)}</ul>
       </Section>
 
-      <Section title="Backup" hint="The Work OS keeps its own data, separate from the planner's tasks.">
+      <Section title="Backup" hint="The planner's Settings → Export also includes Work OS. Use these to back up or restore Work OS on its own.">
         <div className="flex flex-wrap gap-2">
           <button type="button" className="btn-ghost" onClick={exportJson}><Download size={14} /> Export JSON</button>
           <button type="button" className="btn-ghost" onClick={() => fileRef.current?.click()}><Upload size={14} /> Import JSON</button>
           <input ref={fileRef} type="file" accept="application/json" className="hidden" onChange={(e) => importJson(e.target.files?.[0])} />
-          <button type="button" className="btn-ghost text-coral-fg ml-auto" onClick={() => confirm('Reset the Work OS to defaults? All tasks, posts and campaigns here will be removed.') && resetWork()}><RotateCcw size={14} /> Reset to defaults</button>
+          <button type="button" className="btn-ghost text-coral-fg ml-auto" onClick={() => setConfirmReset(true)}><RotateCcw size={14} /> Reset to defaults</button>
         </div>
+        {importError && <p className="mt-3 text-sm text-coral-fg font-medium">{importError}</p>}
       </Section>
+
+      <ConfirmDialog open={!!pending} onClose={() => setPending(null)} onConfirm={() => importWork(pending)} confirmLabel="Replace"
+        title="Replace all Work OS data with this file?"
+        body={pending ? `It holds ${pending.tasks.length} task-log rows. Your current Work OS data will be overwritten.` : ''} />
+      <ConfirmDialog open={confirmReset} onClose={() => setConfirmReset(false)} onConfirm={resetWork} confirmLabel="Reset"
+        title="Reset Work OS to defaults?" body="All tasks, posts and campaigns here will be removed. Your planner tasks are not affected." />
     </div>
   )
 }
