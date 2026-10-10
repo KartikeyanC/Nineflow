@@ -5,6 +5,7 @@ import { dayStats } from '../lib/tasks'
 import { currentProfile, initials } from '../lib/profiles'
 import { colorOf } from '../lib/colors'
 import { cx } from '../components/ui'
+import { InterruptButton } from '../features/Interrupt'
 
 // Floating "island" sidebar: icons only between 640px and 1024px, full
 // labels from 1024px. Phones use MobileNav instead.
@@ -48,6 +49,7 @@ export default function Sidebar() {
         <span className="hidden lg:inline text-[13px] font-semibold">New task</span>
         <span className="hidden lg:inline-flex ml-auto text-[10px] font-semibold text-page/50 tracking-wide">CTRL K</span>
       </button>
+      <InterruptButton />
 
       <nav className="mt-5 flex flex-col gap-1">
         {items.map((item, i) => {

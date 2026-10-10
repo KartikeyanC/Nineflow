@@ -3,6 +3,7 @@ import { LayoutDashboard, KanbanSquare, CalendarRange, CalendarDays, Settings, P
 import { usePlanner } from '../store/PlannerContext'
 import { dayStats } from '../lib/tasks'
 import { cx, ProgressBar } from './ui'
+import { InterruptButton } from '../features/Interrupt'
 
 const NAV = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -85,6 +86,7 @@ export default function Sidebar() {
         <Plus size={16} />
         <span className="hidden lg:inline">New task</span>
       </button>
+      <InterruptButton />
 
       <button
         type="button"

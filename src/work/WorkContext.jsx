@@ -52,7 +52,7 @@ export function WorkProvider({ children }) {
     const status = p.status === 'completed' ? 'Done' : p.status === 'working' ? 'In progress' : 'Not started'
     const row = {
       ...newTaskRow(w.nextTaskNo, key(new Date())),
-      task: p.title, plannerTaskId: p.id, dueDate: p.date || key(new Date()), workDate: p.date,
+      task: p.title, plannerTaskId: p.id, requestedBy: p.interruption?.by || '', dueDate: p.date || key(new Date()), workDate: p.date,
       plannedHours: Math.round((p.durationMinutes || 0) / 6) / 10, status,
       completedDate: p.completedAt ? key(new Date(p.completedAt)) : null,
     }

@@ -11,6 +11,10 @@ import { currentProfile } from './lib/profiles'
 import FocusMode from './components/FocusMode'
 import PipQuickList from './components/PipQuickList'
 import CalendarToast from './components/CalendarToast'
+import Notices from './features/Notices'
+import Ritual from './features/Ritual'
+import WelcomeBack from './features/WelcomeBack'
+import Interrupt, { InterruptButton, ResumePrompt } from './features/Interrupt'
 import Dashboard from './views/Dashboard'
 import Board from './views/Board'
 import Week from './views/Week'
@@ -70,6 +74,14 @@ function Shell() {
       <FocusMode />
       <PipQuickList />
       <CalendarToast />
+      <Notices />
+      <Ritual />
+      <WelcomeBack />
+      <Interrupt />
+      <ResumePrompt />
+
+      {/* Phones: interruption button above the quick-add button */}
+      <span className="sm:hidden fixed bottom-[9.5rem] right-5 z-30"><InterruptButton compact /></span>
     </div>
   )
 }

@@ -1,12 +1,12 @@
 import React, { useMemo, useState } from 'react'
 import { addDays, parseISO } from 'date-fns'
 import { ArrowRight, Clock3, CornerDownRight, Inbox, Moon } from 'lucide-react'
-import { usePlanner } from '../../store/PlannerContext'
-import { carriedLabel, dateKey, fmtMinutes, isOverdue } from '../../lib/tasks'
-import { dayLoad, fitInto, hhmm, remainingMinutes, trimDay } from '../../lib/capacity'
-import { colorOf } from '../../lib/colors'
-import { cx } from '../../components/ui'
-import { openRitual } from '../ritualBus'
+import { usePlanner } from '../store/PlannerContext'
+import { carriedLabel, dateKey, fmtMinutes, isOverdue } from '../lib/tasks'
+import { dayLoad, fitInto, hhmm, remainingMinutes, trimDay } from '../lib/capacity'
+import { colorOf } from '../lib/colors'
+import { cx } from '../components/ui'
+import { openRitual } from './ritualBus'
 
 // Planning aids for the v2 Today view: how full the day is against your
 // working hours, and a calm place for work carried over from earlier days.

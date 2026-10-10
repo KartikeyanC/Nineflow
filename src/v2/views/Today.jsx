@@ -3,13 +3,14 @@ import { addDays, format, getISOWeek, isSameDay, parseISO, subDays } from 'date-
 import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis } from 'recharts'
 import {
   ChevronLeft, ChevronRight, ArrowRight, ArrowUpRight, Plus, X, Flame, Play, Check, Repeat, Wand2, AlertTriangle,
-  Sparkles, TrendingUp, Clock3, Flag, PieChart as PieIcon, CalendarPlus, Moon,
+  Sparkles, TrendingUp, Clock3, Flag, PieChart as PieIcon, CalendarPlus, Moon, Zap, CornerUpLeft,
 } from 'lucide-react'
 import { usePlanner } from '../../store/PlannerContext'
 import { dateKey, fmtMinutes, focusByHour, isOverdue, sortByTime, tasksOn, todayKey, totalMinutes } from '../../lib/tasks'
 import { toMin as capMin } from '../../lib/capacity'
-import { CapacityBar, CarriedOver, carriedLabel } from './Planning'
-import { RitualPrompt } from '../Ritual'
+import { CapacityBar, CarriedOver, carriedLabel } from '../../features/Planning'
+import { RitualPrompt } from '../../features/Ritual'
+import { openInterrupt } from '../../features/Interrupt'
 import { buildInsights } from '../../lib/insights'
 import { describePlan } from '../../lib/schedule'
 import { currentProfile, firstName } from '../../lib/profiles'
@@ -146,12 +147,13 @@ function pickFocus(list, isToday, nowMin) {
 }
 
 function NowCard({ list, isToday, dayKey, className, i }) {
-  const { now, categoryById, startFocus, toggleComplete, setSelectedId, setQuickAdd, focus } = usePlanner()
+  const { tasks, now, categoryById, startFocus, toggleComplete, setSelectedId, setQuickAdd, focus } = usePlanner()
   const nowMin = now.getHours() * 60 + now.getMinutes()
   const pick = pickFocus(list, isToday, nowMin)
   const later = pick?.s != null ? list.filter((t) => t.startTime && t.status !== 'completed' && toMin(t.startTime) > pick.s).slice(0, 2) : []
   const r = rise(i)
-  const label = { now: 'Happening now', next: `Up next · in ${fmtMinutes(Math.max(0, (pick?.s ?? 0) - nowMin))}`, working: 'In progress', first: 'First up', list: 'Next on your list' }[pick?.kind]
+  const back = pick?.t.interruption?.resume && tasks.find((t) => t.id === pick.t.interruption.resume)
+  const label = pick?.t.interruption ? `Interruption${pick.t.interruption.by ? ` · from ${pick.t.interruption.by}` : ''}` : { now: 'Happening now', next: `Up next · in ${fmtMinutes(Math.max(0, (pick?.s ?? 0) - nowMin))}`, working: 'In progress', first: 'First up', list: 'Next on your list' }[pick?.kind]
   const pct = pick?.kind === 'now' ? (nowMin - pick.s) / Math.max(1, pick.e - pick.s) : 0
   const cat = pick ? categoryById(pick.t.category) : null
   const focusing = pick && focus?.taskId === pick.t.id
@@ -225,8 +227,22 @@ function NowCard({ list, isToday, dayKey, className, i }) {
                   className="inline-flex items-center gap-2 h-11 rounded-full bg-white/10 ring-1 ring-white/15 px-4 text-[13px] font-semibold text-white/90 transition hover:bg-white/15 active:scale-[0.97]">
                   <Check size={15} /> Done
                 </button>
+                {isToday && !pick.t.interruption && (
+                  <button type="button" onClick={openInterrupt} title="Something came up (Ctrl+I)"
+                    className="inline-flex items-center gap-1.5 h-11 rounded-full px-3 text-[13px] font-semibold text-white/55 transition hover:text-white">
+                    <Zap size={14} /> Interrupted?
+                  </button>
+                )}
               </div>
-              {later.length > 0 && (
+              {back && back.status !== 'completed' && (
+                <div className="text-right">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/40">Then back to</p>
+                  <button type="button" onClick={() => setSelectedId(back.id)} className="inline-flex items-center gap-1.5 mt-1 text-[13px] text-white/80 hover:text-white transition">
+                    <CornerUpLeft size={13} /> {back.title}
+                  </button>
+                </div>
+              )}
+              {!back && later.length > 0 && (
                 <div className="text-right">
                   <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/40">Then</p>
                   {later.map((t) => (
@@ -377,6 +393,7 @@ function TaskList({ day, dayKey, className, i }) {
                 <div className="min-w-0 flex-1">
                   <p className={cx('text-[14px] font-semibold truncate transition', done && 'line-through text-faint')}>{t.title}</p>
                   <div className="flex items-center gap-2 text-[11px] font-medium">
+                    {t.interruption && <span className="inline-flex items-center gap-1 text-peach-fg"><Zap size={10} />Interruption{t.interruption.by ? ` · ${t.interruption.by}` : ''}</span>}
                     {t.status === 'working' && <span className="inline-flex items-center gap-1 text-sky-fg"><i className="h-1.5 w-1.5 rounded-full bg-sky-fg animate-pulse" />Working</span>}
                     {od && <span className="text-muted">{carriedLabel(t.date, now)}</span>}
                     {tab !== 'today' && t.date && t.date !== dayKey && <span className="text-faint">{format(parseISO(t.date), 'EEE d')}</span>}
@@ -535,7 +552,7 @@ function Timeline({ list, day, dayKey, isToday, className, i }) {
                       background: cssVar(c.bgVar),
                     }}>
                     <span className="absolute left-1.5 top-1.5 bottom-1.5 w-[3px] rounded-full" style={{ background: cssVar(c.var) }} />
-                    <p className={cx('text-[12px] font-bold leading-4 truncate text-ink', done && 'line-through')}>{t.title}</p>
+                    <p className={cx('text-[12px] font-bold leading-4 truncate text-ink', done && 'line-through')}>{t.interruption && <Zap size={11} className="inline -mt-0.5 mr-1 text-peach-fg" aria-label="Interruption" />}{t.title}</p>
                     {h >= 36 && <p className="text-[11px] leading-4 font-medium tnum truncate" style={{ color: cssVar(c.var) }}>{hh(s)} – {hh(e)}{t.status === 'working' ? ' · working' : done && totalMinutes(t, now) >= 1 ? ` · took ${fmtMinutes(totalMinutes(t, now))}` : ''}</p>}
                   </button>
                 )

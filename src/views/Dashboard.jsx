@@ -3,11 +3,11 @@ import { addDays, format, isSameDay, parseISO, subDays } from 'date-fns'
 import { Bar, BarChart, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis } from 'recharts'
 import {
   ChevronLeft, ChevronRight, ArrowRight, Plus, X, Flame, ListChecks, CheckCircle2, Activity, Circle,
-  Sparkles, AlertTriangle, TrendingUp, Clock3, Flag, PieChart as PieIcon, Repeat, Wand2,
+  Sparkles, AlertTriangle, TrendingUp, Clock3, Flag, PieChart as PieIcon, Repeat, Wand2, Zap, Moon,
 } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
 import {
-  PRIORITIES, PRIORITY_LABEL, dateKey, daysAgoLabel, fmtMinutes, focusByHour, isOverdue, minutesOnDay, sortByTime, tasksOn, todayKey,
+  PRIORITIES, PRIORITY_LABEL, carriedLabel, dateKey, fmtMinutes, focusByHour, isOverdue, sortByTime, tasksOn, todayKey, totalMinutes,
 } from '../lib/tasks'
 import { buildInsights } from '../lib/insights'
 import { describePlan } from '../lib/schedule'
@@ -15,13 +15,16 @@ import { currentProfile, firstName } from '../lib/profiles'
 import { colorOf, cssVar, PRIORITY_STYLE } from '../lib/colors'
 import { CategoryTag, CheckCircle, Segmented, cx } from '../components/ui'
 import { DateField } from '../components/DatePicker'
+import { CapacityBar, CarriedOver } from '../features/Planning'
+import { RitualPrompt } from '../features/Ritual'
+import { openInterrupt } from '../features/Interrupt'
 
 const toMin = (hhmm) => { const [h, m] = hhmm.split(':').map(Number); return h * 60 + m }
 const hh = (min) => `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`
 const INSIGHT_ICON = { sparkles: Sparkles, alert: AlertTriangle, trend: TrendingUp, clock: Clock3, flag: Flag, pie: PieIcon }
 
 export default function Dashboard() {
-  const { tasks, now, settings, dashboardDate, setDashboardDate, categoryById, toggleComplete, setSelectedId, setQuickAdd, moveOverdueToToday } = usePlanner()
+  const { tasks, now, dashboardDate, setDashboardDate } = usePlanner()
   const day = useMemo(() => parseISO(dashboardDate), [dashboardDate])
   const isToday = isSameDay(day, now)
   const list = useMemo(() => sortByTime(tasksOn(tasks, dashboardDate)), [tasks, dashboardDate])
@@ -31,7 +34,6 @@ export default function Dashboard() {
     working: list.filter((t) => t.status === 'working').length,
     todo: list.filter((t) => t.status === 'todo').length,
   }
-  const overdue = useMemo(() => (isToday ? tasks.filter((t) => isOverdue(t, now)).sort((a, b) => a.date.localeCompare(b.date)) : []), [tasks, now, isToday])
   const hour = now.getHours()
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
   return (
@@ -43,7 +45,13 @@ export default function Dashboard() {
           <p className="text-sm text-muted mt-1 font-medium">{format(day, 'EEEE, MMMM d, yyyy')}</p>
           <p className="text-sm text-faint">Let's make today productive.</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {isToday && <RitualPrompt />}
+          {isToday && (
+            <button type="button" className="btn-ghost h-9 py-0" onClick={openInterrupt} title="Something came up (Ctrl+I)">
+              <Zap size={14} className="text-peach-fg" /> Interruption
+            </button>
+          )}
           {!isToday && <button type="button" className="btn-ghost h-9 py-0" onClick={() => setDashboardDate(todayKey())}>Back to today</button>}
           <div className="inline-flex items-center rounded-full bg-card border border-line p-1 shadow-soft">
             <button type="button" aria-label="Previous day" onClick={() => setDashboardDate(dateKey(subDays(day, 1)))} className="h-8 w-8 rounded-full inline-flex items-center justify-center text-muted hover:bg-page hover:text-ink transition"><ChevronLeft size={16} /></button>
@@ -59,22 +67,9 @@ export default function Dashboard() {
         </div>
       </header>
 
-      {/* Overdue banner */}
-      {overdue.length > 0 && (
-        <section className="rounded-card bg-coral border border-coral-fg/20 p-4 mb-5 flex flex-wrap items-center gap-3">
-          <AlertTriangle size={18} className="text-coral-fg shrink-0" />
-          <p className="font-bold text-sm text-coral-fg">{overdue.length} unfinished task{overdue.length === 1 ? '' : 's'} from past days</p>
-          <div className="flex flex-wrap gap-1.5">
-            {overdue.slice(0, 4).map((t) => (
-              <button key={t.id} type="button" onClick={() => setSelectedId(t.id)} className="pill bg-card text-ink hover:shadow-soft transition">
-                {t.title} <span className="text-faint font-medium">· {daysAgoLabel(t.date, now)}</span>
-              </button>
-            ))}
-            {overdue.length > 4 && <span className="text-xs text-coral-fg font-semibold self-center">+{overdue.length - 4} more</span>}
-          </div>
-          <button type="button" className="btn-black ml-auto" onClick={() => moveOverdueToToday()}>Move all to today <ArrowRight size={14} /></button>
-        </section>
-      )}
+      {/* How full the day is, and calm handling of work from earlier days */}
+      <CapacityBar dayKey={dashboardDate} />
+      {isToday && <CarriedOver />}
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-4">
@@ -127,25 +122,45 @@ function Card({ title, right, children, span, className }) {
 
 // 1. Timeline of the day's timed tasks.
 function Schedule({ list, isToday, now }) {
-  const { categoryById, setSelectedId, planDay, dashboardDate } = usePlanner()
+  const { categoryById, setSelectedId, previewPlan, applyPlan, dashboardDate } = usePlanner()
+  const [preview, setPreview] = useState(null) // plan awaiting Apply / Cancel
   const timed = list.filter((t) => t.startTime)
   const unscheduled = list.filter((t) => !t.startTime && t.status === 'todo').length
   const nowMin = now.getHours() * 60 + now.getMinutes()
   const [planMsg, setPlanMsg] = useState(null)
+  // Show where tasks would go first; nothing moves until Apply.
   const runPlan = () => {
-    setPlanMsg(describePlan(planDay(dashboardDate)))
-    setTimeout(() => setPlanMsg(null), 4000)
+    const plan = previewPlan(dashboardDate)
+    if (plan.patches.length) setPreview(plan)
+    else { setPlanMsg(describePlan(plan)); setTimeout(() => setPlanMsg(null), 4000) }
   }
+  const proposed = preview ? preview.patches.map((p) => ({ ...p, t: list.find((x) => x.id === p.id) })).filter((p) => p.t) : []
   return (
     <Card title="Today's schedule" span="xl:col-span-4"
-      right={planMsg ? (
-        <span className="text-[11px] font-semibold text-muted animate-fade-in">{planMsg}</span>
+      right={preview ? (
+        <div className="flex items-center gap-1.5">
+          <button type="button" className="pill bg-page text-muted hover:text-ink transition" onClick={() => setPreview(null)}>Cancel</button>
+          <button type="button" className="pill bg-lav-fg text-white hover:opacity-90 transition" onClick={() => { applyPlan(preview); setPreview(null) }}>Apply</button>
+        </div>
+      ) : planMsg ? (
+        <span role="status" className="text-[11px] font-semibold text-muted animate-fade-in">{planMsg}</span>
       ) : unscheduled > 0 && (
         <button type="button" onClick={runPlan} title={`Timebox ${unscheduled} unscheduled task${unscheduled === 1 ? '' : 's'} into free slots`}
           className="pill bg-lav text-lav-fg hover:opacity-90 transition">
           <Wand2 size={12} /> Plan my day · {unscheduled}
         </button>
       )}>
+      {preview && (
+        <div className="mb-3 rounded-2xl bg-lav/60 border border-lav-fg/20 p-3 animate-fade-in">
+          <p className="text-xs font-semibold text-lav-fg mb-1.5">Preview · nothing changes until you apply</p>
+          <ul className="space-y-1">
+            {proposed.map((p) => (
+              <li key={p.id} className="flex items-center gap-2 text-xs"><span className="w-10 font-semibold text-muted tnum">{p.startTime}</span><span className="font-semibold truncate">{p.t.title}</span><span className="ml-auto text-faint">{fmtMinutes(p.t.durationMinutes)}</span></li>
+            ))}
+          </ul>
+          {preview.unplaced.length > 0 && <p className="text-[11px] text-muted mt-1.5">{preview.unplaced.length} won't fit today.</p>}
+        </div>
+      )}
       {timed.length === 0 ? (
         <p className="text-sm text-faint">No timed tasks. Add a start time to see them here.</p>
       ) : (
@@ -165,6 +180,7 @@ function Schedule({ list, isToday, now }) {
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className={cx('text-sm font-semibold truncate', done && 'line-through text-muted')}>
+                    {t.interruption && <Zap size={12} className="inline -mt-0.5 mr-1 text-peach-fg" aria-label="Interruption" />}
                     {t.title}
                     {live && <span className="ml-2 pill bg-lav-fg text-white text-[10px] py-0">Now</span>}
                   </p>
@@ -193,6 +209,20 @@ function TaskList({ day, dayKey, isToday }) {
     return sortByTime(r).sort((a, b) => (a.date || '9').localeCompare(b.date || '9'))
   }, [tasks, tab, day, dayKey])
 
+  // Keyboard: ↑↓ or J/K move between rows, Enter opens, X completes, F focuses.
+  const { startFocus } = usePlanner()
+  const onRowKey = (e, t) => {
+    if (e.target !== e.currentTarget) return
+    const els = [...e.currentTarget.parentElement.querySelectorAll('li[data-row]')]
+    const i = els.indexOf(e.currentTarget)
+    const k = e.key.toLowerCase()
+    if (k === 'arrowdown' || k === 'j') { e.preventDefault(); els[i + 1]?.focus() }
+    else if (k === 'arrowup' || k === 'k') { e.preventDefault(); els[i - 1]?.focus() }
+    else if (k === 'enter') { e.preventDefault(); setSelectedId(t.id) }
+    else if (k === 'x') { e.preventDefault(); toggleComplete(t.id) }
+    else if (k === 'f' && t.status !== 'completed') { e.preventDefault(); startFocus(t.id) }
+  }
+
   return (
     <Card title="Tasks" span="xl:col-span-5"
       right={
@@ -214,7 +244,8 @@ function TaskList({ day, dayKey, isToday }) {
             const done = t.status === 'completed'
             const od = isOverdue(t, now)
             return (
-              <li key={t.id} onClick={() => setSelectedId(t.id)} className="flex items-center gap-3 px-2 py-2 rounded-xl cursor-pointer hover:bg-page transition">
+              <li key={t.id} data-row tabIndex={0} onKeyDown={(e) => onRowKey(e, t)} onClick={() => setSelectedId(t.id)} aria-label={`${t.title}${done ? ', done' : ''}`}
+                className="flex items-center gap-3 px-2 py-2 rounded-xl cursor-pointer hover:bg-page focus-visible:bg-page focus-visible:ring-2 focus-visible:ring-lav-fg/30 outline-none transition">
                 <CheckCircle checked={done} onToggle={() => toggleComplete(t.id)} size="sm" />
                 <div className="min-w-0 flex-1">
                   <p className={cx('text-sm font-semibold truncate', done && 'line-through text-muted')}>{t.title}</p>
@@ -222,11 +253,15 @@ function TaskList({ day, dayKey, isToday }) {
                     <CategoryTag category={categoryById(t.category)} className="text-[10px] py-0" />
                     {t.recurrence && <Repeat size={10} className="text-lav-fg" />}
                     {t.status === 'working' && <span className="text-[10px] font-semibold text-sky-fg">Working</span>}
-                    {od && <span className="text-[10px] font-semibold text-coral-fg">Overdue</span>}
+                    {t.interruption && <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-peach-fg"><Zap size={10} />Interruption{t.interruption.by ? ` · ${t.interruption.by}` : ''}</span>}
+                    {od && <span className="text-[10px] font-semibold text-muted">{carriedLabel(t.date, now)}</span>}
                     {tab !== 'today' && t.date && t.date !== dayKey && <span className="text-[10px] text-faint">{format(parseISO(t.date), 'EEE d')}</span>}
                   </div>
                 </div>
-                <span className="text-xs font-medium text-muted">{t.startTime || fmtMinutes(t.durationMinutes)}</span>
+                <span className="text-xs font-medium text-muted tnum text-right">
+                  {t.startTime || fmtMinutes(t.durationMinutes)}
+                  {done && totalMinutes(t, now) >= 1 && <span className="block text-[10px] text-faint">took {fmtMinutes(totalMinutes(t, now))}</span>}
+                </span>
               </li>
             )
           })}
@@ -395,16 +430,23 @@ function Insights({ day }) {
 
 // 8. Habit tracker.
 function Habits({ dayKey, day }) {
-  const { habits, addHabit, removeHabit, toggleHabit, now } = usePlanner()
+  const { habits, addHabit, removeHabit, toggleHabit, toggleHabitRest, now } = usePlanner()
   const [adding, setAdding] = useState(false)
   const [name, setName] = useState('')
   const strip = Array.from({ length: 7 }, (_, i) => subDays(day, 6 - i))
 
+  // Done days count; rest days are skipped over without breaking the streak.
   const streakOf = (h) => {
+    const rest = h.rest || []
     let d = now
-    if (!h.done.includes(dateKey(d))) d = subDays(d, 1)
+    if (!h.done.includes(dateKey(d)) && !rest.includes(dateKey(d))) d = subDays(d, 1)
     let n = 0
-    while (h.done.includes(dateKey(d))) { n++; d = subDays(d, 1) }
+    for (let guard = 0; guard < 400; guard++) {
+      const k = dateKey(d)
+      if (h.done.includes(k)) n++
+      else if (!rest.includes(k)) break
+      d = subDays(d, 1)
+    }
     return n
   }
 
@@ -428,10 +470,18 @@ function Habits({ dayKey, day }) {
               <div className="flex gap-1">
                 {strip.map((d) => {
                   const k = dateKey(d)
-                  return <span key={k} title={format(d, 'EEE d')} className={cx('h-4 w-3 rounded-full', h.done.includes(k) ? 'bg-mint-fg' : 'bg-page border border-line')} />
+                  const rest = (h.rest || []).includes(k)
+                  return <span key={k} title={`${format(d, 'EEE d')}${rest ? ' · rest day' : ''}`} className={cx('h-4 w-3 rounded-full', h.done.includes(k) ? 'bg-mint-fg' : rest ? 'bg-lav' : 'bg-page border border-line')} />
                 })}
               </div>
               <span className="inline-flex items-center gap-0.5 text-xs font-bold text-peach-fg w-9 justify-end"><Flame size={12} />{streak}</span>
+              <button type="button" onClick={() => toggleHabitRest(h.id, dayKey)}
+                aria-label={(h.rest || []).includes(dayKey) ? `Undo rest day for ${h.name}` : `Rest day for ${h.name}: keeps the streak`}
+                title={(h.rest || []).includes(dayKey) ? 'Undo rest day' : 'Rest day (keeps your streak)'}
+                className={cx('h-6 w-6 rounded-full inline-flex items-center justify-center transition',
+                  (h.rest || []).includes(dayKey) ? 'bg-lav text-lav-fg' : 'text-faint opacity-0 group-hover:opacity-100 [@media(hover:none)]:opacity-100 hover:bg-page hover:text-ink')}>
+                <Moon size={12} />
+              </button>
               <button type="button" aria-label="Remove habit" onClick={() => removeHabit(h.id)}
                 className="h-6 w-6 rounded-full inline-flex items-center justify-center text-faint opacity-0 group-hover:opacity-100 hover:bg-coral hover:text-coral-fg transition"><X size={13} /></button>
             </li>

@@ -41,6 +41,7 @@ export function createTask(fields = {}) {
     sessions: [],
     seriesId: null,
     recurrence: null, // { freq, until, skip } | null
+    interruption: null, // { by, at, resume, resumeMode, resolved } | null
     ...fields,
   }
 }

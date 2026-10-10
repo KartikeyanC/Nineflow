@@ -30,6 +30,14 @@
   --rose-fg: 214 51 108;    /* #D6336C */
   --teal: 214 241 240;      /* #D6F1F0 */
   --teal-fg: 15 139 141;    /* #0F8B8D */
+
+  /* Tokens the shared feature screens (src/features) use, in v1's palette:
+     lavender is v1's accent. */
+  --subtle: 246 242 234;
+  --shell: 240 235 226;
+  --accent: 107 78 230;
+  --accent-soft: 228 221 251;
+  --hair: rgb(60 50 30 / 0.08);
 }
 
 .dark {
@@ -57,6 +65,12 @@
   --rose-fg: 255 128 170;
   --teal: 24 66 66;
   --teal-fg: 78 208 210;
+
+  --subtle: 38 37 33;
+  --shell: 28 27 24;
+  --accent: 176 158 255;
+  --accent-soft: 58 49 96;
+  --hair: rgb(255 255 255 / 0.07);
 }
 
 @layer base {
@@ -100,4 +114,22 @@
   .pill {
     @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold leading-5;
   }
+  .kbd {
+    @apply inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-md bg-page border border-line text-[10px] font-semibold text-muted;
+  }
+}
+
+@layer utilities {
+  .tnum {
+    font-variant-numeric: tabular-nums;
+  }
+  .ring-hair {
+    box-shadow: 0 0 0 1px var(--hair);
+  }
+}
+
+/* Shared screens use a serif for big titles in v2; in v1 they keep v1's bold Inter. */
+.font-serif {
+  font-weight: 700;
+  letter-spacing: -0.02em;
 }

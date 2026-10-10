@@ -33,6 +33,13 @@ export function buildInsights({ tasks, day, now, categories }) {
     }
   }
 
+  // Unplanned work that came in.
+  const interrupts = list.filter((t) => t.interruption)
+  if (interrupts.length) {
+    const mins = interrupts.reduce((s, t) => s + (totalMinutes(t, now) || 0), 0)
+    out.push({ tone: 'peach', icon: 'alert', text: `${interrupts.length} interruption${interrupts.length === 1 ? '' : 's'} came in${mins ? `, taking ${fmtMinutes(mins)}` : ''}. That time came out of your plan.` })
+  }
+
   // Completion vs the 7-day average (only days that had tasks).
   if (list.length) {
     const done = list.filter((t) => t.status === 'completed').length

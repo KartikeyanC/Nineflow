@@ -11,6 +11,8 @@ export default {
     extend: {
       fontFamily: {
         sans: ['"Inter Variable"', 'Inter', 'system-ui', 'sans-serif'],
+        // Shared feature screens ask for `font-serif`; v1 keeps Inter.
+        serif: ['"Inter Variable"', 'Inter', 'system-ui', 'sans-serif'],
       },
       colors: {
         page: v('page'),
@@ -35,6 +37,10 @@ export default {
         'rose-fg': v('rose-fg'),
         teal: v('teal'),
         'teal-fg': v('teal-fg'),
+        subtle: v('subtle'),
+        shell: v('shell'),
+        accent: v('accent'),
+        'accent-soft': v('accent-soft'),
       },
       borderRadius: {
         card: '20px',
@@ -74,6 +80,13 @@ export default {
           from: { opacity: '0', transform: 'translateY(-4px) scale(0.98)' },
           to: { opacity: '1', transform: 'translateY(0) scale(1)' },
         },
+        rise: {
+          from: { opacity: '0', transform: 'translateY(8px)' },
+          to: { opacity: '1', transform: 'translateY(0)' },
+        },
+      },
+      transitionTimingFunction: {
+        spring: 'cubic-bezier(0.2, 0.7, 0.2, 1)',
       },
       animation: {
         'view-in': 'view-in 220ms cubic-bezier(0.2, 0.7, 0.2, 1) both',
@@ -83,6 +96,7 @@ export default {
         pop: 'pop 260ms cubic-bezier(0.2, 0.7, 0.2, 1) both',
         'card-out': 'card-out 260ms ease-in both',
         'menu-in': 'menu-in 140ms cubic-bezier(0.2, 0.7, 0.2, 1) both',
+        rise: 'rise 260ms cubic-bezier(0.2, 0.7, 0.2, 1) both',
       },
     },
   },

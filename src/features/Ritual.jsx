@@ -8,7 +8,7 @@ import { currentProfile } from '../lib/profiles'
 import { readDayNote, updateDayNote } from '../work/workStore'
 import { colorOf } from '../lib/colors'
 import { cx, useDialogFocus } from '../components/ui'
-import { CapacityBar, CarriedOver } from './views/Planning'
+import { CapacityBar, CarriedOver } from './Planning'
 import { EVENT, dueRitual, openRitual, useRitualState, writeState } from './ritualBus'
 
 export { openRitual }

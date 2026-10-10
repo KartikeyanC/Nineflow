@@ -141,6 +141,8 @@ function normalizeTask(t) {
     sessions: Array.isArray(t.sessions) ? t.sessions : [],
     seriesId: t.seriesId ?? null,
     recurrence: t.recurrence && t.recurrence.freq ? { freq: t.recurrence.freq, until: t.recurrence.until ?? null, skip: t.recurrence.skip ?? [] } : null,
+    // Work that interrupted the plan: { by, at, resume, resumeMode, resolved }
+    interruption: t.interruption && typeof t.interruption === 'object' ? t.interruption : null,
   }
 }
 

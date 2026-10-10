@@ -17,9 +17,10 @@ import Settings from '../views/Settings'
 import Work from '../work/Work'
 import Today from './views/Today'
 import Sidebar from './Sidebar'
-import Notices from './Notices'
-import Ritual from './Ritual'
-import WelcomeBack from './WelcomeBack'
+import Notices from '../features/Notices'
+import Ritual from '../features/Ritual'
+import WelcomeBack from '../features/WelcomeBack'
+import Interrupt, { InterruptButton, ResumePrompt } from '../features/Interrupt'
 
 // v2 shell. Same store and views as v1 (src/App.jsx); the frame, the Today
 // view and the design tokens (theme.css) are new.
@@ -36,8 +37,9 @@ function MobileBar() {
         <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-accent ring-2 ring-page" />
       </span>
       <span className="text-[14px] font-bold tracking-tight">Daily Planner</span>
+      <span className="ml-auto"><InterruptButton compact /></span>
       <button type="button" title="Toggle dark mode" onClick={() => updateSettings({ theme: dark ? 'light' : 'dark' })}
-        className="ml-auto h-9 w-9 rounded-full inline-flex items-center justify-center text-muted bg-card shadow-soft">
+        className=" h-9 w-9 rounded-full inline-flex items-center justify-center text-muted bg-card shadow-soft">
         {dark ? <Sun size={16} /> : <Moon size={16} />}
       </button>
     </div>
@@ -93,6 +95,8 @@ function Shell() {
       <Notices />
       <Ritual />
       <WelcomeBack />
+      <Interrupt />
+      <ResumePrompt />
     </div>
   )
 }

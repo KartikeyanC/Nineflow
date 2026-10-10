@@ -43,6 +43,7 @@ export default function DailyReport() {
     ...done.map((t) => `• ${t.task || t.taskType}${taskDerived(t).delivery === 'Late' ? ' (late)' : ''}`),
     planner.list.length ? '' : null,
     planner.list.length ? `From the planner: ${planner.done.length} of ${planner.list.length} done, ${fmtMinutes(planner.focus)} focused` : null,
+    planner.interruptions.length ? `Interruptions: ${planner.interruptions.map((t) => `${t.title}${t.interruption.by ? ` (${t.interruption.by})` : ''}`).join('; ')}` : null,
     ...planner.done.map((t) => `• ${t.title}${totalMinutes(t, now) >= 1 ? ` – took ${fmtMinutes(totalMinutes(t, now))}` : ''}`),
     posts.length ? '' : null, posts.length ? `Published: ${posts.map((p) => `${p.platform} ${p.postType}${p.topic ? ` – ${p.topic}` : ''}`).join('; ')}` : null,
     '',

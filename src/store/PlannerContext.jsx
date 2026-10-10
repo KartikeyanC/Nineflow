@@ -8,7 +8,7 @@ import { createTask, dateKey, todayKey, withSessionPaused, withSessionResumed, w
 import { generateSample } from '../lib/sample'
 import { ensureRecurrences } from '../lib/recurrence'
 import { planDay as planDayPure } from '../lib/schedule'
-import { toMin } from '../lib/capacity'
+import { hhmm, toMin } from '../lib/capacity'
 
 const PlannerContext = createContext(null)
 
@@ -466,6 +466,59 @@ export function PlannerProvider({ children }) {
     else if (t.status === 'working') setStatus(f.taskId, 'todo')
   }, [setStatus])
 
+  // ---- Interruptions --------------------------------------------------
+  // Someone hands you urgent work: log it as a task on today's plan. With
+  // `startNow`, whatever you were doing is paused (its timer stops), the new
+  // task's timer starts, and timed tasks still ahead today can be pushed back
+  // by its length. `resume` remembers what to go back to afterwards.
+  const logInterruption = useCallback(({ title, by = '', minutes = 30, category, startNow = true, shift = true }) => {
+    const at = new Date()
+    const today = dateKey(at)
+    const nowMin = at.getHours() * 60 + at.getMinutes()
+    const f = focusRef.current
+    const working = tasksRef.current.find((t) => t.status === 'working' && t.sessions.some((x) => x.end == null))
+    const prev = !startNow ? null : f ? { id: f.taskId, mode: 'focus' } : working ? { id: working.id, mode: 'working' } : null
+    let task = createTask({
+      title, date: today, durationMinutes: minutes, priority: 'high',
+      ...(category ? { category } : {}),
+      startTime: startNow ? hhmm(Math.floor(nowMin / 5) * 5) : null,
+      interruption: { by: by.trim(), at: at.toISOString(), resume: prev?.id || null, resumeMode: prev?.mode || null, resolved: false },
+    })
+    if (startNow && !f) task = withStatus(task, 'working', at)
+    offerUndo(`Logged “${title}” as an interruption`)
+    setTasks((ts) => {
+      let next = ts
+      if (prev?.mode === 'working') next = next.map((t) => (t.id === prev.id ? withSessionPaused(t, at) : t))
+      if (startNow && shift) {
+        next = next.map((t) => {
+          if (t.date !== today || t.status !== 'todo' || !t.startTime) return t
+          const s = toMin(t.startTime)
+          if (s < nowMin) return t
+          const moved = s + minutes
+          return moved > 23 * 60 + 45 ? { ...t, startTime: null } : { ...t, startTime: hhmm(moved) }
+        })
+      }
+      return [...next, task]
+    })
+    if (startNow && f) startFocus(task.id)
+    return task
+  }, [offerUndo, startFocus])
+
+  // Go back to what the interruption paused, and mark it handled.
+  const resumeAfter = useCallback((interruptionId) => {
+    const it = tasksRef.current.find((t) => t.id === interruptionId)
+    const r = it?.interruption
+    if (!r) return
+    setTasks((ts) => ts.map((t) => (t.id === interruptionId ? { ...t, interruption: { ...r, resolved: true } } : t)))
+    const back = r.resume && tasksRef.current.find((t) => t.id === r.resume && t.status !== 'completed')
+    if (!back) return
+    if (r.resumeMode === 'focus') startFocus(back.id)
+    else resumeSession(back.id)
+  }, [startFocus, resumeSession])
+  const dismissResume = useCallback((interruptionId) => {
+    setTasks((ts) => ts.map((t) => (t.id === interruptionId && t.interruption ? { ...t, interruption: { ...t.interruption, resolved: true } } : t)))
+  }, [])
+
   // The focused task was completed or deleted somewhere else: end focus.
   useEffect(() => {
     if (!focus) return
@@ -595,6 +648,9 @@ export function PlannerProvider({ children }) {
       advanceFocus,
       stopFocus,
       setFocusOpen,
+      logInterruption,
+      resumeAfter,
+      dismissResume,
       lastAdded,
       setLastAdded,
       pipWin,
@@ -627,6 +683,7 @@ export function PlannerProvider({ children }) {
       moveOverdueToToday, clearCompleted, removeTask, setRecurrence, removeSeries, applyToUpcoming, planDay,
       previewPlan, applyPlan, moveTasksTo,
       focus, startFocus, pauseFocus, resumeFocus, advanceFocus, stopFocus, setFocusOpen,
+      logInterruption, resumeAfter, dismissResume,
       lastAdded, setLastAdded, pipWin, pipError, openPip, closePip,
       updateSettings, addCategory, updateCategory, removeCategory, categoryById,
       habits, addHabit, removeHabit, toggleHabit, toggleHabitRest,
