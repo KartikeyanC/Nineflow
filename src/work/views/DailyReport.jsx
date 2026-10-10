@@ -6,9 +6,13 @@ import { real, taskDerived, key, h1, isWorkingDay, timePlan } from '../workCalc'
 import { Section, Pill, DELIVERY_TONE } from '../ui'
 import { DateField } from '../../components/DatePicker'
 import { currentProfile } from '../../lib/profiles'
+import { usePlanner } from '../../store/PlannerContext'
+import { dayReport } from '../../lib/report'
+import { fmtMinutes, totalMinutes } from '../../lib/tasks'
 
 export default function DailyReport() {
   const { work, setDayNote } = useWork()
+  const { tasks: plannerTasks, now, settings: plannerSettings } = usePlanner()
   const [k, setK] = useState(key(new Date()))
   const d = parseISO(k)
   const note = work.dayNotes[k] || {}
@@ -22,6 +26,9 @@ export default function DailyReport() {
   const next = addDays(d, 1)
   const nextPlan = timePlan(work.settings, next).filter((b) => b.focus).map((b) => b.area).filter(Boolean)
   const nextDue = tasks.filter((t) => t.dueDate === key(next) && t.status !== 'Done')
+  // Planner tasks and their focus sessions for the same day: real tracked
+  // time, so it doesn't have to be typed into the task log as well.
+  const planner = useMemo(() => dayReport({ tasks: plannerTasks, key: k, now, categories: plannerSettings.categories }), [plannerTasks, k, now, plannerSettings.categories])
 
   const summary = `${worked.length} task${worked.length === 1 ? '' : 's'} worked on, ${done.length} completed, ${h1(hours)} h logged${posts.length ? `, ${posts.length} post${posts.length === 1 ? '' : 's'} published` : ''}${overdue.length ? `, ${overdue.length} overdue` : ''}.`
   const message = useMemo(() => [
@@ -34,12 +41,15 @@ export default function DailyReport() {
     ...(worked.length ? worked.map((t) => `• ${t.task || t.taskType} (${t.area}) – ${t.status}${t.actualHours ? `, ${h1(t.actualHours)} h` : ''}`) : ['• —']),
     done.length ? '' : null, done.length ? 'Completed:' : null,
     ...done.map((t) => `• ${t.task || t.taskType}${taskDerived(t).delivery === 'Late' ? ' (late)' : ''}`),
+    planner.list.length ? '' : null,
+    planner.list.length ? `From the planner: ${planner.done.length} of ${planner.list.length} done, ${fmtMinutes(planner.focus)} focused` : null,
+    ...planner.done.map((t) => `• ${t.title}${totalMinutes(t, now) >= 1 ? ` – took ${fmtMinutes(totalMinutes(t, now))}` : ''}`),
     posts.length ? '' : null, posts.length ? `Published: ${posts.map((p) => `${p.platform} ${p.postType}${p.topic ? ` – ${p.topic}` : ''}`).join('; ')}` : null,
     '',
     `Blockers: ${note.blockers || 'none'}`,
     `Tomorrow: ${note.tomorrow || (nextPlan.length ? `${nextPlan.join(' + ')}${nextDue.length ? `; due: ${nextDue.map((t) => t.task || t.taskType).join(', ')}` : ''}` : '—')}`,
     currentProfile()?.name ? '' : null, currentProfile()?.name ? `— ${currentProfile().name}` : null,
-  ].filter((l) => l !== null).join('\n'), [d, note, summary, worked, done, posts, nextPlan, nextDue])
+  ].filter((l) => l !== null).join('\n'), [d, note, summary, worked, done, posts, nextPlan, nextDue, planner, now])
 
   const copy = async () => { try { await navigator.clipboard.writeText(message); setCopied(true); setTimeout(() => setCopied(false), 2000) } catch { /* ignore */ } }
 
@@ -58,6 +68,16 @@ export default function DailyReport() {
               <ul className="space-y-1.5">{worked.map((t) => { const x = taskDerived(t); return (
                 <li key={t.id} className="text-sm flex items-center gap-2"><span className="text-faint text-xs w-12">{t.id}</span><span className="font-semibold truncate">{t.task || t.taskType}</span><span className="text-faint text-xs">{t.area}</span><span className="ml-auto text-xs text-muted">{h1(t.actualHours || 0)} h</span><Pill tone={DELIVERY_TONE[x.delivery]}>{t.status === 'Done' ? x.delivery : t.status}</Pill></li>
               ) })}</ul>
+            )}
+          </Section>
+          <Section title="From the planner" hint={`${planner.done.length} of ${planner.list.length} done · ${fmtMinutes(planner.focus)} focused (tracked automatically)`}>
+            {planner.list.length === 0 ? <p className="text-sm text-faint">No planner tasks on this day.</p> : (
+              <ul className="space-y-1.5">{planner.list.map((t) => (
+                <li key={t.id} className="text-sm flex items-center gap-2">
+                  <span className={t.status === 'completed' ? 'font-semibold truncate line-through text-muted' : 'font-semibold truncate'}>{t.title}</span>
+                  <span className="ml-auto text-xs text-muted tabular-nums">{totalMinutes(t, now) >= 1 ? fmtMinutes(totalMinutes(t, now)) : '—'} / {fmtMinutes(t.durationMinutes)}</span>
+                </li>
+              ))}</ul>
             )}
           </Section>
           <Section title="Blockers">

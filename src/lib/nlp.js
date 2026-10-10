@@ -5,9 +5,11 @@ import { addDays, format, parse, isValid, setDay } from 'date-fns'
 import { dateKey } from './tasks'
 
 const WEEKDAYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
+const SHORT_DAYS = 'mon|tue|tues|wed|thu|thur|thurs|fri|sat|sun'
 const MONTHS = 'jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec'
 
 const hhmm = (h, m) => `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+const repeat = (freq) => ({ freq, until: null, skip: [] })
 
 // Next occurrence of a weekday strictly after today ("next" = at least a week out).
 function weekdayDate(now, idx, next = false) {
@@ -17,25 +19,30 @@ function weekdayDate(now, idx, next = false) {
   return d
 }
 
-export function parseQuickAdd(input, { categories = [], now = new Date() } = {}) {
+// `ignore` lists token texts the user chose to keep in the title (the × on a
+// parsed chip), so a word like "weekly" can always be put back.
+export function parseQuickAdd(input, { categories = [], now = new Date(), ignore = [] } = {}) {
   let text = ` ${input} `
+  const ignored = new Set(ignore.map((x) => x.toLowerCase()))
   const out = { title: '', date: undefined, startTime: undefined, durationMinutes: undefined, priority: undefined, category: undefined, recurrence: undefined, tokens: [] }
   const take = (re, type, fn) => {
     const m = text.match(re)
-    if (!m) return
+    if (!m || ignored.has(m[0].trim().toLowerCase())) return
     const v = fn(m)
     if (v === undefined) return
     out.tokens.push({ type, raw: m[0].trim() })
     text = text.replace(m[0], ' ')
   }
 
-  // Recurrence first, so "every monday" sets both repeat and date.
-  take(/\s(every\s+day|daily)\s/i, 'repeat', () => (out.recurrence = { freq: 'daily', until: null, skip: [] }))
-  take(/\s(every\s+weekday|weekdays)\s/i, 'repeat', () => (out.recurrence = { freq: 'weekdays', until: null, skip: [] }))
-  take(/\s(every\s+month|monthly)\s/i, 'repeat', () => (out.recurrence = { freq: 'monthly', until: null, skip: [] }))
-  take(/\s(every\s+week|weekly)\s/i, 'repeat', () => (out.recurrence = { freq: 'weekly', until: null, skip: [] }))
+  // Recurrence first, so "every monday" sets both repeat and date. Spelled-out
+  // phrases count anywhere; a bare "weekly" / "daily" counts only as the last
+  // word (see the end), so "Write weekly report" keeps its title.
+  take(/\s(every\s+day|repeats?\s+daily)\s/i, 'repeat', () => (out.recurrence = repeat('daily')))
+  take(/\s(every\s+weekday|repeats?\s+(?:on\s+)?weekdays)\s/i, 'repeat', () => (out.recurrence = repeat('weekdays')))
+  take(/\s(every\s+month|repeats?\s+monthly)\s/i, 'repeat', () => (out.recurrence = repeat('monthly')))
+  take(/\s(every\s+week|repeats?\s+weekly)\s/i, 'repeat', () => (out.recurrence = repeat('weekly')))
   take(new RegExp(`\\severy\\s+(${WEEKDAYS.join('|')})s?\\s`, 'i'), 'repeat', (m) => {
-    out.recurrence = { freq: 'weekly', until: null, skip: [] }
+    out.recurrence = repeat('weekly')
     const idx = WEEKDAYS.indexOf(m[1].toLowerCase())
     out.date = dateKey(idx === now.getDay() ? now : weekdayDate(now, idx))
     return true
@@ -73,18 +80,23 @@ export function parseQuickAdd(input, { categories = [], now = new Date() } = {})
   if (out.startTime === undefined) take(/\s(?:at\s+|@\s*)([01]?\d|2[0-3]):([0-5]\d)\s/i, 'time', (m) => (out.startTime = hhmm(Number(m[1]), Number(m[2]))))
   if (out.startTime === undefined) take(/\s([01]?\d|2[0-3]):([0-5]\d)\s/, 'time', (m) => (out.startTime = hhmm(Number(m[1]), Number(m[2]))))
 
-  // Date: today, tomorrow, day after tomorrow, in N days, next week, (next) weekday, oct 12 / 12 oct, ISO
+  // Date: today, tomorrow, day after tomorrow, in N days, next week, (on/next) weekday, oct 12 / 12 oct, ISO
   if (out.date === undefined) {
     take(/\s(day\s+after\s+tomorrow)\s/i, 'date', () => (out.date = dateKey(addDays(now, 2))))
     if (out.date === undefined) take(/\s(tomorrow|tmr|tmrw)\s/i, 'date', () => (out.date = dateKey(addDays(now, 1))))
     if (out.date === undefined) take(/\s(today|tonight)\s/i, 'date', () => (out.date = dateKey(now)))
     if (out.date === undefined) take(/\sin\s+(\d+)\s+days?\s/i, 'date', (m) => (out.date = dateKey(addDays(now, Number(m[1])))))
     if (out.date === undefined) take(/\snext\s+week\s/i, 'date', () => (out.date = dateKey(addDays(now, 7))))
-    if (out.date === undefined) take(new RegExp(`\\s(next\\s+)?(${WEEKDAYS.join('|')}|mon|tue|tues|wed|thu|thur|thurs|fri|sat|sun)\\s`, 'i'), 'date', (m) => {
+    // Full day names count anywhere ("on" is absorbed). Short forms count only
+    // after on / next / this, or as the last word, so "Buy sun cream" stays a title.
+    const onDay = (m) => {
       const idx = WEEKDAYS.findIndex((w) => w.startsWith(m[2].toLowerCase().slice(0, 3)))
-      out.date = dateKey(weekdayDate(now, idx, !!m[1]))
+      out.date = dateKey(weekdayDate(now, idx, (m[1] || '').toLowerCase() === 'next'))
       return true
-    })
+    }
+    if (out.date === undefined) take(new RegExp(`\\s(?:(on|next|this)\\s+)?(${WEEKDAYS.join('|')})\\s`, 'i'), 'date', onDay)
+    if (out.date === undefined) take(new RegExp(`\\s(on|next|this)\\s+(${SHORT_DAYS})\\.?\\s`, 'i'), 'date', onDay)
+    if (out.date === undefined) take(new RegExp(`\\s()(${SHORT_DAYS})\\.?\\s*$`, 'i'), 'date', onDay)
     if (out.date === undefined) take(/\s(\d{4}-\d{2}-\d{2})\s/, 'date', (m) => (out.date = m[1]))
     if (out.date === undefined) take(new RegExp(`\\s(${MONTHS})[a-z]*\\.?\\s+(\\d{1,2})(?:st|nd|rd|th)?\\s`, 'i'), 'date', (m) => {
       const d = parse(`${m[1].slice(0, 3)} ${m[2]} ${now.getFullYear()}`, 'MMM d yyyy', now)
@@ -99,6 +111,9 @@ export function parseQuickAdd(input, { categories = [], now = new Date() } = {})
       return true
     })
   }
+
+  // A bare repeat word counts only as the last word left ("Standup daily").
+  if (out.recurrence === undefined) take(/\s(daily|weekdays|weekly|monthly)\s*$/i, 'repeat', (m) => (out.recurrence = repeat(m[1].toLowerCase())))
 
   out.title = text.replace(/\s+/g, ' ').trim()
   return out

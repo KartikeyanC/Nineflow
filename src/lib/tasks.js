@@ -214,8 +214,10 @@ export function streak(tasks, now = new Date()) {
 
 // ---- due dates --------------------------------------------------------
 
+// A missed occurrence of a repeating task doesn't count: the series comes round
+// again, so it shouldn't pile up as unfinished work.
 export const isOverdue = (task, now = new Date()) =>
-  !!task.date && task.status !== 'completed' && task.date < dateKey(now)
+  !!task.date && task.status !== 'completed' && task.date < dateKey(now) && !(task.seriesId && task.recurrence)
 
 export const isDueToday = (task, now = new Date()) => task.date === dateKey(now)
 

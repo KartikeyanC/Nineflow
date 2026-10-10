@@ -20,7 +20,7 @@ export default function CalendarToast() {
   if (!url) return null
 
   return (
-    <div className="fixed bottom-20 sm:bottom-24 right-4 sm:right-6 z-30 card shadow-lift px-4 py-3 flex items-center gap-3 animate-view-in max-w-[calc(100vw-2rem)]">
+    <div className="fixed top-16 sm:top-auto sm:bottom-24 right-4 sm:right-6 z-30 card shadow-lift px-4 py-3 flex items-center gap-3 animate-view-in max-w-[calc(100vw-2rem)]">
       <span className="h-8 w-8 rounded-full bg-mint text-mint-fg flex items-center justify-center shrink-0"><Check size={15} /></span>
       <div className="min-w-0">
         <p className="text-sm font-semibold truncate">Added “{task.title}”</p>

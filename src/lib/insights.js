@@ -1,6 +1,7 @@
 // Rule-based insight sentences for one day. No AI, just arithmetic.
 import { isSameDay, parseISO, subDays } from 'date-fns'
-import { dateKey, daysAgoLabel, focusByHour, isOverdue, tasksOn, totalMinutes } from './tasks'
+import { dateKey, daysAgoLabel, fmtMinutes, focusByHour, isOverdue, tasksOn, totalMinutes } from './tasks'
+import { categoryAccuracy, learnedDuration } from './capacity'
 
 const fmtHour = (h) => {
   const hour = h % 24
@@ -27,8 +28,8 @@ export function buildInsights({ tasks, day, now, categories }) {
     if (overdue.length) {
       const first = overdue[0]
       const more = overdue.length - 1
-      out.push({ tone: 'coral', icon: 'alert', text:
-        `Overdue: '${first.title}' was due ${daysAgoLabel(first.date, now)}${more ? `, plus ${more} more unfinished task${more === 1 ? '' : 's'}` : ''}.` })
+      out.push({ tone: 'butter', icon: 'flag', text:
+        `'${first.title}' is carried over from ${daysAgoLabel(first.date, now)}${more ? `, with ${more} more` : ''}. Give ${more ? 'them' : 'it'} a day or let ${more ? 'them' : 'it'} go.` })
     }
   }
 
@@ -79,7 +80,14 @@ export function buildInsights({ tasks, day, now, categories }) {
   {
     const from = dateKey(subDays(day, 6)), to = key
     const done = tasks.filter((t) => t.status === 'completed' && t.date && t.date >= from && t.date <= to && t.sessions.length)
-    if (done.length >= 3) {
+    // Name the category that is furthest off, and what new ones will default to.
+    const worst = categoryAccuracy(tasks, from, to, now).sort((a, b) => Math.abs(b.ratio - 1) - Math.abs(a.ratio - 1))[0]
+    const cat = worst && categories.find((c) => c.id === worst.category)
+    const learned = cat && learnedDuration(tasks, cat.id, now)
+    if (cat && Math.abs(worst.ratio - 1) >= 0.25) {
+      out.push({ tone: worst.ratio > 1 ? 'peach' : 'mint', icon: 'clock', text:
+        `${cat.name} tasks took ${worst.ratio.toFixed(1)}× your estimate this week${learned ? `. New ones now start at ${fmtMinutes(learned.minutes)}` : ''}.` })
+    } else if (done.length >= 3) {
       const est = done.reduce((s, t) => s + t.durationMinutes, 0)
       const act = done.reduce((s, t) => s + totalMinutes(t, now), 0)
       if (est > 0) {

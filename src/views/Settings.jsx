@@ -5,7 +5,9 @@ import { currentProfile, updateProfile, deleteProfile, signOut, listProfiles, in
 import { usePlanner } from '../store/PlannerContext'
 import { COLOR_IDS, colorOf } from '../lib/colors'
 import { validateBackup } from '../lib/storage'
+import { loadWork } from '../work/workStore'
 import { ConfirmDialog, Segmented, cx } from '../components/ui'
+import { TimeField } from '../components/TimePicker'
 
 export default function Settings() {
   const { settings, updateSettings, addCategory, updateCategory, removeCategory, tasks, habits, importData, loadSample, clearAll } = usePlanner()
@@ -16,6 +18,17 @@ export default function Settings() {
   const [confirmSample, setConfirmSample] = useState(false)
   const [deleteText, setDeleteText] = useState('')
   const [removeCat, setRemoveCat] = useState(null)
+  const [notifyNote, setNotifyNote] = useState(null)
+  // Turning reminders on asks the browser for permission (it needs a click).
+  const setReminders = async (on) => {
+    setNotifyNote(null)
+    if (!on) { updateSettings({ reminders: { ...settings.reminders, enabled: false } }); return }
+    if (typeof Notification === 'undefined') { setNotifyNote('This browser does not support notifications.'); return }
+    let perm = Notification.permission
+    if (perm === 'default') { try { perm = await Notification.requestPermission() } catch { perm = 'denied' } }
+    if (perm !== 'granted') { setNotifyNote('Notifications are blocked for this site. Allow them in the browser\'s site settings, then try again.'); return }
+    updateSettings({ reminders: { ...settings.reminders, enabled: true } })
+  }
   const fileRef = useRef(null)
 
   const usage = (id) => tasks.filter((t) => t.category === id).length
@@ -28,7 +41,8 @@ export default function Settings() {
   }
 
   const exportData = () => {
-    const payload = { app: 'daily-planner', version: 1, exportedAt: new Date().toISOString(), tasks, settings, habits }
+    // One file holds everything, Work OS included (it used to need its own backup).
+    const payload = { app: 'daily-planner', version: 2, exportedAt: new Date().toISOString(), tasks, settings, habits, work: loadWork() }
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const a = Object.assign(document.createElement('a'), { href: url, download: `daily-planner-${new Date().toISOString().slice(0, 10)}.json` })
@@ -91,6 +105,38 @@ export default function Settings() {
             <Segmented size="sm" value={settings.weekStart} onChange={(v) => updateSettings({ weekStart: v })}
               options={[{ value: 1, label: 'Monday' }, { value: 0, label: 'Sunday' }]} />
           </Row>
+          <Row label="Working hours" hint="Your daily capacity and “Plan my day” use these. The break is subtracted from the day.">
+            <div className="flex flex-wrap items-end gap-2">
+              {[['start', 'Start'], ['end', 'End']].map(([k, label]) => (
+                <label key={k} className="flex flex-col gap-1">
+                  <span className="text-[10px] font-semibold text-faint">{label}</span>
+                  <TimeField value={settings.workHours[k]} allowClear={false} className="w-28"
+                    onChange={(v) => v && updateSettings({ workHours: { ...settings.workHours, [k]: v } })} />
+                </label>
+              ))}
+              <label className="flex flex-col gap-1">
+                <span className="text-[10px] font-semibold text-faint">Break (min)</span>
+                <input type="number" min={0} max={240} step={15} className="input w-20 text-center py-1.5"
+                  value={settings.workHours.breakMinutes}
+                  onChange={(e) => updateSettings({ workHours: { ...settings.workHours, breakMinutes: Math.max(0, Math.min(240, Number(e.target.value) || 0)) } })} />
+              </label>
+            </div>
+          </Row>
+          <Row label="Reminders" hint="A browser notification before a timed task starts. Works while the planner is open in a tab.">
+            <div className="flex flex-col items-end gap-1.5">
+              <div className="flex items-center gap-2">
+                {settings.reminders.enabled && (
+                  <select className="input w-auto py-1.5" value={settings.reminders.minutes} aria-label="Minutes before"
+                    onChange={(e) => updateSettings({ reminders: { ...settings.reminders, minutes: Number(e.target.value) } })}>
+                    {[0, 5, 10, 15, 30].map((m) => <option key={m} value={m}>{m ? `${m} min before` : 'At start time'}</option>)}
+                  </select>
+                )}
+                <Segmented size="sm" value={settings.reminders.enabled ? 'on' : 'off'} onChange={(v) => setReminders(v === 'on')}
+                  options={[{ value: 'off', label: 'Off' }, { value: 'on', label: 'On' }]} />
+              </div>
+              {notifyNote && <p className="text-xs text-coral-fg font-medium max-w-xs text-right">{notifyNote}</p>}
+            </div>
+          </Row>
           <Row label="Heatmap workload" hint="How the Month screen tints each day.">
             <Segmented size="sm" value={settings.heatmapMeasure} onChange={(v) => updateSettings({ heatmapMeasure: v })}
               options={[{ value: 'hours', label: 'Hours' }, { value: 'count', label: 'Task count' }]} />
@@ -125,7 +171,7 @@ export default function Settings() {
         {/* Data */}
         <section className="card p-5">
           <h2 className="h-display text-base mb-1">Your data</h2>
-          <p className="text-sm text-muted mb-4">{tasks.length} tasks and {habits.length} habits in localStorage. Nothing leaves this browser.</p>
+          <p className="text-sm text-muted mb-4">{tasks.length} tasks and {habits.length} habits in localStorage. Nothing leaves this browser. The backup file also includes your Work OS data.</p>
           <div className="flex flex-wrap gap-2">
             <button type="button" className="btn-ghost" onClick={exportData}><Download size={14} /> Export JSON</button>
             <button type="button" className="btn-ghost" onClick={() => fileRef.current?.click()}><Upload size={14} /> Import JSON</button>
@@ -169,7 +215,7 @@ export default function Settings() {
       <ConfirmDialog open={!!pendingImport} onClose={() => setPendingImport(null)}
         onConfirm={() => importData(pendingImport)} confirmLabel="Replace"
         title="Replace everything with this backup?"
-        body={pendingImport ? `It holds ${pendingImport.tasks.length} tasks${Array.isArray(pendingImport.habits) ? ` and ${pendingImport.habits.length} habits` : ''}. Your current data will be overwritten.` : ''} />
+        body={pendingImport ? `It holds ${pendingImport.tasks.length} tasks${Array.isArray(pendingImport.habits) ? ` and ${pendingImport.habits.length} habits` : ''}${pendingImport.work ? ', plus Work OS data' : ''}. Your current data will be overwritten.` : ''} />
 
       <ConfirmDialog open={confirmSample} onClose={() => setConfirmSample(false)}
         onConfirm={loadSample} confirmLabel="Load sample" danger={false}

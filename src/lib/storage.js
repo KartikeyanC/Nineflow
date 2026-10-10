@@ -24,12 +24,22 @@ export const DEFAULT_SETTINGS = {
   quickList: { position: 'right', collapsed: false, filter: 'today' }, // position: 'right' | 'top' | 'bottom' | 'off'
   calendar: { promptOnAdd: true }, // offer an "Add to Google Calendar" link after adding a task
   modules: { work: true }, // which optional sections show in the navigation
+  workHours: { start: '09:00', end: '18:00', breakMinutes: 60 }, // capacity and "Plan my day" use these
+  reminders: { enabled: false, minutes: 5 }, // browser notification before a timed task starts
 }
 
 const FOCUS_KEY = () => storageKey('focus')
+const HABITS_KEY = () => storageKey('habits')
+
+// Storage keys a change in another tab should reload (see PlannerContext).
+export const syncedKeys = () => ({ tasks: TASKS_KEY(), settings: SETTINGS_KEY(), habits: HABITS_KEY(), focus: FOCUS_KEY() })
 // Running pomodoro: { taskId, phase: 'focus'|'short'|'long', running, endsAt, remainingMs, completed, open }
 export const loadFocus = () => read(FOCUS_KEY(), null)
-export const saveFocus = (f) => (f ? write(FOCUS_KEY(), f) : localStorage.removeItem(FOCUS_KEY()))
+// Returns nothing: it runs as a React effect, where a return value means cleanup.
+export const saveFocus = (f) => {
+  if (f) { write(FOCUS_KEY(), f); return }
+  try { localStorage.removeItem(FOCUS_KEY()) } catch { /* ignore */ }
+}
 
 function read(key, fallback) {
   try {
@@ -41,11 +51,30 @@ function read(key, fallback) {
   }
 }
 
+// Save status listeners. A failed write (quota full, private mode) used to be
+// swallowed, so edits silently lived only in memory until the next reload.
+// Now every write reports success or failure so the app can warn the user.
+const saveListeners = new Set()
+let lastSaveOk = true
+export function onSaveStatus(cb) {
+  saveListeners.add(cb)
+  return () => saveListeners.delete(cb)
+}
+export function reportSave(ok, key) {
+  if (ok === lastSaveOk && ok) return
+  lastSaveOk = ok
+  saveListeners.forEach((cb) => cb(ok, key))
+}
+
 function write(key, value) {
   try {
     localStorage.setItem(key, JSON.stringify(value))
+    reportSave(true, key)
+    return true
   } catch {
-    // Quota or private mode: the in-memory state keeps working.
+    // Quota or private mode: the in-memory state keeps working, but say so.
+    reportSave(false, key)
+    return false
   }
 }
 
@@ -58,13 +87,12 @@ export function saveTasks(tasks) {
   write(TASKS_KEY(), tasks)
 }
 
-const HABITS_KEY = () => storageKey('habits')
-
-// Habits: [{ id, name, createdAt, done: ['yyyy-MM-dd', ...] }]
+// Habits: [{ id, name, createdAt, done: ['yyyy-MM-dd', ...], rest: ['yyyy-MM-dd', ...] }]
+// A rest day keeps a streak going without counting towards it.
 export function loadHabits() {
   const habits = read(HABITS_KEY(), [])
   return Array.isArray(habits)
-    ? habits.map((h) => ({ id: h.id, name: h.name ?? '', createdAt: h.createdAt ?? new Date().toISOString(), done: Array.isArray(h.done) ? h.done : [] }))
+    ? habits.map((h) => ({ id: h.id, name: h.name ?? '', createdAt: h.createdAt ?? new Date().toISOString(), done: Array.isArray(h.done) ? h.done : [], rest: Array.isArray(h.rest) ? h.rest : [] }))
     : []
 }
 
@@ -81,6 +109,8 @@ export function loadSettings() {
     quickList: { ...DEFAULT_SETTINGS.quickList, ...(stored.quickList || {}) },
     calendar: { ...DEFAULT_SETTINGS.calendar, ...(stored.calendar || {}) },
     modules: { ...DEFAULT_SETTINGS.modules, ...(stored.modules || {}) },
+    workHours: { ...DEFAULT_SETTINGS.workHours, ...(stored.workHours || {}) },
+    reminders: { ...DEFAULT_SETTINGS.reminders, ...(stored.reminders || {}) },
   }
   if (!Array.isArray(settings.categories) || settings.categories.length === 0) {
     settings.categories = DEFAULT_CATEGORIES
@@ -130,6 +160,7 @@ export function validateBackup(data) {
   }
   if (data.settings != null && typeof data.settings !== 'object') return 'Settings are malformed.'
   if (data.habits != null && !Array.isArray(data.habits)) return 'Habits are malformed.'
+  if (data.work != null && (typeof data.work !== 'object' || Array.isArray(data.work))) return 'Work OS data is malformed.'
   return null
 }
 

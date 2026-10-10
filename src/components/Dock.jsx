@@ -70,27 +70,29 @@ export default function Dock({ slot }) {
   )
 }
 
-// Phone: a handle above the tab bar and a bottom sheet.
+// Phone: a handle above the tab bar and a bottom sheet. The sheet opens only
+// when tapped (it used to open over 70% of the screen on first run) and its
+// open state is separate from the desktop dock's collapsed setting.
 export function MobileDock() {
-  const { settings, updateSettings } = usePlanner()
+  const { settings } = usePlanner()
   const desktop = useIsDesktop()
   const count = useQuickCount()
+  const [open, setOpen] = useState(false)
   const ql = settings.quickList
   if (desktop || ql.position === 'off') return null
-  const setQL = (patch) => updateSettings({ quickList: { ...ql, ...patch } })
-  if (ql.collapsed) {
+  if (!open) {
     return (
-      <button type="button" onClick={() => setQL({ collapsed: false })}
-        className="fixed bottom-20 left-3 z-30 card h-11 px-3.5 flex items-center gap-2 shadow-lift text-sm font-semibold">
+      <button type="button" onClick={() => setOpen(true)}
+        className="fixed bottom-20 left-3 sm:left-auto sm:right-6 sm:bottom-24 z-30 card h-11 px-3.5 flex items-center gap-2 shadow-lift text-sm font-semibold">
         <ListTodo size={15} className="text-lav-fg" /> List <span className="pill bg-lav text-lav-fg py-0">{count}</span>
       </button>
     )
   }
   return (
     <div className="fixed inset-0 z-40">
-      <div className="absolute inset-0 bg-ink/25 animate-fade-in" onClick={() => setQL({ collapsed: true })} />
+      <div className="absolute inset-0 bg-ink/25 animate-fade-in" onClick={() => setOpen(false)} />
       <section className="absolute inset-x-2 bottom-2 h-[70vh] card flex flex-col shadow-modal animate-view-in">
-        <QuickList onCollapse={() => setQL({ collapsed: true })} collapseIcon="down" showPositions={false} />
+        <QuickList onCollapse={() => setOpen(false)} collapseIcon="down" showPositions={false} />
       </section>
     </div>
   )

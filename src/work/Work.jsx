@@ -15,6 +15,8 @@ import Guide from './views/Guide'
 import { cx } from '../components/ui'
 import { storageKey } from '../lib/profiles'
 
+// The four used every day come first; the rest open under "More tools".
+const CORE = ['date', 'tasks', 'report', 'dashboard']
 const TABS = [
   ['date', 'Date view', DateView], ['time', 'Time plan', TimePlan], ['week', 'Weekly plan', WeekPlan], ['tasks', 'Task log', TaskLog],
   ['standards', 'Standard times', Standards], ['dashboard', 'Dashboard', WorkDashboard], ['report', 'Daily report', DailyReport],
@@ -25,6 +27,8 @@ export default function Work() {
   const [tab, setTab] = useState(() => { try { return localStorage.getItem(storageKey('work-tab')) || 'date' } catch { return 'date' } })
   const pick = (t) => { setTab(t); try { localStorage.setItem(storageKey('work-tab'), t) } catch { /* ignore */ } }
   const View = TABS.find(([id]) => id === tab)?.[2] || DateView
+  const [more, setMore] = useState(() => !CORE.includes(tab))
+  const shown = TABS.filter(([id]) => more || CORE.includes(id) || id === tab)
   return (
     <WorkProvider>
       <div className="animate-view-in">
@@ -33,10 +37,14 @@ export default function Work() {
           <p className="text-sm text-muted mt-1">Your whole workflow — plan the day, log the work, read the numbers.</p>
         </header>
         <nav className="flex gap-1.5 overflow-x-auto pb-2 -mx-1 px-1 mb-4">
-          {TABS.map(([id, label]) => (
+          {shown.map(([id, label]) => (
             <button key={id} type="button" onClick={() => pick(id)}
               className={cx('shrink-0 rounded-full px-3.5 py-1.5 text-sm font-semibold transition', tab === id ? 'bg-ink text-page' : 'bg-card border border-line text-muted hover:text-ink')}>{label}</button>
           ))}
+          <button type="button" onClick={() => setMore((m) => !m)} aria-expanded={more}
+            className="shrink-0 rounded-full px-3.5 py-1.5 text-sm font-semibold text-muted hover:text-ink transition">
+            {more ? 'Fewer tools' : `More tools (${TABS.length - CORE.length})`}
+          </button>
         </nav>
         <div key={tab} className="animate-view-in"><View /></div>
       </div>

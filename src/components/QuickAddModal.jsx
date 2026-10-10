@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { Timer, Repeat, CornerDownLeft, Sparkles, CalendarDays, Clock, Flag, Tag } from 'lucide-react'
+import { Timer, Repeat, CornerDownLeft, Sparkles, CalendarDays, Clock, Flag, Tag, X } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
 import { fmtMinutes, todayKey, PRIORITY_LABEL } from '../lib/tasks'
 import { FREQS, FREQ_LABEL, describe } from '../lib/recurrence'
 import { parseQuickAdd, fmtDateToken } from '../lib/nlp'
+import { learnedDuration } from '../lib/capacity'
 import { CategoryPills, Modal, PriorityPills, cx } from './ui'
 import { DateField } from './DatePicker'
 import { TimeField } from './TimePicker'
@@ -14,13 +15,21 @@ const blank = (preset = {}) => ({
   category: null, priority: 'medium', status: 'todo', recurrence: null, ...preset,
 })
 const TOKEN_ICON = { date: CalendarDays, time: Clock, duration: Timer, priority: Flag, category: Tag, repeat: Repeat }
+// Shown while the title is empty, so the syntax is learnable by example.
+const EXAMPLES = ['Edit trailer tomorrow 2pm 90m #work', 'Gym every weekday 7am', 'Call mom on sat 30m', 'Invoice client friday !high']
 
 export default function QuickAddModal() {
-  const { quickAdd, setQuickAdd, addTask, settings, now } = usePlanner()
+  const { quickAdd, setQuickAdd, addTask, settings, now, tasks } = usePlanner()
   const open = quickAdd != null
   const [draft, setDraft] = useState(blank)
   // Fields the user set by hand win over anything parsed from the title.
   const manual = useRef(new Set())
+  // Fields currently filled from the title, and what they were before, so a
+  // token that disappears (deleted or dismissed) gives its field back.
+  const fromParse = useRef(new Set())
+  const base = useRef(blank())
+  // Token texts the user dismissed with ×: they stay part of the title.
+  const [ignored, setIgnored] = useState([])
   const set = (p, byHand = true) => {
     if (byHand) Object.keys(p).forEach((k) => manual.current.add(k))
     setDraft((d) => ({ ...d, ...p }))
@@ -29,19 +38,29 @@ export default function QuickAddModal() {
   useEffect(() => {
     if (open) {
       manual.current = new Set(Object.keys(quickAdd || {}))
-      setDraft(blank({ category: settings.categories[0]?.id, ...quickAdd }))
+      fromParse.current = new Set()
+      base.current = blank({ category: settings.categories[0]?.id, ...quickAdd })
+      setIgnored([])
+      setDraft(base.current)
     }
   }, [open]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Parse the title as it's typed and mirror the findings into untouched fields.
-  const parsed = useMemo(() => parseQuickAdd(draft.title, { categories: settings.categories, now }), [draft.title, settings.categories, now])
+  const parsed = useMemo(() => parseQuickAdd(draft.title, { categories: settings.categories, now, ignore: ignored }), [draft.title, settings.categories, now, ignored])
+  // With no length typed or picked, the estimate comes from how long your
+  // finished tasks in this category actually took (3+ of them needed).
+  const learned = useMemo(() => learnedDuration(tasks, draft.category, now), [tasks, draft.category, now])
   useEffect(() => {
     const patch = {}
     for (const k of ['date', 'startTime', 'durationMinutes', 'priority', 'category', 'recurrence']) {
-      if (parsed[k] !== undefined && !manual.current.has(k)) patch[k] = parsed[k]
+      if (manual.current.has(k)) continue
+      if (parsed[k] !== undefined) { patch[k] = parsed[k]; fromParse.current.add(k) }
+      else if (k === 'durationMinutes') { patch[k] = learned?.minutes ?? base.current[k]; fromParse.current.delete(k) }
+      else if (fromParse.current.has(k)) { patch[k] = base.current[k]; fromParse.current.delete(k) }
     }
     if (Object.keys(patch).length) setDraft((d) => ({ ...d, ...patch }))
-  }, [parsed])
+  }, [parsed, learned])
+  const usingLearned = learned && !manual.current.has('durationMinutes') && parsed.durationMinutes === undefined
 
   const close = () => setQuickAdd(null)
   const cleanTitle = parsed.title.trim()
@@ -76,14 +95,29 @@ export default function QuickAddModal() {
         {/* Parsed tokens */}
         <div className="mt-2 min-h-[22px] flex flex-wrap items-center gap-1.5">
           {parsed.tokens.length === 0 ? (
-            <span className="inline-flex items-center gap-1 text-[11px] text-faint">
-              <Sparkles size={11} /> Try “tomorrow 3pm 30m #work !high every weekday”
-            </span>
+            draft.title.trim() ? (
+              <span className="inline-flex items-center gap-1 text-[11px] text-faint">
+                <Sparkles size={11} /> Add a date, time or length: “tomorrow 3pm 30m #work !high”
+              </span>
+            ) : (
+              <>
+                <span className="inline-flex items-center gap-1 text-[11px] text-faint mr-0.5"><Sparkles size={11} /> Try</span>
+                {EXAMPLES.map((ex) => (
+                  <button key={ex} type="button" onClick={() => set({ title: ex }, false)}
+                    className="pill bg-page text-muted border border-line hover:text-ink hover:border-faint transition">{ex}</button>
+                ))}
+              </>
+            )
           ) : parsed.tokens.map((t, i) => {
             const Icon = TOKEN_ICON[t.type]
             return (
-              <span key={i} className="pill bg-lav text-lav-fg">
+              <span key={i} className="pill bg-lav text-lav-fg pr-1" title={`Read from “${t.raw}”`}>
                 <Icon size={11} /> {chipLabel(t)}
+                <button type="button" aria-label={`Keep “${t.raw}” as part of the title`} title={`Keep “${t.raw}” in the title`}
+                  onClick={() => setIgnored((xs) => [...xs, t.raw.toLowerCase()])}
+                  className="h-4 w-4 rounded-full inline-flex items-center justify-center hover:bg-lav-fg/15 transition">
+                  <X size={10} />
+                </button>
               </span>
             )
           })}
@@ -105,6 +139,12 @@ export default function QuickAddModal() {
             </select>
           </IconField>
         </div>
+
+        {usingLearned && (
+          <p className="mt-2 text-[11px] text-faint inline-flex items-center gap-1">
+            <Timer size={11} /> Estimate from your last {learned.samples} {settings.categories.find((c) => c.id === draft.category)?.name} tasks
+          </p>
+        )}
 
         <div className="mt-4"><CategoryPills categories={settings.categories} value={draft.category} onChange={(category) => set({ category })} /></div>
         <div className="mt-3"><PriorityPills value={draft.priority} onChange={(priority) => set({ priority })} /></div>

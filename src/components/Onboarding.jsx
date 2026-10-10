@@ -144,7 +144,7 @@ function Login({ profiles, onSignup, onBack }) {
 
 function Signup({ onLogin, onBack, hasProfiles }) {
   const [step, setStep] = useState(0)
-  const [a, setA] = useState({ needs: [], startTime: '09:30', endTime: '18:30', days: [1, 2, 3, 4, 5], saturdayRule: 'all', name: '', email: '', occupation: '', occupationOther: '', reasons: [], pin: '', showPin: false, sample: true })
+  const [a, setA] = useState({ needs: [], startTime: '09:30', endTime: '18:30', days: [1, 2, 3, 4, 5], saturdayRule: 'all', name: '', email: '', occupation: '', occupationOther: '', reasons: [], pin: '', showPin: false, sample: false })
   const set = (p) => setA((x) => ({ ...x, ...p }))
   const toggle = (k, v) => setA((x) => ({ ...x, [k]: x[k].includes(v) ? x[k].filter((y) => y !== v) : [...x[k], v] }))
   const TOTAL = STEP_LABEL.length
@@ -177,7 +177,7 @@ function Signup({ onLogin, onBack, hasProfiles }) {
     signIn(profile.id)
     if (first && hasLegacyData()) migrateLegacyInto(profile.id)
     const s = loadSettings()
-    saveSettings({ ...s, modules: { ...s.modules, work: wantsWork }, quickList: { ...s.quickList, position: a.needs.includes('plan') ? 'right' : 'off' }, weekStart: a.days.includes(0) && !a.days.includes(1) ? 0 : s.weekStart })
+    saveSettings({ ...s, modules: { ...s.modules, work: wantsWork }, quickList: { ...s.quickList, position: a.needs.includes('plan') ? 'right' : 'off' }, weekStart: a.days.includes(0) && !a.days.includes(1) ? 0 : s.weekStart, workHours: { start: a.startTime, end: a.endTime, breakMinutes: 60 } })
     const w = loadWork()
     saveWork({ ...w, settings: { ...w.settings, startTime: a.startTime, workingDays: a.days, saturdayRule: a.saturdayRule } })
     if (a.sample && !(first && hasLegacyData())) { const { tasks, habits } = generateSample(s.categories || DEFAULT_CATEGORIES); saveTasks(tasks); saveHabits(habits) }

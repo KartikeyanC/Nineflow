@@ -1,12 +1,14 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import {
   DEFAULT_SETTINGS, isOnboarded, loadFocus, loadHabits, loadSettings, loadTasks, markOnboarded, normalizeTasks,
-  saveFocus, saveHabits, saveSettings, saveTasks, uid,
+  onSaveStatus, saveFocus, saveHabits, saveSettings, saveTasks, syncedKeys, uid,
 } from '../lib/storage'
+import { saveWork } from '../work/workStore'
 import { createTask, dateKey, todayKey, withSessionPaused, withSessionResumed, withStatus } from '../lib/tasks'
 import { generateSample } from '../lib/sample'
 import { ensureRecurrences } from '../lib/recurrence'
 import { planDay as planDayPure } from '../lib/schedule'
+import { toMin } from '../lib/capacity'
 
 const PlannerContext = createContext(null)
 
@@ -50,6 +52,29 @@ export function PlannerProvider({ children }) {
     saveSettings(settings)
     document.documentElement.classList.toggle('dark', settings.theme === 'dark')
   }, [settings])
+
+  // Latest tasks for callbacks that need them without re-creating themselves.
+  const tasksRef = useRef(tasks)
+  tasksRef.current = tasks
+
+  // A write that fails (storage full, private mode) is reported here so the
+  // UI can tell the user their changes are not being kept.
+  const [saveError, setSaveError] = useState(false)
+  useEffect(() => onSaveStatus((ok) => setSaveError(!ok)), [])
+
+  // Undo for destructive actions: keep the task list from just before the
+  // action. The toast that offers it dismisses itself after a few seconds.
+  const [undo, setUndo] = useState(null) // { id, label, snapshot } | null
+  const undoRef = useRef(undo)
+  undoRef.current = undo
+  const offerUndo = useCallback((label) => setUndo({ id: Date.now(), label, snapshot: tasksRef.current }), [])
+  const undoLast = useCallback(() => {
+    const u = undoRef.current
+    if (!u) return
+    setTasks(u.snapshot)
+    setUndo(null)
+  }, [])
+  const dismissUndo = useCallback(() => setUndo(null), [])
 
   // A ticking clock so "time spent" on Working tasks updates while you watch.
   const [now, setNow] = useState(() => new Date())
@@ -142,15 +167,33 @@ export function PlannerProvider({ children }) {
     })
   }, [])
 
-  // Timebox a day's unscheduled open tasks into free slots. Returns the plan.
+  // Timebox a day's unscheduled open tasks into free slots within your
+  // working hours. previewPlan only computes; applyPlan writes it (with undo);
+  // planDay does both at once.
+  const previewPlan = useCallback((key) => {
+    const h = settings.workHours
+    return planDayPure(tasks, key, new Date(), { start: toMin(h.start), end: toMin(h.end) })
+  }, [tasks, settings.workHours])
+  const applyPlan = useCallback((plan) => {
+    if (!plan?.patches.length) return
+    offerUndo(`Planned ${plan.patches.length} task${plan.patches.length === 1 ? '' : 's'} into free slots`)
+    const byId = new Map(plan.patches.map((p) => [p.id, p.startTime]))
+    setTasks((ts) => ts.map((t) => (byId.has(t.id) ? { ...t, startTime: byId.get(t.id) } : t)))
+  }, [offerUndo])
   const planDay = useCallback((key) => {
-    const plan = planDayPure(tasks, key, new Date())
-    if (plan.patches.length) {
-      const byId = new Map(plan.patches.map((p) => [p.id, p.startTime]))
-      setTasks((ts) => ts.map((t) => (byId.has(t.id) ? { ...t, startTime: byId.get(t.id) } : t)))
-    }
+    const plan = previewPlan(key)
+    applyPlan(plan)
     return plan
-  }, [tasks])
+  }, [previewPlan, applyPlan])
+
+  // Move several tasks to a date (null = Someday, which also drops the time),
+  // with one undo for the lot.
+  const moveTasksTo = useCallback((ids, date, label) => {
+    if (!ids.length) return
+    const set = new Set(ids)
+    offerUndo(label || `Moved ${ids.length} task${ids.length === 1 ? '' : 's'}`)
+    setTasks((ts) => ts.map((t) => (set.has(t.id) ? { ...t, date, ...(date ? {} : { startTime: null }) } : t)))
+  }, [offerUndo])
 
   // Copy an occurrence's editable details onto the series' future open occurrences.
   const applyToUpcoming = useCallback((id) => {
@@ -167,12 +210,15 @@ export function PlannerProvider({ children }) {
   }, [])
 
   const removeSeries = useCallback((seriesId) => {
+    offerUndo('Deleted the repeating series')
     setTasks((ts) => ts.filter((t) => t.seriesId !== seriesId))
     setSelectedId(null)
-  }, [])
+  }, [offerUndo])
 
-  // Replace everything with a backup or sample set.
+  // Replace everything with a backup or sample set. A full backup also
+  // carries Work OS, which loads from storage when its section opens.
   const importData = useCallback((data) => {
+    if (data.work && typeof data.work === 'object') saveWork(data.work)
     setTasks(normalizeTasks(data.tasks || []))
     if (data.settings) setSettings((s) => ({ ...DEFAULT_SETTINGS, ...s, ...data.settings }))
     if (Array.isArray(data.habits)) setHabits(data.habits)
@@ -237,24 +283,47 @@ export function PlannerProvider({ children }) {
     })
   }, [])
 
+  // Unfinished tasks from past days move to today. A repeating task brings
+  // only its latest missed occurrence, and only when the series has nothing
+  // today; its other missed copies are dropped unless time was logged on
+  // them. Previously every missed copy landed on today as a duplicate.
   const moveOverdueToToday = useCallback((status = null) => {
     const today = todayKey()
-    setTasks((ts) =>
-      ts.map((t) =>
-        t.date && t.date < today && t.status !== 'completed' && (!status || t.status === status)
-          ? { ...t, date: today }
-          : t,
-      ),
-    )
-  }, [])
+    const ts = tasksRef.current
+    const overdue = ts.filter((t) => t.date && t.date < today && t.status !== 'completed' && (!status || t.status === status))
+    if (!overdue.length) return 0
+    const move = new Set(), drop = new Set(), bySeries = new Map()
+    for (const t of overdue) {
+      if (t.seriesId && t.recurrence) {
+        if (!bySeries.has(t.seriesId)) bySeries.set(t.seriesId, [])
+        bySeries.get(t.seriesId).push(t)
+      } else move.add(t.id)
+    }
+    for (const [sid, list] of bySeries) {
+      const hasToday = ts.some((x) => x.seriesId === sid && x.date === today)
+      list.sort((a, b) => b.date.localeCompare(a.date))
+      list.forEach((t, i) => {
+        if (i === 0 && !hasToday) move.add(t.id)
+        else if (!t.sessions.length) drop.add(t.id)
+      })
+    }
+    offerUndo(`Moved ${move.size} to today${drop.size ? ` · cleared ${drop.size} missed repeat${drop.size === 1 ? '' : 's'}` : ''}`)
+    setTasks((prev) => prev.filter((t) => !drop.has(t.id)).map((t) => (move.has(t.id) ? { ...t, date: today } : t)))
+    return move.size
+  }, [offerUndo])
 
   const clearCompleted = useCallback(() => {
+    const n = tasksRef.current.filter((t) => t.status === 'completed').length
+    if (!n) return
+    offerUndo(`Cleared ${n} completed task${n === 1 ? '' : 's'}`)
     setTasks((ts) => ts.filter((t) => t.status !== 'completed'))
-  }, [])
+  }, [offerUndo])
 
   // Deleting one occurrence of a series records its date as skipped so the
   // horizon fill doesn't bring it back.
   const removeTask = useCallback((id) => {
+    const gone = tasksRef.current.find((x) => x.id === id)
+    if (gone) offerUndo(`Deleted “${gone.title}”`)
     setTasks((ts) => {
       const t = ts.find((x) => x.id === id)
       const rest = ts.filter((x) => x.id !== id)
@@ -264,7 +333,7 @@ export function PlannerProvider({ children }) {
       )
     })
     setSelectedId((s) => (s === id ? null : s))
-  }, [])
+  }, [offerUndo])
 
   const updateSettings = useCallback((patch) => {
     setSettings((s) => ({ ...s, ...patch }))
@@ -301,6 +370,21 @@ export function PlannerProvider({ children }) {
   // or Completed). Declared after setStatus, which the callbacks depend on.
   const [focus, setFocus] = useState(loadFocus)
   useEffect(() => saveFocus(focus), [focus])
+
+  // Another tab saved: take its copy instead of overwriting it on our next
+  // save. Browsers fire 'storage' only in the other tabs, and only when the
+  // stored value actually changed, so this can't loop.
+  useEffect(() => {
+    const onStorage = (e) => {
+      const k = syncedKeys()
+      if (e.key === k.tasks) setTasks(loadTasks())
+      else if (e.key === k.settings) setSettings(loadSettings())
+      else if (e.key === k.habits) setHabits(loadHabits())
+      else if (e.key === k.focus) setFocus(loadFocus())
+    }
+    window.addEventListener('storage', onStorage)
+    return () => window.removeEventListener('storage', onStorage)
+  }, [])
   const pomo = settings.pomodoro
   const phaseMs = useCallback((phase) => (phase === 'focus' ? pomo.focus : phase === 'short' ? pomo.short : pomo.long) * 60_000, [pomo])
 
@@ -311,51 +395,74 @@ export function PlannerProvider({ children }) {
     setTasks((ts) => ts.map((t) => (t.id === id ? withSessionResumed(withStatus(t, 'working')) : t)))
   }, [])
 
+  // Read the live focus state directly, so these callbacks never run side
+  // effects inside a state updater (React may call updaters twice).
+  const focusRef = useRef(focus)
+  focusRef.current = focus
+
+  // Only one timer at a time: starting focus on another task closes the
+  // previous task's open session (it stays in Working, just not timed).
   const startFocus = useCallback((taskId) => {
-    setFocus({ taskId, phase: 'focus', running: true, endsAt: Date.now() + phaseMs('focus'), remainingMs: null, completed: 0, open: true })
+    const prev = focusRef.current
+    if (prev && prev.taskId !== taskId) pauseSession(prev.taskId)
+    setFocus({ taskId, phase: 'focus', running: true, waiting: false, endsAt: Date.now() + phaseMs('focus'), remainingMs: null, completed: 0, open: true })
     resumeSession(taskId)
-  }, [phaseMs, resumeSession])
+  }, [phaseMs, pauseSession, resumeSession])
 
   const pauseFocus = useCallback(() => {
-    setFocus((f) => {
-      if (!f || !f.running) return f
-      if (f.phase === 'focus') pauseSession(f.taskId)
-      return { ...f, running: false, remainingMs: Math.max(0, f.endsAt - Date.now()), endsAt: null }
-    })
+    const f = focusRef.current
+    if (!f || !f.running) return
+    if (f.phase === 'focus') pauseSession(f.taskId)
+    setFocus({ ...f, running: false, remainingMs: Math.max(0, f.endsAt - Date.now()), endsAt: null })
   }, [pauseSession])
 
   const resumeFocus = useCallback(() => {
-    setFocus((f) => {
-      if (!f || f.running) return f
-      if (f.phase === 'focus') resumeSession(f.taskId)
-      return { ...f, running: true, endsAt: Date.now() + (f.remainingMs ?? phaseMs(f.phase)), remainingMs: null }
-    })
+    const f = focusRef.current
+    if (!f || f.running) return
+    if (f.phase === 'focus') resumeSession(f.taskId)
+    setFocus({ ...f, running: true, waiting: false, endsAt: Date.now() + (f.remainingMs ?? phaseMs(f.phase)), remainingMs: null })
   }, [phaseMs, resumeSession])
 
-  // Move to the next phase (called on expiry or Skip).
-  const advanceFocus = useCallback(() => {
-    setFocus((f) => {
-      if (!f) return f
-      let next, completed = f.completed
-      if (f.phase === 'focus') {
-        completed += 1
-        next = completed % pomo.every === 0 ? 'long' : 'short'
-        pauseSession(f.taskId)
-      } else {
-        next = 'focus'
-        resumeSession(f.taskId)
-      }
-      return { ...f, phase: next, completed, running: true, endsAt: Date.now() + phaseMs(next), remainingMs: null }
-    })
+  // Move to the next phase. Skip (no {auto}) starts it straight away. A phase
+  // that ran out on its own ({auto: true}) waits for you to start the next
+  // one, so a forgotten timer stops logging focus time.
+  const advanceFocus = useCallback((opts) => {
+    const f = focusRef.current
+    if (!f) return
+    const auto = opts?.auto === true
+    let next, completed = f.completed
+    if (f.phase === 'focus') {
+      completed += 1
+      next = completed % pomo.every === 0 ? 'long' : 'short'
+      pauseSession(f.taskId)
+    } else {
+      next = 'focus'
+      if (!auto) resumeSession(f.taskId)
+    }
+    setFocus(auto
+      ? { ...f, phase: next, completed, running: false, waiting: true, endsAt: null, remainingMs: phaseMs(next) }
+      : { ...f, phase: next, completed, running: true, waiting: false, endsAt: Date.now() + phaseMs(next), remainingMs: null })
   }, [phaseMs, pomo.every, pauseSession, resumeSession])
 
-  // Ending the session leaves Working (closing any open session); ✓ completes.
+  // End the session. The check button completes the task; otherwise a task
+  // still in Working goes back to To do. A task already completed elsewhere
+  // is left alone (this used to set it back to To do).
   const stopFocus = useCallback((complete = false) => {
-    setFocus((f) => {
-      if (f) setStatus(f.taskId, complete ? 'completed' : 'todo')
-      return null
-    })
+    const f = focusRef.current
+    if (!f) return
+    setFocus(null)
+    const t = tasksRef.current.find((x) => x.id === f.taskId)
+    if (!t) return
+    if (complete) setStatus(f.taskId, 'completed')
+    else if (t.status === 'working') setStatus(f.taskId, 'todo')
   }, [setStatus])
+
+  // The focused task was completed or deleted somewhere else: end focus.
+  useEffect(() => {
+    if (!focus) return
+    const t = tasks.find((x) => x.id === focus.taskId)
+    if (!t || t.status === 'completed') setFocus(null)
+  }, [tasks, focus])
 
   const setFocusOpen = useCallback((open) => setFocus((f) => (f ? { ...f, open } : f)), [])
 
@@ -363,11 +470,12 @@ export function PlannerProvider({ children }) {
   useEffect(() => {
     if (!focus?.running) {
       if (!focus) document.title = 'Daily Planner'
+      else if (focus.waiting) document.title = focus.phase === 'focus' ? 'Break over · Daily Planner' : 'Time for a break · Daily Planner'
       return
     }
     const id = setInterval(() => {
       const left = focus.endsAt - Date.now()
-      if (left <= 0) { chime(focus.phase); advanceFocus() }
+      if (left <= 0) { chime(focus.phase); advanceFocus({ auto: true }) }
       else {
         const m = Math.floor(left / 60_000), s = Math.floor((left % 60_000) / 1000)
         document.title = `${m}:${String(s).padStart(2, '0')} · ${focus.phase === 'focus' ? 'Focus' : 'Break'}`
@@ -377,7 +485,18 @@ export function PlannerProvider({ children }) {
   }, [focus, advanceFocus])
 
   const addHabit = useCallback((name) => {
-    setHabits((hs) => [...hs, { id: uid(), name, createdAt: new Date().toISOString(), done: [] }])
+    setHabits((hs) => [...hs, { id: uid(), name, createdAt: new Date().toISOString(), done: [], rest: [] }])
+  }, [])
+
+  // A rest day: the habit is off that day, so the streak carries over it.
+  const toggleHabitRest = useCallback((id, key) => {
+    setHabits((hs) => hs.map((h) => {
+      if (h.id !== id) return h
+      const rest = h.rest || []
+      return rest.includes(key)
+        ? { ...h, rest: rest.filter((k) => k !== key) }
+        : { ...h, rest: [...rest, key], done: h.done.filter((k) => k !== key) }
+    }))
   }, [])
 
   const removeHabit = useCallback((id) => {
@@ -387,10 +506,42 @@ export function PlannerProvider({ children }) {
   const toggleHabit = useCallback((id, key) => {
     setHabits((hs) =>
       hs.map((h) =>
-        h.id === id ? { ...h, done: h.done.includes(key) ? h.done.filter((k) => k !== key) : [...h.done, key] } : h,
+        h.id === id
+          ? { ...h, done: h.done.includes(key) ? h.done.filter((k) => k !== key) : [...h.done, key], rest: (h.rest || []).filter((k) => k !== key) }
+          : h,
       ),
     )
   }, [])
+
+  // Reminders: while the app is open, a browser notification a few minutes
+  // before a timed task starts. Opt-in from Settings; each task fires once.
+  const remindedRef = useRef(new Set())
+  useEffect(() => {
+    const r = settings.reminders
+    if (!r?.enabled || typeof Notification === 'undefined' || Notification.permission !== 'granted') return
+    const check = () => {
+      const t0 = new Date()
+      const key = dateKey(t0)
+      const nowMin = t0.getHours() * 60 + t0.getMinutes()
+      for (const t of tasksRef.current) {
+        if (t.date !== key || !t.startTime || t.status !== 'todo') continue
+        const [h, m] = t.startTime.split(':').map(Number)
+        const until = h * 60 + m - nowMin
+        const id = `${t.id}@${key}@${t.startTime}`
+        if (until >= 0 && until <= r.minutes && !remindedRef.current.has(id)) {
+          remindedRef.current.add(id)
+          try {
+            new Notification(until === 0 ? `Starting now: ${t.title}` : `In ${until} min: ${t.title}`, {
+              body: `${t.startTime} · ${t.durationMinutes} min`, tag: id,
+            })
+          } catch { /* some browsers only allow notifications from a service worker */ }
+        }
+      }
+    }
+    check()
+    const timer = setInterval(check, 20_000)
+    return () => clearInterval(timer)
+  }, [settings.reminders])
 
   const categoryById = useMemo(() => {
     const m = new Map(settings.categories.map((c) => [c.id, c]))
@@ -424,6 +575,9 @@ export function PlannerProvider({ children }) {
       removeSeries,
       applyToUpcoming,
       planDay,
+      previewPlan,
+      applyPlan,
+      moveTasksTo,
       focus,
       startFocus,
       pauseFocus,
@@ -446,21 +600,28 @@ export function PlannerProvider({ children }) {
       addHabit,
       removeHabit,
       toggleHabit,
+      toggleHabitRest,
       onboarded,
       setOnboarded,
       importData,
       loadSample,
       clearAll,
+      saveError,
+      undo,
+      undoLast,
+      dismissUndo,
     }),
     [
       tasks, settings, now, view, selectedId, quickAdd, dashboardDate, openDay,
       addTask, updateTask, setStatus, toggleComplete, moveTask, sortStatus,
       moveOverdueToToday, clearCompleted, removeTask, setRecurrence, removeSeries, applyToUpcoming, planDay,
+      previewPlan, applyPlan, moveTasksTo,
       focus, startFocus, pauseFocus, resumeFocus, advanceFocus, stopFocus, setFocusOpen,
       lastAdded, setLastAdded, pipWin, pipError, openPip, closePip,
       updateSettings, addCategory, updateCategory, removeCategory, categoryById,
-      habits, addHabit, removeHabit, toggleHabit,
+      habits, addHabit, removeHabit, toggleHabit, toggleHabitRest,
       onboarded, setOnboarded, importData, loadSample, clearAll,
+      saveError, undo, undoLast, dismissUndo,
     ],
   )
 

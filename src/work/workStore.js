@@ -1,6 +1,6 @@
 // Work OS storage: one key holding settings + the three input tables.
 // Everything else in the module is derived from these.
-import { uid } from '../lib/storage'
+import { uid, reportSave } from '../lib/storage'
 import { storageKey } from '../lib/profiles'
 
 const KEY = () => storageKey('work')
@@ -141,8 +141,24 @@ export function loadWork() {
 }
 
 export function saveWork(w) {
-  try { localStorage.setItem(KEY(), JSON.stringify(w)) } catch { /* ignore */ }
+  try {
+    localStorage.setItem(KEY(), JSON.stringify(w))
+    reportSave(true, KEY())
+  } catch {
+    reportSave(false, KEY())
+  }
 }
+
+export const workKey = () => KEY()
+
+// Write one day's note from outside Work OS (the planner's shutdown). The
+// synthetic storage event makes an open Work OS screen reload its copy.
+export function updateDayNote(k, patch) {
+  const w = loadWork()
+  saveWork({ ...w, dayNotes: { ...w.dayNotes, [k]: { ...(w.dayNotes[k] || {}), ...patch } } })
+  try { window.dispatchEvent(new StorageEvent('storage', { key: KEY() })) } catch { /* ignore */ }
+}
+export const readDayNote = (k) => loadWork().dayNotes[k] || {}
 
 export const newTaskRow = (no, today) => ({
   id: `T-${String(no).padStart(3, '0')}`, example: false, requestDate: today, area: AREAS[0], taskType: '', task: '', project: '', requestedBy: '',

@@ -51,9 +51,9 @@ export default function FocusMode() {
   if (!focus.open) {
     return (
       <button type="button" onClick={() => setFocusOpen(true)}
-        className="fixed bottom-20 sm:bottom-6 left-1/2 -translate-x-1/2 z-30 card px-4 h-12 flex items-center gap-3 shadow-lift hover:-translate-y-0.5 transition animate-view-in max-w-[calc(100vw-1rem)]">
-        <span className={cx('h-2.5 w-2.5 rounded-full', p.dot, focus.running && 'animate-pulse')} />
-        <span className="font-bold tabular-nums">{clock}</span>
+        className="fixed bottom-36 sm:bottom-6 left-1/2 -translate-x-1/2 z-30 card px-4 h-12 flex items-center gap-3 shadow-lift hover:-translate-y-0.5 transition animate-view-in max-w-[calc(100vw-1rem)]">
+        <span className={cx('h-2.5 w-2.5 rounded-full', p.dot, (focus.running || focus.waiting) && 'animate-pulse')} />
+        <span className="font-bold tabular-nums">{focus.waiting ? 'Ready' : clock}</span>
         <span className={cx('pill', p.bg, p.text)}>{p.label}</span>
         <span className="text-sm font-semibold text-muted max-w-[200px] truncate">{task.title}</span>
       </button>
@@ -90,16 +90,16 @@ export default function FocusMode() {
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             <span className="h-display text-5xl tabular-nums">{clock}</span>
-            <span className="text-xs text-faint font-semibold mt-1">{focus.running ? 'remaining' : 'paused'}</span>
+            <span className="text-xs text-faint font-semibold mt-1">{focus.running ? 'remaining' : focus.waiting ? (focus.phase === 'focus' ? 'break is over' : 'focus block done') : 'paused'}</span>
           </div>
         </div>
 
         <div className="flex items-center gap-2 mt-8">
           <button type="button" onClick={() => stopFocus(true)} className="btn-ghost h-11 w-11 p-0 rounded-full" title="Mark task done"><Check size={18} /></button>
           <button type="button" onClick={focus.running ? pauseFocus : resumeFocus} className="btn-black h-14 px-7 text-base rounded-full" title="Space">
-            {focus.running ? <><Pause size={18} /> Pause</> : <><Play size={18} /> {focus.remainingMs == null ? 'Start' : 'Resume'}</>}
+            {focus.running ? <><Pause size={18} /> Pause</> : <><Play size={18} /> {focus.waiting ? (focus.phase === 'focus' ? 'Start focus' : 'Start break') : focus.remainingMs == null ? 'Start' : 'Resume'}</>}
           </button>
-          <button type="button" onClick={advanceFocus} className="btn-ghost h-11 w-11 p-0 rounded-full" title={focus.phase === 'focus' ? 'Skip to break' : 'Skip break'}><SkipForward size={18} /></button>
+          <button type="button" onClick={() => advanceFocus()} className="btn-ghost h-11 w-11 p-0 rounded-full" title={focus.phase === 'focus' ? 'Skip to break' : 'Skip break'}><SkipForward size={18} /></button>
         </div>
 
         <p className="text-xs text-faint mt-6 inline-flex items-center gap-1.5">

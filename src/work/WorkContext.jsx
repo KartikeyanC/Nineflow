@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
-import { loadWork, saveWork, newTaskRow, newPostRow, newCampaignRow, emptyWork } from './workStore'
+import { loadWork, saveWork, workKey, newTaskRow, newPostRow, newCampaignRow, emptyWork } from './workStore'
 import { key } from './workCalc'
 
 const Ctx = createContext(null)
@@ -7,6 +7,12 @@ const Ctx = createContext(null)
 export function WorkProvider({ children }) {
   const [work, setWork] = useState(loadWork)
   useEffect(() => saveWork(work), [work])
+  // Another tab saved Work OS: take its copy instead of overwriting it.
+  useEffect(() => {
+    const onStorage = (e) => { if (e.key === workKey()) setWork(loadWork()) }
+    window.addEventListener('storage', onStorage)
+    return () => window.removeEventListener('storage', onStorage)
+  }, [])
 
   const patch = useCallback((fn) => setWork((w) => ({ ...w, ...fn(w) })), [])
   const updateSettings = useCallback((p) => patch((w) => ({ settings: { ...w.settings, ...p } })), [patch])
