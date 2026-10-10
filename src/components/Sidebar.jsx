@@ -1,5 +1,5 @@
 import React from 'react'
-import { LayoutDashboard, KanbanSquare, CalendarRange, CalendarDays, Settings, Plus, Moon, Sun, Sparkles } from 'lucide-react'
+import { LayoutDashboard, KanbanSquare, CalendarRange, CalendarDays, Settings, Plus, Moon, Sun, Sparkles, Briefcase } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
 import { dayStats } from '../lib/tasks'
 import { cx, ProgressBar } from './ui'
@@ -9,6 +9,7 @@ const NAV = [
   { id: 'board', label: 'Board', icon: KanbanSquare },
   { id: 'week', label: 'Week', icon: CalendarRange },
   { id: 'month', label: 'Month', icon: CalendarDays },
+  { id: 'work', label: 'Work OS', icon: Briefcase },
   { id: 'settings', label: 'Settings', icon: Settings },
 ]
 

@@ -15,8 +15,9 @@ import Board from './views/Board'
 import Week from './views/Week'
 import Month from './views/Month'
 import Settings from './views/Settings'
+import Work from './work/Work'
 
-const VIEWS = { dashboard: Dashboard, board: Board, week: Week, month: Month, settings: Settings }
+const VIEWS = { dashboard: Dashboard, board: Board, week: Week, month: Month, work: Work, settings: Settings }
 
 function Shell() {
   const { view, setQuickAdd } = usePlanner()
