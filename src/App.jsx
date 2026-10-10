@@ -6,7 +6,8 @@ import MobileNav from './components/MobileNav'
 import Dock, { MobileDock } from './components/Dock'
 import QuickAddModal from './components/QuickAddModal'
 import TaskPanel from './components/TaskPanel'
-import WelcomeModal from './components/WelcomeModal'
+import Onboarding from './components/Onboarding'
+import { currentProfile } from './lib/profiles'
 import FocusMode from './components/FocusMode'
 import PipQuickList from './components/PipQuickList'
 import CalendarToast from './components/CalendarToast'
@@ -66,7 +67,6 @@ function Shell() {
 
       <QuickAddModal />
       <TaskPanel />
-      <WelcomeModal />
       <FocusMode />
       <PipQuickList />
       <CalendarToast />
@@ -74,7 +74,10 @@ function Shell() {
   )
 }
 
+// No signed-in profile → onboarding / login. Everything else loads inside
+// that profile's storage namespace.
 export default function App() {
+  if (!currentProfile()) return <Onboarding />
   return (
     <PlannerProvider>
       <Shell />

@@ -30,7 +30,7 @@ export default function Sidebar() {
 
       {/* Nav */}
       <nav className="flex flex-col gap-1">
-        {NAV.map(({ id, label, icon: Icon }) => {
+        {NAV.filter(({ id }) => id !== 'work' || settings.modules?.work).map(({ id, label, icon: Icon }) => {
           const active = view === id
           return (
             <button

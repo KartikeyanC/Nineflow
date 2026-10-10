@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react'
-import { Plus, Trash2, Download, Upload, Sparkles, AlertTriangle, CalendarPlus } from 'lucide-react'
+import { Plus, Trash2, Download, Upload, Sparkles, AlertTriangle, CalendarPlus, LogOut } from 'lucide-react'
 import { downloadIcs } from '../lib/calendar'
+import { currentProfile, updateProfile, deleteProfile, signOut, listProfiles, initials, OCCUPATIONS } from '../lib/profiles'
 import { usePlanner } from '../store/PlannerContext'
 import { COLOR_IDS, colorOf } from '../lib/colors'
 import { validateBackup } from '../lib/storage'
@@ -59,6 +60,8 @@ export default function Settings() {
       </header>
 
       <div className="space-y-4">
+        <ProfileSection />
+
         {/* Categories */}
         <section className="card p-5">
           <h2 className="h-display text-base mb-1">Categories</h2>
@@ -108,6 +111,10 @@ export default function Settings() {
                 </label>
               ))}
             </div>
+          </Row>
+          <Row label="Work OS tab" hint="The full workflow system: task log, social calendar, ad tracker, reports.">
+            <Segmented size="sm" value={settings.modules?.work ? 'on' : 'off'} onChange={(v) => updateSettings({ modules: { ...settings.modules, work: v === 'on' } })}
+              options={[{ value: 'on', label: 'Shown' }, { value: 'off', label: 'Hidden' }]} />
           </Row>
           <Row label="Appearance" hint="Dark mode is one class toggle away.">
             <Segmented size="sm" value={settings.theme} onChange={(v) => updateSettings({ theme: v })}
@@ -176,6 +183,41 @@ export default function Settings() {
           ? `${usage(removeCat.id)} task${usage(removeCat.id) === 1 ? '' : 's'} use this category. They will move to "${settings.categories.find((c) => c.id !== removeCat.id)?.name}".`
           : 'No tasks use this category.'} />
     </div>
+  )
+}
+
+// Local profile: edit details, switch, sign out, delete.
+function ProfileSection() {
+  const [p, setP] = useState(() => currentProfile())
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  if (!p) return null
+  const c = colorOf(p.color)
+  const save = (patch) => { updateProfile(p.id, patch); setP({ ...p, ...patch }) }
+  return (
+    <section className="card p-5">
+      <div className="flex items-center gap-3 mb-4">
+        <span className={cx('h-12 w-12 rounded-full flex items-center justify-center font-bold text-lg', c.bg, c.text)}>{initials(p.name)}</span>
+        <div className="min-w-0 flex-1">
+          <h2 className="h-display text-base">Your profile</h2>
+          <p className="text-sm text-muted">Stored in this browser only · {listProfiles().length} profile{listProfiles().length === 1 ? '' : 's'} on this device</p>
+        </div>
+        <button type="button" className="btn-ghost h-9 py-0" onClick={() => { signOut(); window.location.reload() }}><LogOut size={14} /> {listProfiles().length > 1 ? 'Switch / sign out' : 'Sign out'}</button>
+      </div>
+      <div className="grid sm:grid-cols-2 gap-3">
+        <label className="block"><span className="block text-xs font-semibold text-muted mb-1">Name</span><input className="input" value={p.name} onChange={(e) => save({ name: e.target.value })} /></label>
+        <label className="block"><span className="block text-xs font-semibold text-muted mb-1">Email</span><input type="email" className="input" value={p.email} onChange={(e) => save({ email: e.target.value })} /></label>
+        <label className="block"><span className="block text-xs font-semibold text-muted mb-1">Occupation</span>
+          <select className="input" value={p.occupation} onChange={(e) => save({ occupation: e.target.value })}><option value="">—</option>{OCCUPATIONS.map((o) => <option key={o} value={o}>{o}</option>)}</select></label>
+        <label className="block"><span className="block text-xs font-semibold text-muted mb-1">PIN (4 digits, blank for none)</span><input inputMode="numeric" maxLength={4} className="input w-32 text-center tracking-[0.3em]" value={p.pin} onChange={(e) => save({ pin: e.target.value.replace(/\D/g, '').slice(0, 4) })} /></label>
+      </div>
+      <div className="mt-4 flex items-center gap-2">
+        {confirmDelete ? (
+          <><span className="text-sm font-semibold text-coral-fg">Delete this profile and all its data?</span>
+            <button type="button" className="btn-ghost h-8 py-0 px-3" onClick={() => setConfirmDelete(false)}>Cancel</button>
+            <button type="button" className="btn-black h-8 py-0 px-3 bg-coral-fg" onClick={() => { deleteProfile(p.id); window.location.reload() }}>Delete</button></>
+        ) : <button type="button" className="text-xs font-semibold text-muted hover:text-coral-fg" onClick={() => setConfirmDelete(true)}>Delete profile…</button>}
+      </div>
+    </section>
   )
 }
 

@@ -7,9 +7,10 @@
     <script>
       // Apply the saved theme before first paint to avoid a flash.
       try {
-        var s = JSON.parse(localStorage.getItem('daily-planner:settings') || '{}');
-        var t = s.theme || 'light';
-        if (t === 'dark') document.documentElement.classList.add('dark');
+        var id = localStorage.getItem('daily-planner:current');
+        var key = id ? 'daily-planner:' + id + ':settings' : 'daily-planner:settings';
+        var s = JSON.parse(localStorage.getItem(key) || '{}');
+        if ((s.theme || 'light') === 'dark') document.documentElement.classList.add('dark');
       } catch (e) {}
     </script>
   </head>

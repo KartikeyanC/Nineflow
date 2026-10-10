@@ -14,10 +14,10 @@ const NAV = [
 
 // Bottom tab bar, phones only (the sidebar takes over from 640px).
 export default function MobileNav() {
-  const { view, setView } = usePlanner()
+  const { view, setView, settings } = usePlanner()
   return (
     <nav className="sm:hidden fixed bottom-0 inset-x-0 z-30 bg-card border-t border-line flex" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-      {NAV.map(({ id, label, icon: Icon }) => {
+      {NAV.filter(({ id }) => id !== 'work' || settings.modules?.work).map(({ id, label, icon: Icon }) => {
         const active = view === id
         return (
           <button key={id} type="button" onClick={() => setView(id)}

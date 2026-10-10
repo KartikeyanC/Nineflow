@@ -11,6 +11,7 @@ import {
 } from '../lib/tasks'
 import { buildInsights } from '../lib/insights'
 import { describePlan } from '../lib/schedule'
+import { currentProfile, firstName } from '../lib/profiles'
 import { colorOf, cssVar, PRIORITY_STYLE } from '../lib/colors'
 import { CategoryTag, CheckCircle, Segmented, cx } from '../components/ui'
 import { DateField } from '../components/DatePicker'
@@ -38,7 +39,7 @@ export default function Dashboard() {
       {/* Header */}
       <header className="flex flex-wrap items-start justify-between gap-4 mb-5">
         <div>
-          <h1 className="h-display text-3xl">{greeting} 👋</h1>
+          <h1 className="h-display text-3xl">{greeting}{firstName(currentProfile()?.name) ? `, ${firstName(currentProfile().name)}` : ''} 👋</h1>
           <p className="text-sm text-muted mt-1 font-medium">{format(day, 'EEEE, MMMM d, yyyy')}</p>
           <p className="text-sm text-faint">Let's make today productive.</p>
         </div>

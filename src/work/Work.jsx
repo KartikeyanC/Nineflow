@@ -13,18 +13,17 @@ import Ads from './views/Ads'
 import Process from './views/Process'
 import Guide from './views/Guide'
 import { cx } from '../components/ui'
+import { storageKey } from '../lib/profiles'
 
 const TABS = [
   ['date', 'Date view', DateView], ['time', 'Time plan', TimePlan], ['week', 'Weekly plan', WeekPlan], ['tasks', 'Task log', TaskLog],
   ['standards', 'Standard times', Standards], ['dashboard', 'Dashboard', WorkDashboard], ['report', 'Daily report', DailyReport],
   ['monthly', 'Monthly', Monthly], ['social', 'Social media', Social], ['ads', 'Ad campaigns', Ads], ['process', 'Process', Process], ['guide', 'Guide', Guide],
 ]
-const KEY = 'daily-planner:work-tab'
-
 // Work OS: a solo creative/dev employee's complete daily workflow system.
 export default function Work() {
-  const [tab, setTab] = useState(() => { try { return localStorage.getItem(KEY) || 'date' } catch { return 'date' } })
-  const pick = (t) => { setTab(t); try { localStorage.setItem(KEY, t) } catch { /* ignore */ } }
+  const [tab, setTab] = useState(() => { try { return localStorage.getItem(storageKey('work-tab')) || 'date' } catch { return 'date' } })
+  const pick = (t) => { setTab(t); try { localStorage.setItem(storageKey('work-tab'), t) } catch { /* ignore */ } }
   const View = TABS.find(([id]) => id === tab)?.[2] || DateView
   return (
     <WorkProvider>

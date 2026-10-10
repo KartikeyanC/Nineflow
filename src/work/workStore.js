@@ -1,8 +1,9 @@
 // Work OS storage: one key holding settings + the three input tables.
 // Everything else in the module is derived from these.
 import { uid } from '../lib/storage'
+import { storageKey } from '../lib/profiles'
 
-const KEY = 'daily-planner:work'
+const KEY = () => storageKey('work')
 
 export const AREAS = [
   'Social media content', 'Social media handling', 'UI/UX design', 'Motion design',
@@ -115,7 +116,7 @@ export function emptyWork() {
 
 export function loadWork() {
   try {
-    const raw = localStorage.getItem(KEY)
+    const raw = localStorage.getItem(KEY())
     if (!raw) return emptyWork()
     const w = JSON.parse(raw)
     const base = emptyWork()
@@ -130,7 +131,7 @@ export function loadWork() {
 }
 
 export function saveWork(w) {
-  try { localStorage.setItem(KEY, JSON.stringify(w)) } catch { /* ignore */ }
+  try { localStorage.setItem(KEY(), JSON.stringify(w)) } catch { /* ignore */ }
 }
 
 export const newTaskRow = (no, today) => ({

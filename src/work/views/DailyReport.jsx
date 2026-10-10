@@ -5,6 +5,7 @@ import { useWork } from '../WorkContext'
 import { real, taskDerived, key, h1, isWorkingDay, timePlan } from '../workCalc'
 import { Section, Pill, DELIVERY_TONE } from '../ui'
 import { DateField } from '../../components/DatePicker'
+import { currentProfile } from '../../lib/profiles'
 
 export default function DailyReport() {
   const { work, setDayNote } = useWork()
@@ -37,6 +38,7 @@ export default function DailyReport() {
     '',
     `Blockers: ${note.blockers || 'none'}`,
     `Tomorrow: ${note.tomorrow || (nextPlan.length ? `${nextPlan.join(' + ')}${nextDue.length ? `; due: ${nextDue.map((t) => t.task || t.taskType).join(', ')}` : ''}` : '—')}`,
+    currentProfile()?.name ? '' : null, currentProfile()?.name ? `— ${currentProfile().name}` : null,
   ].filter((l) => l !== null).join('\n'), [d, note, summary, worked, done, posts, nextPlan, nextDue])
 
   const copy = async () => { try { await navigator.clipboard.writeText(message); setCopied(true); setTimeout(() => setCopied(false), 2000) } catch { /* ignore */ } }
