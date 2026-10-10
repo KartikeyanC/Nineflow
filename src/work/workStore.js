@@ -20,10 +20,20 @@ export const OBJECTIVES = ['Leads', 'Traffic', 'Awareness', 'Sales', 'Engagement
 export const AD_STATUSES = ['Planned', 'Active', 'Paused', 'Ended']
 export const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 
+// Which Saturdays are working days (only applies when Saturday is ticked).
+export const SATURDAY_RULES = [
+  { id: 'all', label: 'Every Saturday', hint: 'All Saturdays are working days' },
+  { id: 'first-third', label: '1st, 3rd & 5th Saturdays', hint: '2nd and 4th Saturdays off' },
+  { id: 'second-fourth', label: '2nd & 4th Saturdays', hint: '1st, 3rd and 5th Saturdays off' },
+  { id: 'alternate-odd', label: 'Alternate Saturdays (odd weeks)', hint: 'Week 1, 3, 5… of the year' },
+  { id: 'alternate-even', label: 'Alternate Saturdays (even weeks)', hint: 'Week 2, 4, 6… of the year' },
+]
+
 // ---- Assumptions (all editable in the Work settings) --------------------
 export const DEFAULT_WORK_SETTINGS = {
   startTime: '09:30',
   workingDays: [1, 2, 3, 4, 5, 6], // Mon–Sat
+  saturdayRule: 'all', // see SATURDAY_RULES
   dayOffs: [], // extra holidays, yyyy-MM-dd
   currency: '$',
   // The day in order. Fixed slots keep their area; focus blocks take the

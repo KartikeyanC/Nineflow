@@ -1,7 +1,7 @@
 import React from 'react'
 import { Plus, AlertTriangle } from 'lucide-react'
 import { useWork } from '../WorkContext'
-import { AREAS, DAY_NAMES } from '../workStore'
+import { AREAS, DAY_NAMES, SATURDAY_RULES } from '../workStore'
 import { timePlan, endTime, dayLength, workMinutesPerDay, h1 } from '../workCalc'
 import { Section, Table, Th, Td, TextIn, NumIn, SelectIn, RowTools, Legend } from '../ui'
 import { TimeField } from '../../components/TimePicker'
@@ -32,6 +32,13 @@ export default function TimePlan() {
               <button key={d} type="button" onClick={() => toggleDay(d)} className={cx('h-8 w-9 rounded-full text-xs font-bold transition', s.workingDays.includes(d) ? 'bg-ink text-page' : 'bg-page text-faint hover:text-ink')}>{DAY_NAMES[d].slice(0, 2)}</button>
             ))}</div>
           </div>
+          {s.workingDays.includes(6) && (
+            <div className="animate-view-in"><span className="block text-xs font-semibold text-muted mb-1">Which Saturdays ✎</span>
+              <select className="input w-auto py-1.5" value={s.saturdayRule || 'all'} onChange={(e) => updateSettings({ saturdayRule: e.target.value })}>
+                {SATURDAY_RULES.map((r) => <option key={r.id} value={r.id}>{r.label} — {r.hint}</option>)}
+              </select>
+            </div>
+          )}
         </div>
         <div className="mb-3"><Legend /></div>
         <Table minWidth={1100}>

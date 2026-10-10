@@ -1,6 +1,6 @@
 // All derived numbers for the Work OS. Pure functions; example rows are
 // filtered out by `real()` so they never enter a total.
-import { addDays, differenceInCalendarDays, eachDayOfInterval, format, getDay, parseISO, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns'
+import { addDays, differenceInCalendarDays, eachDayOfInterval, format, getDay, getDate, getISOWeek, parseISO, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns'
 import { AREAS } from './workStore'
 
 export const key = (d) => format(d, 'yyyy-MM-dd')
@@ -11,7 +11,22 @@ export const h1 = (n) => (Math.round(n * 10) / 10).toString()
 export const pct = (a, b) => (b > 0 ? Math.round((a / b) * 100) : null)
 
 // ---- calendar -----------------------------------------------------------
-export const isWorkingDay = (settings, d) => settings.workingDays.includes(getDay(d)) && !settings.dayOffs.includes(key(d))
+// Is this Saturday a working one under the chosen pattern?
+export function saturdayWorks(rule, d) {
+  const nth = Math.ceil(getDate(d) / 7) // 1st..5th Saturday of the month
+  switch (rule) {
+    case 'first-third': return nth === 1 || nth === 3 || nth === 5
+    case 'second-fourth': return nth === 2 || nth === 4
+    case 'alternate-odd': return getISOWeek(d) % 2 === 1
+    case 'alternate-even': return getISOWeek(d) % 2 === 0
+    default: return true
+  }
+}
+
+export const isWorkingDay = (settings, d) =>
+  settings.workingDays.includes(getDay(d)) &&
+  (getDay(d) !== 6 || saturdayWorks(settings.saturdayRule || 'all', d)) &&
+  !settings.dayOffs.includes(key(d))
 export const workMinutesPerDay = (settings) => settings.blocks.filter((b) => !b.lunch).reduce((s, b) => s + (b.minutes || 0), 0)
 export const dayLength = (settings) => settings.blocks.reduce((s, b) => s + (b.minutes || 0), 0)
 export const endTime = (settings) => toHHMM(toMin(settings.startTime) + dayLength(settings))
@@ -29,14 +44,16 @@ export function timePlan(settings, d) {
 }
 
 // Hours per area across one working week from the weekly plan + fixed slots.
+// A partial-Saturday pattern counts Saturday at half weight.
 export function weeklyAreaHours(settings) {
   const hours = Object.fromEntries(AREAS.map((a) => [a, 0]))
   for (const wd of settings.workingDays) {
+    const weight = wd === 6 && (settings.saturdayRule || 'all') !== 'all' ? 0.5 : 1
     const plan = settings.weeklyPlan[wd] || []
     for (const b of settings.blocks) {
       if (b.lunch || b.admin) continue
       const area = b.focus ? plan[b.focus - 1] : b.area
-      if (area && area in hours) hours[area] += (b.minutes || 0) / 60
+      if (area && area in hours) hours[area] += ((b.minutes || 0) / 60) * weight
     }
   }
   return hours

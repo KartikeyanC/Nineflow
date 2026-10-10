@@ -2,7 +2,7 @@ import React, { useRef } from 'react'
 import { Download, Upload, RotateCcw } from 'lucide-react'
 import { useWork } from '../WorkContext'
 import { endTime, workMinutesPerDay, h1 } from '../workCalc'
-import { DAY_NAMES } from '../workStore'
+import { DAY_NAMES, SATURDAY_RULES } from '../workStore'
 import { Section, NumIn, TextIn } from '../ui'
 
 const ROUTINE = [
@@ -53,7 +53,7 @@ export default function Guide() {
       <Section title="Assumptions — change any of them" hint="These are the numbers every calculation uses. Targets drive the On track / Below target / Overloaded status on the dashboard.">
         <div className="grid sm:grid-cols-2 gap-x-8 gap-y-3 text-sm">
           <Row label="Working day" value={`${s.startTime}–${endTime(s)} with ${h1(workMinutesPerDay(s) / 60)} h of work (lunch excluded)`} where="Time plan" />
-          <Row label="Working days" value={s.workingDays.map((d) => DAY_NAMES[d].slice(0, 3)).join(', ')} where="Time plan" />
+          <Row label="Working days" value={`${s.workingDays.map((d) => DAY_NAMES[d].slice(0, 3)).join(', ')}${s.workingDays.includes(6) ? ` · Saturdays: ${SATURDAY_RULES.find((r) => r.id === (s.saturdayRule || 'all'))?.label}` : ''}`} where="Time plan" />
           <Row label="Available hours" value="working days in the range × daily working hours, minus days off" />
           <Row label="Completion %" value="tasks done ÷ tasks worked on in the range" />
           <Row label="On-time %" value="done by the due date ÷ all done in the range" />
