@@ -1,0 +1,52 @@
+# Builds the NineFlow desktop installers on GitHub's machines:
+#   Windows -> NineFlow-Setup-<version>.exe
+#   macOS   -> NineFlow-<version>-arm64.dmg and -x64.dmg
+# Run it from the Actions tab ("Run workflow"), or push a tag like v1.0.0.
+# Needs one repository secret, DESKTOP_OAUTH_JSON: the contents of
+# desktop/oauth.json (see docs/DESKTOP.md).
+name: Desktop installers
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            target: --win
+          - os: macos-latest
+            target: --mac
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Google desktop sign-in client
+        shell: bash
+        env:
+          DESKTOP_OAUTH_JSON: ${{ secrets.DESKTOP_OAUTH_JSON }}
+        run: |
+          if [ -z "$DESKTOP_OAUTH_JSON" ]; then echo "::error::Add the DESKTOP_OAUTH_JSON secret (see docs/DESKTOP.md)"; exit 1; fi
+          printf '%s' "$DESKTOP_OAUTH_JSON" > desktop/oauth.json
+      - name: Build the web app
+        run: npm run build
+        env:
+          VITE_GOOGLE_CLIENT_ID: ${{ vars.VITE_GOOGLE_CLIENT_ID }}
+      - name: Build the installer
+        run: npx electron-builder ${{ matrix.target }}
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false' # unsigned until a signing certificate is added
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nineflow-${{ matrix.os }}
+          path: |
+            release/*.exe
+            release/*.dmg
+          if-no-files-found: error

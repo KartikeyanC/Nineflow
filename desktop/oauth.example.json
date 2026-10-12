@@ -1,0 +1,5 @@
+{
+  "_comment": "Copy to desktop/oauth.json (not committed) with the Google Cloud 'Desktop app' OAuth client. See docs/DESKTOP.md.",
+  "client_id": "1234567890-abc123.apps.googleusercontent.com",
+  "client_secret": "GOCSPX-..."
+}

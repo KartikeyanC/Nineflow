@@ -1,0 +1,40 @@
+# NineFlow desktop installers (electron-builder). See docs/DESKTOP.md.
+#   npm run desktop:win   -> release/NineFlow-Setup-<version>.exe   (on Windows)
+#   npm run desktop:mac   -> release/NineFlow-<version>-<arch>.dmg   (on a Mac)
+appId: app.nineflow.desktop
+productName: NineFlow
+copyright: Copyright © 2026 NineFlow
+directories:
+  output: release
+  buildResources: build
+# The window runs the Vite build in dist/; the main process only uses
+# Electron's own modules, so no node_modules are shipped.
+files:
+  - dist/**/*
+  - desktop/**/*
+  - "!desktop/oauth.example.json"
+  - package.json
+  - "!node_modules/**/*"
+asar: true
+win:
+  target: nsis
+  icon: build/icon.png
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: always
+  createStartMenuShortcut: true
+  shortcutName: NineFlow
+  uninstallDisplayName: NineFlow
+  artifactName: NineFlow-Setup-${version}.${ext}
+mac:
+  target:
+    - target: dmg
+      arch: [arm64, x64]
+  icon: build/icon.png
+  category: public.app-category.productivity
+  artifactName: NineFlow-${version}-${arch}.${ext}
+dmg:
+  title: NineFlow ${version}
+publish: null

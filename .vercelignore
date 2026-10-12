@@ -1,0 +1,17 @@
+# Not uploaded to Vercel: Vercel installs dependencies and builds the app
+# itself, and the Google client ID is set as a Vercel environment variable.
+node_modules
+dist
+.env.local
+.env.*.local
+.claude
+.DS_Store
+docs
+# The original logo artwork; the app uses public/brand and public/icons.
+*.png
+!public/**/*.png
+# Desktop app (built separately; oauth.json holds its Google client)
+desktop
+release
+build
+electron-builder.yml
