@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { ArrowLeft, CalendarCheck, Info, Target } from 'lucide-react'
+import { ArrowLeft, CalendarCheck, Info, Sparkles, Target } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 import { usePlanner } from '../store/PlannerContext'
 import { dayLoad } from '../lib/capacity'
 import { fmtMinutes } from '../lib/tasks'
 import { parseTopics, planGoal } from '../lib/goalPlan'
+import { parsePlanPrompt } from '../lib/promptPlan'
 import { CategoryPills, CheckCircle, Field, Modal, cx } from './ui'
 import { DateField } from './DatePicker'
 import { TimeField } from './TimePicker'
@@ -16,6 +17,21 @@ import { TimeField } from './TimePicker'
 
 const MINUTES = [30, 45, 60, 90, 120, 180, 240]
 const DAYS = [['Mo', 1, 'Monday'], ['Tu', 2, 'Tuesday'], ['We', 3, 'Wednesday'], ['Th', 4, 'Thursday'], ['Fr', 5, 'Friday'], ['Sa', 6, 'Saturday'], ['Su', 0, 'Sunday']]
+
+const EXAMPLES = [
+  '90 day UPSC exam plan, 6 hours a day, subjects: history, polity, geography, economics',
+  'IELTS prep in 8 weeks, 1.5 hours a day, Mon-Fri',
+  'Maths exam on 15 Dec, 2 hours daily except Sundays at 7pm',
+]
+const DAY_SHORT = { 1: 'Mon', 2: 'Tue', 3: 'Wed', 4: 'Thu', 5: 'Fri', 6: 'Sat', 0: 'Sun' }
+// "Mon–Sat", "every day", or a plain list.
+function daysLabel(days) {
+  const order = [1, 2, 3, 4, 5, 6, 0].filter((d) => days.includes(d))
+  if (order.length === 7) return 'every day'
+  const idx = order.map((d) => [1, 2, 3, 4, 5, 6, 0].indexOf(d))
+  const run = idx.every((v, i) => i === 0 || v === idx[i - 1] + 1)
+  return run && order.length > 2 ? `${DAY_SHORT[order[0]]}–${DAY_SHORT[order[order.length - 1]]}` : order.map((d) => DAY_SHORT[d]).join(', ')
+}
 
 const blank = (categories) => ({
   name: '', deadline: null, topicsText: '', minutes: 60, days: [1, 2, 3, 4, 5, 6], startTime: '18:00',
@@ -40,11 +56,13 @@ export default function GoalPlanner() {
   const [form, setForm] = useState(() => blank(settings.categories))
   const [stage, setStage] = useState('form') // 'form' | 'preview'
   const [off, setOff] = useState(() => new Set()) // preview rows the person unticked
+  const [promptText, setPromptText] = useState('')
+  const [understood, setUnderstood] = useState(null) // null | { chips: string[], missing: string[] }
   const set = (patch) => setForm((f) => ({ ...f, ...patch }))
   const close = () => setGoalPlannerOpen(false)
 
   useEffect(() => {
-    if (open) { setForm(blank(settings.categories)); setStage('form'); setOff(new Set()) }
+    if (open) { setForm(blank(settings.categories)); setStage('form'); setOff(new Set()); setPromptText(''); setUnderstood(null) }
   }, [open]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const topics = useMemo(() => parseTopics(form.topicsText), [form.topicsText])
@@ -57,6 +75,28 @@ export default function GoalPlanner() {
       isFull: (key) => { const l = dayLoad(tasks, key, now, settings.workHours); return l.capacity > 0 && l.left >= l.capacity },
     })
   }, [stage, form, topics, tasks, now, settings.workHours])
+
+  // The sentence box: read it, fill in the form, and go to the preview when there is
+  // a goal and a due date. Whatever wasn't mentioned keeps the form's current value.
+  const buildFromPrompt = () => {
+    if (!promptText.trim()) return
+    const { fields } = parsePlanPrompt(promptText, { now })
+    const next = { ...form, ...fields }
+    const chips = []
+    if (fields.name) chips.push(fields.name)
+    if (fields.deadline) chips.push(`due ${format(parseISO(fields.deadline), 'EEE d MMM yyyy')}`)
+    if (fields.minutes) chips.push(`${fmtMinutes(fields.minutes)} a day`)
+    if (fields.days) chips.push(daysLabel(fields.days))
+    if (fields.startTime) chips.push(`at ${fields.startTime}`)
+    if (fields.topicsText) { const n = parseTopics(fields.topicsText).length; chips.push(`${n} ${n === 1 ? 'topic' : 'topics'}`) }
+    if (fields.revision === false) chips.push('no revision')
+    const missing = []
+    if (!next.name.trim()) missing.push('what it is')
+    if (!next.deadline) missing.push('the due date')
+    setForm(next)
+    setUnderstood({ chips, missing })
+    if (!missing.length) { setOff(new Set()); setStage('preview') }
+  }
 
   const preview = () => {
     setOff(new Set())
@@ -84,9 +124,29 @@ export default function GoalPlanner() {
         <form onSubmit={(e) => { e.preventDefault(); if (ready) preview() }}>
           <p className="text-sm text-muted -mt-1 mb-4">An exam, a launch, a trip: say what it is and when it's due, and NineFlow spreads the work over your free days.</p>
 
+          <div className="rounded-2xl bg-page border border-line p-3.5 mb-5">
+            <label htmlFor="goal-prompt" className="text-xs font-semibold text-muted inline-flex items-center gap-1.5 mb-1.5"><Sparkles size={13} className="text-lav-fg" /> Or just describe it in a sentence</label>
+            <textarea id="goal-prompt" autoFocus className="input min-h-[64px] resize-y leading-relaxed" value={promptText} onChange={(e) => { setPromptText(e.target.value); setUnderstood(null) }}
+              onKeyDown={(e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); buildFromPrompt() } }}
+              placeholder={EXAMPLES[0]} />
+            <div className="mt-2 flex flex-wrap items-center gap-1.5">
+              {EXAMPLES.map((ex) => (
+                <button key={ex} type="button" onClick={() => { setPromptText(ex); setUnderstood(null) }} title={ex}
+                  className="pill h-7 px-2.5 text-[11px] bg-card border border-line text-muted hover:text-ink transition max-w-[13rem] truncate">{ex.split(',')[0]}</button>
+              ))}
+              <button type="button" onClick={buildFromPrompt} disabled={!promptText.trim()} className={cx('btn-black h-9 py-0 ml-auto', !promptText.trim() && 'opacity-40')}>Build my plan <CalendarCheck size={14} /></button>
+            </div>
+            {understood && (
+              <div className="mt-2.5 text-[12px]" role="status">
+                {understood.chips.length > 0 && <p className="text-muted"><span className="font-semibold text-ink">Understood:</span> {understood.chips.join(' · ')}</p>}
+                {understood.missing.length > 0 && <p className="mt-1 font-semibold text-peach-fg inline-flex items-center gap-1.5"><Info size={13} /> I couldn&#39;t find {understood.missing.join(' or ')}. Add it below, then see the plan.</p>}
+              </div>
+            )}
+          </div>
+
           <div className="grid sm:grid-cols-[1fr_auto] gap-3">
             <Field label="What is it?">
-              <input autoFocus className="input" value={form.name} onChange={(e) => set({ name: e.target.value })} placeholder="Maths exam, Website launch, Trip to Goa…" maxLength={60} />
+              <input className="input" value={form.name} onChange={(e) => set({ name: e.target.value })} placeholder="Maths exam, Website launch, Trip to Goa…" maxLength={60} />
             </Field>
             <Field label="Due on">
               <DateField value={form.deadline} onChange={(deadline) => set({ deadline })} allowClear={false} placeholder="Pick a date" className="w-full sm:w-44" />

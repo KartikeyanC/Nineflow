@@ -4,7 +4,8 @@
 // before the deadline clear. Pure, so it can be tried on its own.
 import { addDays, differenceInCalendarDays, format, getDay, parseISO, startOfDay } from 'date-fns'
 
-export const MAX_TASKS = 80
+// Enough for a plan every day for about four months (a 90-day plan with a task each day).
+export const MAX_TASKS = 120
 const key = (d) => format(d, 'yyyy-MM-dd')
 
 // One topic per line; a single line with commas or semicolons is split too.
