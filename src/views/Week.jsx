@@ -190,7 +190,8 @@ export default function Week() {
                   className={cx('rounded-2xl py-2 flex flex-col items-center transition hover:-translate-y-0.5',
                     today ? 'bg-ink text-page' : 'bg-page text-ink hover:bg-lav/60')}>
                   <span className={cx('text-[10px] font-bold uppercase tracking-wider', today ? 'text-page/70' : 'text-faint')}>{format(day, 'EEE')}</span>
-                  <span className="h-display text-2xl leading-tight">{format(day, 'd')}</span>
+                  {/* .h-display sets text-ink, so today's date needs its colour set here or it vanishes on the ink tile. */}
+                  <span className={cx('h-display text-2xl leading-tight', today && 'text-page')}>{format(day, 'd')}</span>
                 </button>
               )
             })}
