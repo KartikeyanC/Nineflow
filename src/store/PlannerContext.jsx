@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import React, { createContext, startTransition, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import {
   DEFAULT_SETTINGS, isOnboarded, loadFocus, loadHabits, loadSettings, loadTasks, markOnboarded, normalizeTasks,
   onSaveStatus, saveFocus, saveHabits, saveSettings, saveTasks, syncedKeys, uid,
@@ -36,16 +36,24 @@ export function PlannerProvider({ children }) {
   useEffect(() => saveHabits(habits), [habits])
 
   // UI state that several parts of the app share.
-  const [view, setView] = useState('dashboard')
+  const [view, setViewNow] = useState('dashboard')
+  // Switching pages renders at low priority, so the current page stays on
+  // screen until the next one is ready instead of flashing blank.
+  const setView = useCallback((v) => startTransition(() => setViewNow(v)), [])
   const [selectedId, setSelectedId] = useState(null)
   const [quickAdd, setQuickAdd] = useState(null) // null | { date?, status? }
+  // The day the planner is looking at, shared by every view: the Dashboard
+  // shows it, the Week calendar shows its day or week, Month shows its month.
   const [dashboardDate, setDashboardDate] = useState(todayKey)
+  // The calendar (Week view) shows one day or the whole week. Phones start on a day.
+  const [calendarMode, setCalendarMode] = useState(() => (typeof window !== 'undefined' && window.innerWidth < 640 ? 'day' : 'week'))
 
-  // Open a given day on the Dashboard (Month tiles, busiest-day cards).
+  // Open a given day in the calendar's day view (Month tiles, busiest-day cards).
   const openDay = useCallback((key) => {
     setDashboardDate(key)
-    setView('dashboard')
-  }, [])
+    setCalendarMode('day')
+    setView('week')
+  }, [setView])
 
   useEffect(() => saveTasks(tasks), [tasks])
   useEffect(() => {
@@ -128,7 +136,7 @@ export function PlannerProvider({ children }) {
         setTimeout(() => setPipError(null), 6000)
         return
       }
-      win.document.write('<!doctype html><html><head><meta charset="utf-8"><title>Quick list · Daily Planner</title></head><body></body></html>')
+      win.document.write('<!doctype html><html><head><meta charset="utf-8"><title>Quick list · NineFlow</title></head><body></body></html>')
       win.document.close()
     }
     adoptWindow(win)
@@ -531,8 +539,8 @@ export function PlannerProvider({ children }) {
   // Tick: expire phases and keep the tab title informative.
   useEffect(() => {
     if (!focus?.running) {
-      if (!focus) document.title = 'Daily Planner'
-      else if (focus.waiting) document.title = focus.phase === 'focus' ? 'Break over · Daily Planner' : 'Time for a break · Daily Planner'
+      if (!focus) document.title = 'NineFlow'
+      else if (focus.waiting) document.title = focus.phase === 'focus' ? 'Break over · NineFlow' : 'Time for a break · NineFlow'
       return
     }
     const id = setInterval(() => {
@@ -623,6 +631,8 @@ export function PlannerProvider({ children }) {
       setQuickAdd,
       dashboardDate,
       setDashboardDate,
+      calendarMode,
+      setCalendarMode,
       openDay,
       addTask,
       updateTask,
@@ -678,7 +688,7 @@ export function PlannerProvider({ children }) {
       dismissUndo,
     }),
     [
-      tasks, settings, now, view, selectedId, quickAdd, dashboardDate, openDay,
+      tasks, settings, now, view, setView, selectedId, quickAdd, dashboardDate, calendarMode, openDay,
       addTask, updateTask, setSessions, setStatus, toggleComplete, moveTask, sortStatus,
       moveOverdueToToday, clearCompleted, removeTask, setRecurrence, removeSeries, applyToUpcoming, planDay,
       previewPlan, applyPlan, moveTasksTo,

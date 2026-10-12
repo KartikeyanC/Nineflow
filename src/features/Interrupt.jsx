@@ -12,6 +12,7 @@ import { CategoryPills, cx, useDialogFocus } from '../components/ui'
 const EVENT = 'planner:interrupt'
 export const openInterrupt = () => window.dispatchEvent(new Event(EVENT))
 const LENGTHS = [10, 15, 30, 45, 60, 90, 120]
+const MAX_MINUTES = 12 * 60 // a custom length can be anything up to 12 hours
 
 export function InterruptButton({ compact = false }) {
   return (
@@ -34,7 +35,12 @@ export default function Interrupt() {
   const [open, setOpen] = useState(false)
   const [title, setTitle] = useState('')
   const [by, setBy] = useState('')
-  const [minutes, setMinutes] = useState(30)
+  const [preset, setPreset] = useState(30)
+  // Custom length, typed as hours + minutes (kept as text while editing).
+  const [custom, setCustom] = useState(false)
+  const [hours, setHours] = useState('')
+  const [mins, setMins] = useState('')
+  const hoursRef = useRef(null)
   const [category, setCategory] = useState(null)
   const [startNow, setStartNow] = useState(true)
   const [shift, setShift] = useState(true)
@@ -44,7 +50,7 @@ export default function Interrupt() {
   // Open from anywhere: the buttons, or Ctrl/Cmd+I.
   useEffect(() => {
     const show = () => {
-      setTitle(''); setBy(''); setMinutes(30); setStartNow(true); setShift(true)
+      setTitle(''); setBy(''); setPreset(30); setCustom(false); setStartNow(true); setShift(true)
       setCategory(settings.categories.find((c) => c.id === 'work')?.id || settings.categories[0]?.id)
       setOpen(true)
     }
@@ -62,6 +68,16 @@ export default function Interrupt() {
     return () => window.removeEventListener('keydown', onKey)
   }, [open])
 
+  const typed = (Number(hours) || 0) * 60 + (Number(mins) || 0)
+  const minutes = custom ? Math.min(typed, MAX_MINUTES) : preset
+  const customError = custom && (typed <= 0 ? 'Enter how long it will take.' : typed > MAX_MINUTES ? 'Up to 12 hours. For longer work, add it as a task.' : null)
+  const openCustom = () => {
+    setHours(String(Math.floor(minutes / 60)))
+    setMins(String(minutes % 60))
+    setCustom(true)
+    setTimeout(() => hoursRef.current?.select(), 0)
+  }
+
   const today = dateKey(now)
   const nowMin = now.getHours() * 60 + now.getMinutes()
   // What gets paused, and what gets pushed back.
@@ -78,7 +94,7 @@ export default function Interrupt() {
   if (!open) return null
   const submit = (e) => {
     e.preventDefault()
-    if (!title.trim()) return
+    if (!title.trim() || customError) return
     logInterruption({ title: title.trim(), by, minutes, category, startNow, shift: startNow && shift })
     setOpen(false)
   }
@@ -111,12 +127,33 @@ export default function Interrupt() {
           <span className="text-[12px] font-semibold text-muted">About how long?</span>
           <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Estimated length">
             {LENGTHS.map((m) => (
-              <button key={m} type="button" role="radio" aria-checked={minutes === m} onClick={() => setMinutes(m)}
-                className={cx('pill h-8 px-3 text-[12px] transition', minutes === m ? 'bg-ink text-page' : 'bg-subtle text-ink ring-hair hover:-translate-y-px')}>
+              <button key={m} type="button" role="radio" aria-checked={!custom && preset === m} onClick={() => { setPreset(m); setCustom(false) }}
+                className={cx('pill h-8 px-3 text-[12px] transition', !custom && preset === m ? 'bg-ink text-page' : 'bg-subtle text-ink ring-hair hover:-translate-y-px')}>
                 {fmtMinutes(m)}
               </button>
             ))}
+            <button type="button" role="radio" aria-checked={custom} onClick={openCustom}
+              className={cx('pill h-8 px-3 text-[12px] transition', custom ? 'bg-ink text-page' : 'bg-subtle text-ink ring-hair hover:-translate-y-px')}>
+              {custom && typed > 0 && !customError ? `Custom · ${fmtMinutes(minutes)}` : 'Custom'}
+            </button>
           </div>
+          {custom && (
+            <div className="mt-1 flex flex-wrap items-center gap-2 animate-view-in">
+              <label className="inline-flex items-center gap-1.5">
+                <input ref={hoursRef} type="number" inputMode="numeric" min={0} max={12} step={1} value={hours}
+                  onChange={(e) => setHours(e.target.value.replace(/\D/g, '').slice(0, 2))} aria-label="Hours"
+                  className="input w-16 h-9 py-0 text-center tnum" />
+                <span className="text-[12px] font-semibold text-muted">h</span>
+              </label>
+              <label className="inline-flex items-center gap-1.5">
+                <input type="number" inputMode="numeric" min={0} max={59} step={5} value={mins}
+                  onChange={(e) => setMins(e.target.value.replace(/\D/g, '').slice(0, 2))} aria-label="Minutes"
+                  className="input w-16 h-9 py-0 text-center tnum" />
+                <span className="text-[12px] font-semibold text-muted">min</span>
+              </label>
+              {customError && <span role="alert" className="text-[12px] font-semibold text-coral-fg">{customError}</span>}
+            </div>
+          )}
         </div>
 
         <CategoryPills categories={settings.categories} value={category} onChange={setCategory} />
@@ -140,7 +177,7 @@ export default function Interrupt() {
 
         <footer className="flex items-center justify-end gap-2">
           <button type="button" className="btn-ghost" onClick={() => setOpen(false)}>Cancel</button>
-          <button type="submit" disabled={!title.trim()}
+          <button type="submit" disabled={!title.trim() || !!customError}
             className="inline-flex items-center gap-2 h-10 rounded-full bg-accent text-white px-5 text-[13px] font-semibold transition hover:-translate-y-px active:scale-[0.97] disabled:opacity-40 disabled:pointer-events-none">
             <Zap size={14} /> {startNow ? 'Log and start' : 'Add to today'}
           </button>

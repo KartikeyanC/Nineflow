@@ -13,7 +13,8 @@ import { CategoryTag, CheckCircle, ConfirmDialog, Menu, PriorityPill, cx } from 
 import TaskCard from '../components/TaskCard'
 
 const COL = {
-  todo: { label: 'To Do', panel: 'bg-lav/60', text: 'text-lav-fg', header: 'bg-lav' },
+  // To Do uses the app's accent colour (orange in both designs).
+  todo: { label: 'To Do', panel: 'bg-accent-soft/60', text: 'text-accent', header: 'bg-accent-soft' },
   working: { label: 'Working', panel: 'bg-sky/60', text: 'text-sky-fg', header: 'bg-sky' },
   completed: { label: 'Completed', panel: 'bg-mint/60', text: 'text-mint-fg', header: 'bg-mint' },
 }
@@ -149,7 +150,7 @@ export default function Board() {
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-faint" />
             <input className="input pl-8 w-full sm:w-48 bg-card" placeholder="Search tasks" value={query} onChange={(e) => setQuery(e.target.value)} />
           </label>
-          <select className="input w-auto bg-card pr-8" value={filter} onChange={(e) => setFilter(e.target.value)}>
+          <select className="input w-auto min-w-[10rem] bg-card" value={filter} onChange={(e) => setFilter(e.target.value)}>
             <option value="all">All tasks</option>
             <option value="today">Today</option>
             <option value="week">This week</option>
@@ -211,7 +212,7 @@ export default function Board() {
           <DragOverlay dropAnimation={null}>
             {activeTask ? (
               <div className="rotate-[2.5deg] scale-[1.03] shadow-modal rounded-2xl">
-                <TaskCard task={activeTask} />
+                <TaskCard task={activeTask} tone={STATUSES.find((s) => idLists[s].includes(activeTask.id))} />
               </div>
             ) : null}
           </DragOverlay>
@@ -249,7 +250,7 @@ function Column({ status, ids, taskById, activeId, onAdd, menu, footer }) {
 
       <SortableContext items={ids} strategy={verticalListSortingStrategy}>
         <div className="flex flex-col gap-2.5 flex-1 overflow-y-auto pr-0.5 text-ink">
-          {ids.map((id) => taskById.get(id) && <SortableCard key={id} task={taskById.get(id)} dragging={id === activeId} />)}
+          {ids.map((id) => taskById.get(id) && <SortableCard key={id} task={taskById.get(id)} tone={status} dragging={id === activeId} />)}
           {ids.length === 0 && (
             <div className={cx('flex-1 flex items-center justify-center text-xs font-semibold border-2 border-dashed rounded-2xl min-h-[96px]', c.text, 'border-current/30 opacity-70')}>
               Drop tasks here
@@ -267,10 +268,10 @@ function Column({ status, ids, taskById, activeId, onAdd, menu, footer }) {
   )
 }
 
-function SortableCard({ task, dragging }) {
+function SortableCard({ task, tone, dragging }) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: task.id })
   const style = { transform: CSS.Translate.toString(transform), transition }
-  return <TaskCard task={task} innerRef={setNodeRef} style={style} handleProps={{ ...attributes, ...listeners }} dragging={dragging} />
+  return <TaskCard task={task} tone={tone} innerRef={setNodeRef} style={style} handleProps={{ ...attributes, ...listeners }} dragging={dragging} />
 }
 
 // ---- list view ----------------------------------------------------------

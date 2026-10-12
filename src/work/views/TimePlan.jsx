@@ -34,7 +34,7 @@ export default function TimePlan() {
           </div>
           {s.workingDays.includes(6) && (
             <div className="animate-view-in"><span className="block text-xs font-semibold text-muted mb-1">Which Saturdays ✎</span>
-              <select className="input w-auto py-1.5" value={s.saturdayRule || 'all'} onChange={(e) => updateSettings({ saturdayRule: e.target.value })}>
+              <select className="input w-full sm:w-[28rem] py-1.5" value={s.saturdayRule || 'all'} onChange={(e) => updateSettings({ saturdayRule: e.target.value })}>
                 {SATURDAY_RULES.map((r) => <option key={r.id} value={r.id}>{r.label} — {r.hint}</option>)}
               </select>
             </div>

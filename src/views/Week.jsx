@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { addDays, format, getISOWeek, isSameDay, isSameMonth, startOfWeek } from 'date-fns'
+import { addDays, format, getISOWeek, isSameDay, isSameMonth, parseISO, startOfWeek } from 'date-fns'
 import { DndContext, KeyboardSensor, MouseSensor, TouchSensor, pointerWithin, useDraggable, useDroppable, useSensor, useSensors } from '@dnd-kit/core'
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { ChevronLeft, ChevronRight, Plus, Check, CheckCircle2, Flame, Wand2 } from 'lucide-react'
@@ -48,17 +48,21 @@ function layoutLanes(tasks) {
   return out
 }
 
-function rangeLabel(days) {
+function rangeLabel(days, now) {
   const a = days[0], b = days[days.length - 1]
-  if (days.length === 1) return format(a, 'EEE, MMM d')
+  if (days.length === 1) return isSameDay(a, now) ? `Today · ${format(a, 'MMM d')}` : format(a, 'EEE, MMM d')
   return isSameMonth(a, b) ? `${format(a, 'MMM d')} – ${format(b, 'd')}` : `${format(a, 'MMM d')} – ${format(b, 'MMM d')}`
 }
 
 export default function Week() {
-  const { tasks, now, settings, updateTask, setQuickAdd, setView, setSelectedId, planDay } = usePlanner()
-  const [anchor, setAnchor] = useState(() => new Date())
-  // Phones open on a single day; wider screens on the week.
-  const [mode, setMode] = useState(() => (window.innerWidth < 640 ? 'day' : 'week')) // 'day' | 'week'
+  const {
+    tasks, now, settings, updateTask, setQuickAdd, setView, setSelectedId, planDay,
+    dashboardDate, setDashboardDate, calendarMode: mode, setCalendarMode: setMode,
+  } = usePlanner()
+  // The day being looked at is shared with the Dashboard and Month, so
+  // moving here moves them too (and the other way round).
+  const anchor = useMemo(() => parseISO(dashboardDate), [dashboardDate])
+  const setAnchor = (next) => setDashboardDate(dateKey(typeof next === 'function' ? next(anchor) : next))
 
   const days = useMemo(() => {
     if (mode === 'day') return [anchor]
@@ -146,7 +150,7 @@ export default function Week() {
         <div className="flex items-center gap-2">
           <div className="inline-flex items-center rounded-full bg-ink text-page p-1">
             <button type="button" onClick={() => shift(-1)} className="h-8 w-8 rounded-full inline-flex items-center justify-center hover:bg-page/15 transition" aria-label="Previous"><ChevronLeft size={16} /></button>
-            <span className="px-3 text-sm font-bold tracking-tight min-w-[140px] text-center">{rangeLabel(days)}</span>
+            <span className="px-3 text-sm font-bold tracking-tight min-w-[140px] text-center">{rangeLabel(days, now)}</span>
             <button type="button" onClick={() => shift(1)} className="h-8 w-8 rounded-full inline-flex items-center justify-center hover:bg-page/15 transition" aria-label="Next"><ChevronRight size={16} /></button>
           </div>
           {!todayInRange && (
@@ -164,8 +168,8 @@ export default function Week() {
           )}
           <button type="button" className="btn-ghost h-9 py-0" onClick={() => setQuickAdd({ date: dateKey(anchor) })}><Plus size={15} /> Add task</button>
           <Segmented size="sm" value={mode}
-            onChange={(v) => { if (v === 'month') setView('month'); else { setMode(v); if (v === 'day') setAnchor(new Date()) } }}
-            options={[{ value: 'day', label: 'Today' }, { value: 'week', label: 'Week' }, { value: 'month', label: 'Month' }]} />
+            onChange={(v) => (v === 'month' ? setView('month') : setMode(v))}
+            options={[{ value: 'day', label: 'Day' }, { value: 'week', label: 'Week' }, { value: 'month', label: 'Month' }]} />
         </div>
       </header>
 

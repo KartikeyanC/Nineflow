@@ -1,0 +1,184 @@
+/* Themed dropdowns for every <select>, in both designs.
+   Uses the browser's customizable select (appearance: base-select), so the
+   open list is a real, styleable popover while keyboard, screen-reader and
+   form behaviour stay native. Browsers without it keep the OS list.
+   Only the list, options and chevron are styled here: the closed field keeps
+   whatever classes it has (.input, bg-transparent, ...). Imported after the
+   theme CSS so these rules win over Tailwind's preflight. */
+
+@supports (appearance: base-select) {
+  select,
+  ::picker(select) {
+    appearance: base-select;
+  }
+
+  /* The closed field: the button src/lib/selects.js adds holds the chosen
+     label, which shrinks and ends in "…" so the chevron stays in view. */
+  select {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+  }
+  select > button {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: block;
+    padding: 0;
+    border: 0;
+    background: none;
+    font: inherit;
+    color: inherit;
+    text-align: start;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: inherit;
+  }
+  select > button > selectedcontent {
+    display: inline;
+  }
+  select:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  /* Chevron: drawn with a mask so it takes the text colour, and turns over
+     while the list is open. */
+  select::picker-icon {
+    content: '';
+    flex-shrink: 0;
+    margin-inline-start: auto;
+    width: 14px;
+    height: 14px;
+    background-color: rgb(var(--muted));
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") center / contain no-repeat;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") center / contain no-repeat;
+    transition: rotate 200ms ease, background-color 150ms ease;
+  }
+  select:hover::picker-icon,
+  select:open::picker-icon {
+    background-color: rgb(var(--ink));
+  }
+  select:open::picker-icon {
+    rotate: 180deg;
+  }
+
+  /* The open list: a floating card like the date picker's. */
+  ::picker(select) {
+    margin-block: 6px;
+    padding: 6px;
+    min-width: anchor-size(width);
+    max-height: min(320px, 60dvh);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border: 0;
+    border-radius: 14px;
+    background: rgb(var(--card));
+    color: rgb(var(--ink));
+    box-shadow:
+      0 0 0 1px var(--hair),
+      0 0 0 1px rgb(var(--line) / 0.6),
+      0 2px 4px rgb(var(--shadow) / 0.05),
+      0 20px 44px -12px rgb(var(--shadow) / 0.24);
+    scrollbar-width: thin;
+    opacity: 0;
+    translate: 0 -4px;
+    transition:
+      opacity 140ms ease,
+      translate 160ms ease,
+      overlay 160ms allow-discrete,
+      display 160ms allow-discrete;
+  }
+  select:open::picker(select) {
+    opacity: 1;
+    translate: 0 0;
+  }
+  @starting-style {
+    select:open::picker(select) {
+      opacity: 0;
+      translate: 0 -4px;
+    }
+  }
+
+  option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 34px;
+    padding: 6px 10px;
+    border-radius: 9px;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.3;
+    color: rgb(var(--ink));
+    cursor: pointer;
+    white-space: nowrap;
+    outline: none;
+    transition: background-color 120ms ease, color 120ms ease;
+  }
+  option:hover,
+  option:focus-visible {
+    background: rgb(var(--subtle));
+  }
+  option:focus-visible {
+    box-shadow: inset 0 0 0 2px rgb(var(--accent) / 0.35);
+  }
+  option:checked {
+    background: rgb(var(--accent-soft));
+    color: rgb(var(--accent));
+    font-weight: 600;
+  }
+  option:disabled {
+    color: rgb(var(--faint));
+    cursor: default;
+    background: none;
+  }
+
+  /* Tick on the chosen option, after the label; unchosen ones keep the space
+     so labels line up. */
+  option::checkmark {
+    order: 1;
+    margin-inline-start: auto;
+    content: '';
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+    background-color: currentColor;
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E") center / contain no-repeat;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E") center / contain no-repeat;
+  }
+
+  /* An empty "none" choice (value="") reads as a placeholder, not a value. */
+  option[value='']:not(:checked) {
+    color: rgb(var(--muted));
+  }
+
+  /* Groups (Category, Priority on the board filter): a divider, then the
+     heading from the <legend> src/lib/selects.js adds, padded like an option
+     so its text starts on the same line as the options' text. */
+  optgroup {
+    display: block;
+    margin-top: 6px;
+    padding-top: 6px;
+    border-top: 1px solid rgb(var(--line));
+  }
+  optgroup > legend {
+    display: block;
+    padding: 6px 10px 4px;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.3;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: rgb(var(--faint));
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    select::picker-icon,
+    ::picker(select),
+    option {
+      transition: none;
+    }
+  }
+}

@@ -99,7 +99,7 @@ export default function TaskPanel() {
               </div>
             </Row>
             <Row icon={Timer} label="Estimate">
-              <select className="input w-auto py-1.5" value={task.durationMinutes} onChange={(e) => updateTask(task.id, { durationMinutes: Number(e.target.value) })}>
+              <select className="input w-auto min-w-[7.5rem] py-1.5" value={task.durationMinutes} onChange={(e) => updateTask(task.id, { durationMinutes: Number(e.target.value) })}>
                 {[...new Set([...ESTIMATES, task.durationMinutes])].sort((a, b) => a - b).map((d) => (
                   <option key={d} value={d}>{fmtMinutes(d)}</option>
                 ))}
@@ -107,7 +107,7 @@ export default function TaskPanel() {
             </Row>
             <Row icon={Repeat} label="Repeat" top={!!task.recurrence}>
               <div className="flex flex-wrap items-center gap-2">
-                <select className="input w-auto py-1.5" value={task.recurrence?.freq || ''}
+                <select className="input w-auto min-w-[10.5rem] py-1.5" value={task.recurrence?.freq || ''}
                   onChange={(e) => setRecurrence(task.id, e.target.value ? { freq: e.target.value, until: task.recurrence?.until ?? null } : null)}>
                   <option value="">Does not repeat</option>
                   {FREQS.map((f) => <option key={f} value={f}>{FREQ_LABEL[f]}</option>)}

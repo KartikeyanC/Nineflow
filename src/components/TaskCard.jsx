@@ -5,9 +5,18 @@ import { carriedLabel, dueLabel, fmtMinutes, isOverdue, todayKey, totalMinutes }
 import { describe } from '../lib/recurrence'
 import { CategoryTag, CheckCircle, PriorityPill, cx } from './ui'
 
+// In dark mode a card takes the colour of the column it sits in: To Do orange,
+// Working blue, Completed green (light mode keeps white cards on pastel columns).
+const TONE = {
+  todo: 'dark:bg-accent-soft dark:border-accent/30',
+  working: 'dark:bg-sky dark:border-sky-fg/30',
+  completed: 'dark:bg-mint dark:border-mint-fg/30',
+}
+
 // Board card. Presentation only; the parent attaches drag behaviour through
-// `innerRef`, `handleProps` and `style`.
-export default function TaskCard({ task, dragging = false, handleProps, style, innerRef }) {
+// `innerRef`, `handleProps` and `style`. `tone` is the column it is in right
+// now (it changes while the card is dragged across, before the status does).
+export default function TaskCard({ task, tone, dragging = false, handleProps, style, innerRef }) {
   const { categoryById, toggleComplete, setSelectedId, updateTask, now } = usePlanner()
   const [leaving, setLeaving] = useState(false)
   const done = task.status === 'completed'
@@ -40,6 +49,7 @@ export default function TaskCard({ task, dragging = false, handleProps, style, i
       aria-label={`${task.title || 'Untitled'}${overdue ? `, carried over ${carriedLabel(task.date, now)}` : ''}. Enter to open, Space to move.`}
       className={cx(
         'group bg-card rounded-2xl border border-line shadow-soft p-3.5 cursor-pointer select-none',
+        TONE[tone || task.status],
         'transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-lift',
         dragging && 'opacity-30',
         leaving && 'animate-card-out pointer-events-none',

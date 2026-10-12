@@ -9,7 +9,7 @@ import { DateField } from '../../components/DatePicker'
 import { cssVar } from '../../lib/colors'
 import { cx } from '../../components/ui'
 
-const AREA_COLORS = ['--lav-fg', '--sky-fg', '--mint-fg', '--peach-fg', '--coral-fg', '--butter-fg', '--rose-fg', '--teal-fg', '--muted']
+const AREA_COLORS = ['--violet-fg', '--sky-fg', '--mint-fg', '--peach-fg', '--coral-fg', '--butter-fg', '--rose-fg', '--teal-fg', '--muted']
 const STATUS_COLORS = { 'Not started': '--faint', 'In progress': '--sky-fg', 'In review': '--peach-fg', Done: '--mint-fg', 'On hold': '--coral-fg' }
 
 export default function WorkDashboard() {

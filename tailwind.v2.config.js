@@ -30,6 +30,8 @@ export default {
         'accent-soft': v('accent-soft'),
         lav: v('lav'),
         'lav-fg': v('lav-fg'),
+        violet: v('violet'),
+        'violet-fg': v('violet-fg'),
         sky: v('sky'),
         'sky-fg': v('sky-fg'),
         butter: v('butter'),
@@ -67,8 +69,10 @@ export default {
         DEFAULT: '260ms',
       },
       keyframes: {
+        // Pages enter mostly visible: starting from opacity 0 showed a blank
+        // screen for a moment on every page switch.
         'view-in': {
-          from: { opacity: '0', transform: 'translateY(10px)' },
+          from: { opacity: '0.55', transform: 'translateY(10px)' },
           to: { opacity: '1', transform: 'translateY(0)' },
         },
         rise: {

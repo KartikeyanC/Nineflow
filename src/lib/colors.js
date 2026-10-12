@@ -1,7 +1,7 @@
 // Pastel palette. Each entry maps a colour id to the Tailwind classes that
 // read the matching CSS variables, so dark mode needs no extra classes.
 export const PALETTE = {
-  lav: { label: 'Lavender', bg: 'bg-lav', text: 'text-lav-fg', dot: 'bg-lav-fg', var: '--lav-fg', bgVar: '--lav' },
+  lav: { label: 'Lavender', bg: 'bg-violet', text: 'text-violet-fg', dot: 'bg-violet-fg', var: '--violet-fg', bgVar: '--violet' },
   sky: { label: 'Sky', bg: 'bg-sky', text: 'text-sky-fg', dot: 'bg-sky-fg', var: '--sky-fg', bgVar: '--sky' },
   butter: { label: 'Butter', bg: 'bg-butter', text: 'text-butter-fg', dot: 'bg-butter-fg', var: '--butter-fg', bgVar: '--butter' },
   coral: { label: 'Coral', bg: 'bg-coral', text: 'text-coral-fg', dot: 'bg-coral-fg', var: '--coral-fg', bgVar: '--coral' },

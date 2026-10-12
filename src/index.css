@@ -14,8 +14,13 @@
   --faint: 170 163 153;
   --shadow: 60 50 30;
 
-  --lav: 228 221 251;       /* #E4DDFB */
-  --lav-fg: 107 78 230;     /* #6B4EE6 */
+  /* Accent: NineFlow orange. `lav` is the accent's token name (it began as
+     lavender); a deeper shade of the logo orange keeps text readable
+     (4.9:1 on white). The Lavender category colour lives in `violet`. */
+  --lav: 255 236 224;       /* #FFECE0 */
+  --lav-fg: 201 66 11;      /* #C9420B */
+  --violet: 228 221 251;    /* #E4DDFB */
+  --violet-fg: 107 78 230;  /* #6B4EE6 */
   --sky: 220 233 251;       /* #DCE9FB */
   --sky-fg: 59 130 246;     /* #3B82F6 */
   --butter: 251 239 196;    /* #FBEFC4 */
@@ -32,11 +37,11 @@
   --teal-fg: 15 139 141;    /* #0F8B8D */
 
   /* Tokens the shared feature screens (src/features) use, in v1's palette:
-     lavender is v1's accent. */
+     orange is v1's accent. */
   --subtle: 246 242 234;
   --shell: 240 235 226;
-  --accent: 107 78 230;
-  --accent-soft: 228 221 251;
+  --accent: 201 66 11;
+  --accent-soft: 255 236 224;
   --hair: rgb(60 50 30 / 0.08);
 }
 
@@ -49,8 +54,10 @@
   --faint: 110 104 96;
   --shadow: 0 0 0;
 
-  --lav: 58 49 96;
-  --lav-fg: 176 158 255;
+  --lav: 74 40 20;
+  --lav-fg: 255 154 92;
+  --violet: 58 49 96;
+  --violet-fg: 176 158 255;
   --sky: 36 55 84;
   --sky-fg: 125 172 255;
   --butter: 78 66 26;
@@ -68,8 +75,8 @@
 
   --subtle: 38 37 33;
   --shell: 28 27 24;
-  --accent: 176 158 255;
-  --accent-soft: 58 49 96;
+  --accent: 255 154 92;
+  --accent-soft: 74 40 20;
   --hair: rgb(255 255 255 / 0.07);
 }
 
