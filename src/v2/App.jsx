@@ -5,6 +5,7 @@ import MobileNav from '../components/MobileNav'
 import Dock, { MobileDock } from '../components/Dock'
 import QuickAddModal from '../components/QuickAddModal'
 import GoalPlanner from '../components/GoalPlanner'
+import PromptToList from '../components/PromptToList'
 import TaskPanel from '../components/TaskPanel'
 import AuthGate from '../features/AuthGate'
 import FocusMode from '../components/FocusMode'
@@ -89,6 +90,7 @@ function Shell() {
 
       <QuickAddModal />
       <GoalPlanner />
+      <PromptToList />
       <TaskPanel />
       <FocusMode />
       <PipQuickList />

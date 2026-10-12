@@ -43,6 +43,7 @@ export function PlannerProvider({ children }) {
   const [selectedId, setSelectedId] = useState(null)
   const [quickAdd, setQuickAdd] = useState(null) // null | { date?, status? }
   const [goalPlannerOpen, setGoalPlannerOpen] = useState(false) // the "plan a goal" window
+  const [promptListOpen, setPromptListOpen] = useState(false) // the "prompt to list" window
   // The day the planner is looking at, shared by every view: the Dashboard
   // shows it, the Week calendar shows its day or week, Month shows its month.
   const [dashboardDate, setDashboardDate] = useState(todayKey)
@@ -641,6 +642,8 @@ export function PlannerProvider({ children }) {
       setQuickAdd,
       goalPlannerOpen,
       setGoalPlannerOpen,
+      promptListOpen,
+      setPromptListOpen,
       dashboardDate,
       setDashboardDate,
       calendarMode,
@@ -702,7 +705,7 @@ export function PlannerProvider({ children }) {
     }),
     [
       tasks, settings, now, view, setView, selectedId, quickAdd, dashboardDate, calendarMode, openDay,
-      addTask, addTasks, goalPlannerOpen, updateTask, setSessions, setStatus, toggleComplete, moveTask, sortStatus,
+      addTask, addTasks, goalPlannerOpen, promptListOpen, updateTask, setSessions, setStatus, toggleComplete, moveTask, sortStatus,
       moveOverdueToToday, clearCompleted, removeTask, setRecurrence, removeSeries, applyToUpcoming, planDay,
       previewPlan, applyPlan, moveTasksTo,
       focus, startFocus, pauseFocus, resumeFocus, advanceFocus, stopFocus, setFocusOpen,

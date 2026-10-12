@@ -9,6 +9,7 @@ import { InterruptButton } from '../features/Interrupt'
 import { CloudStatusPill } from '../features/CloudStatus'
 import { WorkspaceMenu } from '../features/Workspaces'
 import { PlanGoalButton } from '../components/GoalPlanner'
+import { PromptListButton } from '../components/PromptToList'
 import { BrandMark, Wordmark } from '../components/Brand'
 
 // Floating "island" sidebar: icons only between 640px and 1024px, full
@@ -53,6 +54,7 @@ export default function Sidebar() {
       </button>
       <InterruptButton />
       <PlanGoalButton />
+      <PromptListButton />
 
       <nav className="mt-5 flex flex-col gap-1">
         {items.map((item, i) => {

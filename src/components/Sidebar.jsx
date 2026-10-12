@@ -8,6 +8,7 @@ import { InterruptButton } from '../features/Interrupt'
 import { CloudStatusPill } from '../features/CloudStatus'
 import { WorkspaceMenu } from '../features/Workspaces'
 import { PlanGoalButton } from './GoalPlanner'
+import { PromptListButton } from './PromptToList'
 
 const NAV = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -93,6 +94,7 @@ export default function Sidebar() {
       </button>
       <InterruptButton />
       <PlanGoalButton />
+      <PromptListButton />
 
       <button
         type="button"
