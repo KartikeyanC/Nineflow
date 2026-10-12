@@ -42,6 +42,7 @@ export function PlannerProvider({ children }) {
   const setView = useCallback((v) => startTransition(() => setViewNow(v)), [])
   const [selectedId, setSelectedId] = useState(null)
   const [quickAdd, setQuickAdd] = useState(null) // null | { date?, status? }
+  const [goalPlannerOpen, setGoalPlannerOpen] = useState(false) // the "plan a goal" window
   // The day the planner is looking at, shared by every view: the Dashboard
   // shows it, the Week calendar shows its day or week, Month shows its month.
   const [dashboardDate, setDashboardDate] = useState(todayKey)
@@ -107,6 +108,15 @@ export function PlannerProvider({ children }) {
     if (task.date) setLastAdded({ id: task.id, at: Date.now() })
     return task
   }, [])
+
+  // Several tasks at once (a planned goal). One undo step takes them all back.
+  const addTasks = useCallback((list, undoLabel) => {
+    if (!list.length) return []
+    offerUndo(undoLabel || `Added ${list.length} tasks`)
+    const made = list.map((fields) => createTask(fields))
+    setTasks((ts) => [...ts, ...made])
+    return made
+  }, [offerUndo])
 
   // ---- Pop-out quick list (Document Picture-in-Picture, popup fallback) ----
   const [pipWin, setPipWin] = useState(null)
@@ -629,12 +639,15 @@ export function PlannerProvider({ children }) {
       setSelectedId,
       quickAdd,
       setQuickAdd,
+      goalPlannerOpen,
+      setGoalPlannerOpen,
       dashboardDate,
       setDashboardDate,
       calendarMode,
       setCalendarMode,
       openDay,
       addTask,
+      addTasks,
       updateTask,
       setSessions,
       setStatus,
@@ -689,7 +702,7 @@ export function PlannerProvider({ children }) {
     }),
     [
       tasks, settings, now, view, setView, selectedId, quickAdd, dashboardDate, calendarMode, openDay,
-      addTask, updateTask, setSessions, setStatus, toggleComplete, moveTask, sortStatus,
+      addTask, addTasks, goalPlannerOpen, updateTask, setSessions, setStatus, toggleComplete, moveTask, sortStatus,
       moveOverdueToToday, clearCompleted, removeTask, setRecurrence, removeSeries, applyToUpcoming, planDay,
       previewPlan, applyPlan, moveTasksTo,
       focus, startFocus, pauseFocus, resumeFocus, advanceFocus, stopFocus, setFocusOpen,

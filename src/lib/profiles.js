@@ -1,5 +1,7 @@
 // Local profiles ("accounts" without a server). Each profile owns a storage
 // namespace, so several people can share one browser without mixing data.
+import { ACCOUNT_LEVEL, workspacePrefix } from './workspaces'
+
 const PROFILES_KEY = 'daily-planner:profiles'
 const CURRENT_KEY = 'daily-planner:current'
 const LEGACY_KEYS = ['tasks', 'settings', 'habits', 'focus', 'onboarded', 'work', 'work-tab']
@@ -23,10 +25,13 @@ export const listProfiles = () => read(PROFILES_KEY, [])
 export const currentProfileId = () => { try { return localStorage.getItem(CURRENT_KEY) || null } catch { return null } }
 export const currentProfile = () => listProfiles().find((p) => p.id === currentProfileId()) || null
 
-// Storage key for a data name inside the current profile's namespace.
+// Storage key for a data name inside the current profile's namespace, and
+// inside the workspace this device is in (see lib/workspaces.js). Account-wide
+// names (setup done, the workspace list) skip the workspace prefix.
 export const storageKey = (name) => {
   const id = currentProfileId()
-  return id ? `daily-planner:${id}:${name}` : `daily-planner:${name}`
+  if (!id) return `daily-planner:${name}`
+  return `daily-planner:${id}:${ACCOUNT_LEVEL.has(name) ? '' : workspacePrefix(id)}${name}`
 }
 
 export function createProfile(fields) {

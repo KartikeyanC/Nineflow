@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { Timer, Repeat, CornerDownLeft, Sparkles, CalendarDays, Clock, Flag, Tag, X } from 'lucide-react'
+import { Timer, Repeat, CornerDownLeft, Sparkles, CalendarDays, Clock, Flag, Tag, Target, X } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
 import { fmtMinutes, todayKey, PRIORITY_LABEL } from '../lib/tasks'
 import { FREQS, FREQ_LABEL, describe } from '../lib/recurrence'
@@ -19,7 +19,7 @@ const TOKEN_ICON = { date: CalendarDays, time: Clock, duration: Timer, priority:
 const EXAMPLES = ['Edit trailer tomorrow 2pm 90m #work', 'Gym every weekday 7am', 'Call mom on sat 30m', 'Invoice client friday !high']
 
 export default function QuickAddModal() {
-  const { quickAdd, setQuickAdd, addTask, settings, now, tasks } = usePlanner()
+  const { quickAdd, setQuickAdd, addTask, settings, now, tasks, setGoalPlannerOpen } = usePlanner()
   const open = quickAdd != null
   const [draft, setDraft] = useState(blank)
   // Fields the user set by hand win over anything parsed from the title.
@@ -149,7 +149,12 @@ export default function QuickAddModal() {
         <div className="mt-4"><CategoryPills categories={settings.categories} value={draft.category} onChange={(category) => set({ category })} /></div>
         <div className="mt-3"><PriorityPills value={draft.priority} onChange={(priority) => set({ priority })} /></div>
 
-        <div className="flex items-center justify-between mt-6">
+        <button type="button" onClick={() => { setQuickAdd(null); setGoalPlannerOpen(true) }}
+          className="mt-5 text-[12px] font-semibold text-muted hover:text-ink inline-flex items-center gap-1.5 transition">
+          <Target size={13} /> Planning an exam or project? Plan a goal instead
+        </button>
+
+        <div className="flex items-center justify-between mt-3">
           <span className="text-xs text-faint">
             {draft.status !== 'todo' && <span className="pill bg-page text-muted mr-2">adds to {draft.status === 'working' ? 'Working' : 'Completed'}</span>}
             Esc to close

@@ -3,6 +3,7 @@ import { LogOut, ExternalLink, RefreshCw, HardDrive, Cloud, KeyRound, Check } fr
 import { currentProfile, updateProfile, removeProfileRecord, signOut, initials, isEmailProfile, OCCUPATIONS } from '../lib/profiles'
 import { forgetAccount, revokeToken } from '../lib/google'
 import * as supa from '../lib/supabase'
+import { forgetWorkspace } from '../lib/workspaces'
 import { clearLocal, flush, stopSync } from '../lib/cloud'
 import { FOLDER_NAME, FILE_NAME } from '../lib/drive'
 import { colorOf } from '../lib/colors'
@@ -34,6 +35,7 @@ export default function AccountSection() {
     if (email) await supa.signOut()
     else await revokeToken()
     clearLocal(p.id)
+    forgetWorkspace(p.id)
     removeProfileRecord(p.id)
     signOut()
     forgetAccount()

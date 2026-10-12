@@ -4,6 +4,7 @@ import { PlannerProvider, usePlanner } from '../store/PlannerContext'
 import MobileNav from '../components/MobileNav'
 import Dock, { MobileDock } from '../components/Dock'
 import QuickAddModal from '../components/QuickAddModal'
+import GoalPlanner from '../components/GoalPlanner'
 import TaskPanel from '../components/TaskPanel'
 import AuthGate from '../features/AuthGate'
 import FocusMode from '../components/FocusMode'
@@ -17,6 +18,7 @@ import Work from '../work/Work'
 import Today from './views/Today'
 import Sidebar from './Sidebar'
 import { BrandMark, Wordmark } from '../components/Brand'
+import { WorkspaceMenu } from '../features/Workspaces'
 import Notices from '../features/Notices'
 import Ritual from '../features/Ritual'
 import WelcomeBack from '../features/WelcomeBack'
@@ -34,6 +36,7 @@ function MobileBar() {
     <div className="sm:hidden sticky top-0 z-20 flex items-center gap-2.5 px-4 h-14 bg-page/75 backdrop-blur-xl">
       <BrandMark size={32} />
       <Wordmark className="text-[15px]" />
+      <WorkspaceMenu className="ml-1 min-w-0 max-w-[9.5rem]" />
       <span className="ml-auto"><InterruptButton compact /></span>
       <button type="button" title="Toggle dark mode" onClick={() => updateSettings({ theme: dark ? 'light' : 'dark' })}
         className=" h-9 w-9 rounded-full inline-flex items-center justify-center text-muted bg-card shadow-soft">
@@ -85,6 +88,7 @@ function Shell() {
       </button>
 
       <QuickAddModal />
+      <GoalPlanner />
       <TaskPanel />
       <FocusMode />
       <PipQuickList />

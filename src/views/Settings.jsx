@@ -3,6 +3,7 @@ import { Plus, Trash2, Download, Upload, Sparkles, AlertTriangle, CalendarPlus }
 import { downloadIcs } from '../lib/calendar'
 import AccountSection from '../features/Account'
 import InstallApp from '../features/InstallApp'
+import { WorkspacesSection } from '../features/Workspaces'
 import { usePlanner } from '../store/PlannerContext'
 import { COLOR_IDS, colorOf } from '../lib/colors'
 import { validateBackup } from '../lib/storage'
@@ -76,6 +77,7 @@ export default function Settings() {
 
       <div className="space-y-4">
         <AccountSection />
+        <WorkspacesSection />
         <InstallApp />
         {/* Categories */}
         <section className="card p-5">

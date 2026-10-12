@@ -17,7 +17,8 @@
       // Apply the saved theme before first paint to avoid a flash.
       try {
         var id = localStorage.getItem('daily-planner:current');
-        var key = id ? 'daily-planner:' + id + ':settings' : 'daily-planner:settings';
+        var ws = id ? localStorage.getItem('daily-planner:workspace:' + id) : null;
+        var key = id ? 'daily-planner:' + id + ':' + (ws && ws !== 'main' && /^[a-z0-9]+$/.test(ws) ? 'ws_' + ws + '.' : '') + 'settings' : 'daily-planner:settings';
         var s = JSON.parse(localStorage.getItem(key) || '{}');
         if ((s.theme || 'light') === 'dark') document.documentElement.classList.add('dark');
       } catch (e) {}

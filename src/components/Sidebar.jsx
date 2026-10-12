@@ -6,6 +6,8 @@ import { dayStats } from '../lib/tasks'
 import { cx, ProgressBar } from './ui'
 import { InterruptButton } from '../features/Interrupt'
 import { CloudStatusPill } from '../features/CloudStatus'
+import { WorkspaceMenu } from '../features/Workspaces'
+import { PlanGoalButton } from './GoalPlanner'
 
 const NAV = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -22,12 +24,13 @@ export default function Sidebar() {
   const dark = settings.theme === 'dark'
 
   return (
-    <aside className="card sticky top-4 h-[calc(100vh-2rem)] w-[72px] lg:w-[232px] shrink-0 hidden sm:flex flex-col p-3 lg:p-4 transition-[width] duration-200">
+    <aside className="card sticky z-20 top-4 h-[calc(100vh-2rem)] w-[72px] lg:w-[232px] shrink-0 hidden sm:flex flex-col p-3 lg:p-4 transition-[width] duration-200">
       {/* Brand */}
       <div className="flex items-center gap-2.5 px-1 lg:px-2 h-10 mb-4">
         <BrandMark size={32} />
         <Wordmark className="text-[17px] hidden lg:block" />
       </div>
+      <WorkspaceMenu compact className="mb-4" />
 
       {/* Nav */}
       <nav className="flex flex-col gap-1">
@@ -89,6 +92,7 @@ export default function Sidebar() {
         <span className="hidden lg:inline">New task</span>
       </button>
       <InterruptButton />
+      <PlanGoalButton />
 
       <button
         type="button"

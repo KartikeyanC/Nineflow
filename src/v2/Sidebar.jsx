@@ -7,6 +7,8 @@ import { colorOf } from '../lib/colors'
 import { cx } from '../components/ui'
 import { InterruptButton } from '../features/Interrupt'
 import { CloudStatusPill } from '../features/CloudStatus'
+import { WorkspaceMenu } from '../features/Workspaces'
+import { PlanGoalButton } from '../components/GoalPlanner'
 import { BrandMark, Wordmark } from '../components/Brand'
 
 // Floating "island" sidebar: icons only between 640px and 1024px, full
@@ -29,7 +31,7 @@ export default function Sidebar() {
   const items = NAV.filter(({ id }) => id !== 'work' || settings.modules?.work)
 
   return (
-    <aside className="hidden sm:flex sticky top-4 h-[calc(100dvh-2rem)] w-[76px] lg:w-[252px] shrink-0 flex-col rounded-[28px] bg-card/75 backdrop-blur-xl shadow-soft p-3 lg:p-3.5 transition-[width] duration-500 ease-spring">
+    <aside className="hidden sm:flex sticky z-20 top-4 h-[calc(100dvh-2rem)] w-[76px] lg:w-[252px] shrink-0 flex-col rounded-[28px] bg-card/75 backdrop-blur-xl shadow-soft p-3 lg:p-3.5 transition-[width] duration-500 ease-spring">
       {/* Brand */}
       <div className="flex items-center gap-3 h-11 px-1.5 lg:px-2">
         <BrandMark size={36} />
@@ -38,6 +40,7 @@ export default function Sidebar() {
           <p className="text-[11px] text-faint leading-tight">Plan better. Flow forward.</p>
         </div>
       </div>
+      <WorkspaceMenu compact className="mt-3" />
 
       {/* Command pill: opens quick add */}
       <button type="button" onClick={() => setQuickAdd({})} title="New task (Ctrl+K)"
@@ -49,6 +52,7 @@ export default function Sidebar() {
         <span className="hidden lg:inline-flex ml-auto text-[10px] font-semibold text-page/50 tracking-wide">CTRL K</span>
       </button>
       <InterruptButton />
+      <PlanGoalButton />
 
       <nav className="mt-5 flex flex-col gap-1">
         {items.map((item, i) => {
