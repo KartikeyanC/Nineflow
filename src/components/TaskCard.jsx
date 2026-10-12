@@ -50,8 +50,10 @@ export default function TaskCard({ task, tone, dragging = false, handleProps, st
       className={cx(
         'group bg-card rounded-2xl border border-line shadow-soft p-3.5 cursor-pointer select-none',
         TONE[tone || task.status],
-        'transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-lift',
-        dragging && 'opacity-30',
+        // On the board dnd-kit owns `transform` (and its transition), so a CSS
+        // transform transition or hover lift there would fight it and stutter.
+        innerRef ? 'transition-shadow duration-200 hover:shadow-lift' : 'transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-lift',
+        dragging && 'opacity-40 shadow-none',
         leaving && 'animate-card-out pointer-events-none',
       )}
     >

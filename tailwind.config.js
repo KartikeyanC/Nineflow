@@ -53,6 +53,10 @@ export default {
         modal: '0 24px 64px rgb(var(--shadow) / 0.22)',
       },
       keyframes: {
+        'card-lift': {
+          from: { transform: 'rotate(0deg) scale(1)' },
+          to: { transform: 'rotate(2deg) scale(1.03)' },
+        },
         // Pages enter mostly visible: starting from opacity 0 showed a blank
         // screen for a moment on every page switch.
         'view-in': {
@@ -99,6 +103,7 @@ export default {
         'panel-in': 'panel-in 260ms cubic-bezier(0.2, 0.7, 0.2, 1) both',
         pop: 'pop 260ms cubic-bezier(0.2, 0.7, 0.2, 1) both',
         'card-out': 'card-out 260ms ease-in both',
+        'card-lift': 'card-lift 160ms cubic-bezier(0.2, 0, 0, 1) both',
         'menu-in': 'menu-in 140ms cubic-bezier(0.2, 0.7, 0.2, 1) both',
         rise: 'rise 260ms cubic-bezier(0.2, 0.7, 0.2, 1) both',
       },

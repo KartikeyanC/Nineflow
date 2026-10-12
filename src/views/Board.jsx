@@ -1,7 +1,8 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import {
-  DndContext, DragOverlay, KeyboardSensor, MouseSensor, TouchSensor, pointerWithin, rectIntersection,
-  useDroppable, useSensor, useSensors,
+  DndContext, DragOverlay, KeyboardSensor, MeasuringStrategy, MouseSensor, TouchSensor, defaultDropAnimationSideEffects,
+  pointerWithin, rectIntersection, useDroppable, useSensor, useSensors,
 } from '@dnd-kit/core'
 import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
@@ -19,6 +20,16 @@ const COL = {
   completed: { label: 'Completed', panel: 'bg-mint/60', text: 'text-mint-fg', header: 'bg-mint' },
 }
 const RECENT_COMPLETED = 8
+
+// Cards change columns while dragging, so re-measure every frame of a drag.
+const MEASURING = { droppable: { strategy: MeasuringStrategy.Always } }
+// On drop the floating card glides into its slot instead of vanishing.
+const EASE = 'cubic-bezier(0.2, 0, 0, 1)'
+const DROP_ANIMATION = {
+  duration: 220,
+  easing: EASE,
+  sideEffects: defaultDropAnimationSideEffects({ styles: { active: { opacity: '0.4' } } }),
+}
 
 // Prefer a card under the pointer, then the column under it, then overlap.
 function collisionDetection(args) {
@@ -75,6 +86,7 @@ export default function Board() {
   const [draft, setDraft] = useState(null)
   const draftRef = useRef(null)
   const [activeId, setActiveId] = useState(null)
+  const [overColumn, setOverColumn] = useState(null)
   // Mouse drags after 6px; touch needs a short hold so the page can still scroll.
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
@@ -104,11 +116,23 @@ export default function Board() {
     const lists = draftRef.current
     const from = containerOf(active.id, lists)
     const to = containerOf(over.id, lists)
+    setOverColumn(to)
     if (!from || !to || from === to) return
     const next = { ...lists, [from]: lists[from].filter((id) => id !== active.id) }
-    const overIndex = lists[to].indexOf(over.id)
     const target = [...lists[to]]
-    target.splice(overIndex < 0 ? target.length : overIndex, 0, active.id)
+    let at
+    if (to === 'completed') {
+      // Completed is newest first, so a finished card always lands on top.
+      at = 0
+    } else {
+      // Over a card: go above or below it depending on which half the dragged
+      // card's centre is in, so the list doesn't flip back and forth.
+      const overIndex = target.indexOf(over.id)
+      const dragged = active.rect.current.translated
+      const below = overIndex >= 0 && dragged && dragged.top + dragged.height / 2 > over.rect.top + over.rect.height / 2
+      at = overIndex < 0 ? target.length : overIndex + (below ? 1 : 0)
+    }
+    target.splice(at, 0, active.id)
     next[to] = target
     draftRef.current = next
     setDraft(next)
@@ -117,6 +141,7 @@ export default function Board() {
   const onDragEnd = ({ active, over }) => {
     const lists = draftRef.current
     setActiveId(null)
+    setOverColumn(null)
     setDraft(null)
     draftRef.current = null
     if (!over || !lists) return
@@ -132,6 +157,7 @@ export default function Board() {
 
   const cancelDrag = () => {
     setActiveId(null)
+    setOverColumn(null)
     setDraft(null)
     draftRef.current = null
   }
@@ -177,7 +203,7 @@ export default function Board() {
       {mode === 'list' ? (
         <ListView columns={columns} />
       ) : (
-        <DndContext sensors={sensors} collisionDetection={collisionDetection}
+        <DndContext sensors={sensors} collisionDetection={collisionDetection} measuring={MEASURING}
           onDragStart={onDragStart} onDragOver={onDragOver} onDragEnd={onDragEnd} onDragCancel={cancelDrag}>
           {/* Phones: one column per screen, swipe between them. */}
           <div className="flex md:grid md:grid-cols-3 gap-4 flex-1 min-h-0 overflow-x-auto md:overflow-visible snap-x snap-mandatory -mx-3 px-3 md:mx-0 md:px-0">
@@ -188,6 +214,7 @@ export default function Board() {
                 ids={idLists[s]}
                 taskById={taskById}
                 activeId={activeId}
+                highlighted={activeId != null && overColumn === s}
                 onAdd={() => setQuickAdd({ status: s })}
                 menu={[
                   { label: 'Add task', icon: Plus, onSelect: () => setQuickAdd({ status: s }) },
@@ -209,13 +236,15 @@ export default function Board() {
               />
             ))}
           </div>
-          <DragOverlay dropAnimation={null}>
+          {/* Portalled to <body>: the view's entry animation leaves a transform on
+              the page, which would offset a fixed-position overlay from the pointer. */}
+          {createPortal(<DragOverlay dropAnimation={DROP_ANIMATION}>
             {activeTask ? (
-              <div className="rotate-[2.5deg] scale-[1.03] shadow-modal rounded-2xl">
+              <div className="animate-card-lift rotate-[2deg] shadow-modal rounded-2xl cursor-grabbing">
                 <TaskCard task={activeTask} tone={STATUSES.find((s) => idLists[s].includes(activeTask.id))} />
               </div>
             ) : null}
-          </DragOverlay>
+          </DragOverlay>, document.body)}
         </DndContext>
       )}
 
@@ -226,12 +255,12 @@ export default function Board() {
   )
 }
 
-function Column({ status, ids, taskById, activeId, onAdd, menu, footer }) {
-  const { setNodeRef, isOver } = useDroppable({ id: status })
+function Column({ status, ids, taskById, activeId, highlighted, onAdd, menu, footer }) {
+  const { setNodeRef } = useDroppable({ id: status })
   const c = COL[status]
   return (
     <section ref={setNodeRef}
-      className={cx('rounded-card p-3 flex flex-col min-h-[360px] transition-shadow min-w-[86vw] md:min-w-0 snap-center', c.panel, isOver && 'ring-2 ring-inset ring-current/20', c.text)}>
+      className={cx('rounded-card p-3 flex flex-col min-h-[360px] transition-shadow duration-200 min-w-[86vw] md:min-w-0 snap-center', c.panel, highlighted && 'ring-2 ring-inset ring-current/25', c.text)}>
       <div className="flex items-center gap-2 px-1 mb-3">
         <span className="h-6 min-w-6 px-1.5 rounded-full bg-card text-ink text-xs font-bold inline-flex items-center justify-center shadow-soft">{ids.length}</span>
         <h2 className={cx('font-bold text-sm', c.text)}>{c.label}</h2>
@@ -269,7 +298,7 @@ function Column({ status, ids, taskById, activeId, onAdd, menu, footer }) {
 }
 
 function SortableCard({ task, tone, dragging }) {
-  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: task.id })
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: task.id, transition: { duration: 220, easing: EASE } })
   const style = { transform: CSS.Translate.toString(transform), transition }
   return <TaskCard task={task} tone={tone} innerRef={setNodeRef} style={style} handleProps={{ ...attributes, ...listeners }} dragging={dragging} />
 }

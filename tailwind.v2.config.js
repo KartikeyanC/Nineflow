@@ -69,6 +69,10 @@ export default {
         DEFAULT: '260ms',
       },
       keyframes: {
+        'card-lift': {
+          from: { transform: 'rotate(0deg) scale(1)' },
+          to: { transform: 'rotate(2deg) scale(1.03)' },
+        },
         // Pages enter mostly visible: starting from opacity 0 showed a blank
         // screen for a moment on every page switch.
         'view-in': {
@@ -113,6 +117,7 @@ export default {
         'panel-in': `panel-in 480ms ${spring} both`,
         pop: `pop 320ms ${spring} both`,
         'card-out': 'card-out 260ms cubic-bezier(0.4, 0, 1, 1) both',
+        'card-lift': 'card-lift 160ms cubic-bezier(0.2, 0, 0, 1) both',
         'menu-in': `menu-in 260ms ${spring} both`,
       },
     },
