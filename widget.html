@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NineFlow · Today</title>
+    <link rel="icon" type="image/png" sizes="48x48" href="/icons/favicon-48.png" />
+    <script>
+      // Apply the saved theme before first paint to avoid a flash. The settings
+      // belong to the workspace this device is in (see src/lib/workspaces.js).
+      try {
+        var id = localStorage.getItem('daily-planner:current');
+        var ws = id ? localStorage.getItem('daily-planner:workspace:' + id) : null;
+        var key = id ? 'daily-planner:' + id + ':' + (ws && ws !== 'main' && /^[a-z0-9]+$/.test(ws) ? 'ws_' + ws + '.' : '') + 'settings' : 'daily-planner:settings';
+        var s = JSON.parse(localStorage.getItem(key) || '{}');
+        if ((s.theme || 'light') === 'dark') document.documentElement.classList.add('dark');
+      } catch (e) {}
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/widget/main.jsx"></script>
+  </body>
+</html>

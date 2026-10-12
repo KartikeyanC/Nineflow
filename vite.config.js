@@ -12,6 +12,8 @@ export default defineConfig({
       input: {
         main: resolve(import.meta.dirname, 'index.html'),
         v2: resolve(import.meta.dirname, 'index-v2.html'),
+        // The desktop app's small "today" window (see desktop/main.cjs).
+        widget: resolve(import.meta.dirname, 'widget.html'),
       },
     },
   },

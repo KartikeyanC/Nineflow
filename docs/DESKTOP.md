@@ -52,6 +52,18 @@ The version number comes from `package.json`; raise it before building a new rel
 npx electron-builder --win -c.directories.output=C:/Temp/nineflow-release
 ```
 
+## Closing the window: the "today" list
+
+Closing NineFlow doesn't quit it. The planner hides, the app keeps running in the system tray (the notification area on Windows, the menu bar on Mac), and a small always-on-top list of today's tasks opens in the top right of the screen:
+
+- It shows today's open tasks, anything carried over from earlier days (in red), and a "Done today" section. Tick a task to complete it, tick it again to undo. The change is saved straight into the planner's data, so the hidden planner syncs it to Drive or the account as usual (it keeps running while hidden, so reminders keep working too).
+- **Open NineFlow** brings the planner back (the list hides while the planner is open). The **x** hides the list but leaves the app in the tray.
+- Drag it anywhere and resize it; it remembers where you left it. It opens in the top right the first time, or if that spot is no longer on a screen.
+- **Tray icon:** click it to open the planner. Right-click for *Open NineFlow*, *Show/Hide today's list*, *Show today's list when I close NineFlow* (untick it to make the close button quit, as before) and *Quit NineFlow*. **File → Exit** also quits.
+- It shows the workspace and theme (light or dark) the device is using, and "sign in" when nobody is signed in.
+
+The list is its own small page (`widget.html`, `src/widget/`), not a second copy of the planner, so it doesn't start another sync or duplicate reminders. It's only in the desktop app; the website has no such window.
+
 ## Unsigned installers
 
 Until the installers are code-signed, people see a warning the first time:
@@ -63,8 +75,9 @@ Signing removes these: a Windows code-signing certificate (from about $100–300
 
 ## Files
 
-- `desktop/main.cjs`: the app window, the `app://nineflow` scheme that serves `dist/`, link handling, menus.
+- `desktop/main.cjs`: the app window, the `app://nineflow` scheme that serves `dist/`, link handling, menus, the tray and the "today" list window (its position is kept in `desktop-prefs.json` in the app's data folder).
 - `desktop/google-auth.cjs`: Google sign-in through the system browser, token renewal, sign-out.
-- `desktop/preload.cjs`: the bridge the web app sees as `window.nineflowDesktop` (used by `src/lib/google.js`).
+- `desktop/preload.cjs`: the bridge the web app sees as `window.nineflowDesktop` (used by `src/lib/google.js` and the "today" list).
+- `widget.html`, `src/widget/`: the "today" list page.
 - `electron-builder.yml`: installer settings. `build/icon.png`: the app icon (1024 px).
 - `.github/workflows/desktop.yml`: builds Windows and Mac installers on GitHub.
