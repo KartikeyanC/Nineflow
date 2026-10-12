@@ -1,3 +1,13 @@
 node_modules
 dist
 .DS_Store
+.env.local
+.env.*.local
+
+.vercel
+.env*
+!.env.example
+
+# Desktop app: Google Desktop OAuth client, and built installers
+desktop/oauth.json
+release

@@ -6,6 +6,8 @@ import { currentProfile, initials } from '../lib/profiles'
 import { colorOf } from '../lib/colors'
 import { cx } from '../components/ui'
 import { InterruptButton } from '../features/Interrupt'
+import { CloudStatusPill } from '../features/CloudStatus'
+import { BrandMark, Wordmark } from '../components/Brand'
 
 // Floating "island" sidebar: icons only between 640px and 1024px, full
 // labels from 1024px. Phones use MobileNav instead.
@@ -30,13 +32,10 @@ export default function Sidebar() {
     <aside className="hidden sm:flex sticky top-4 h-[calc(100dvh-2rem)] w-[76px] lg:w-[252px] shrink-0 flex-col rounded-[28px] bg-card/75 backdrop-blur-xl shadow-soft p-3 lg:p-3.5 transition-[width] duration-500 ease-spring">
       {/* Brand */}
       <div className="flex items-center gap-3 h-11 px-1.5 lg:px-2">
-        <span className="relative h-9 w-9 rounded-[12px] bg-ink text-page flex items-center justify-center shrink-0 shadow-[inset_0_1px_0_rgb(255_255_255/0.2)]">
-          <span className="font-serif italic text-[19px] leading-none -mt-0.5">d</span>
-          <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-accent ring-2 ring-card" />
-        </span>
+        <BrandMark size={36} />
         <div className="hidden lg:block min-w-0">
-          <p className="text-[14px] font-bold tracking-tight leading-tight">Daily Planner</p>
-          <p className="text-[11px] text-faint leading-tight">Personal workspace</p>
+          <p className="text-[15px] leading-tight"><Wordmark /></p>
+          <p className="text-[11px] text-faint leading-tight">Plan better. Flow forward.</p>
         </div>
       </div>
 
@@ -90,6 +89,9 @@ export default function Sidebar() {
       <div className="lg:hidden flex justify-center" title={`${today.done} of ${today.total} done`}>
         <ProgressRing value={today.progress} label={today.done} />
       </div>
+
+      <div className="mt-2 hidden lg:flex"><CloudStatusPill /></div>
+      <div className="mt-2 flex lg:hidden justify-center"><CloudStatusPill iconOnly /></div>
 
       {/* Profile + theme */}
       <div className="mt-3 flex flex-col lg:flex-row items-center gap-2 lg:gap-2.5 px-0.5 lg:px-1">

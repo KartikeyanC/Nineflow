@@ -41,6 +41,51 @@ export function createProfile(fields) {
   return profile
 }
 
+// Signed-in accounts: one profile per account, keyed by the provider's
+// stable user id. Google accounts are g_…, email (Supabase) accounts e_….
+// Accounts remembered before email sign-in existed have no `provider`: Google.
+export const isEmailAccount = (account) => account?.provider === 'email'
+export const accountProfileId = (account) => `${isEmailAccount(account) ? 'e' : 'g'}_${account.sub}`
+export const isGoogleProfile = (p) => !!p && p.id.startsWith('g_')
+export const isEmailProfile = (p) => !!p && p.id.startsWith('e_')
+export const isAccountProfile = (p) => isGoogleProfile(p) || isEmailProfile(p)
+export function ensureAccountProfile(account) {
+  const id = accountProfileId(account)
+  const profiles = listProfiles()
+  const existing = profiles.find((p) => p.id === id)
+  if (existing) {
+    const next = { ...existing, email: account.email, picture: account.picture || existing.picture || '', name: existing.name || account.name || '' }
+    write(PROFILES_KEY, profiles.map((p) => (p.id === id ? next : p)))
+    return next
+  }
+  const profile = {
+    id, email: account.email, picture: account.picture || '',
+    // Email accounts only have a name once setup asks for it.
+    ...(isEmailAccount(account) ? { name: account.name || '', emailAccount: true } : { name: account.name || account.email, google: true }),
+    occupation: '', occupationOther: '', reasons: [], needs: [], pin: '', createdAt: new Date().toISOString(),
+    color: AVATAR_COLORS[profiles.length % AVATAR_COLORS.length],
+  }
+  write(PROFILES_KEY, [...profiles, profile])
+  return profile
+}
+
+// Profiles made before sign-in existed, which can be brought into an account.
+export const legacyProfiles = () => listProfiles().filter((p) => !isAccountProfile(p))
+
+// Copy every saved key of one profile into another (used when moving a
+// local profile's data into a Google account), then remove the old one.
+export function moveProfileData(fromId, toId) {
+  const from = `daily-planner:${fromId}:`, to = `daily-planner:${toId}:`
+  for (const k of Object.keys(localStorage)) {
+    if (k.startsWith(from)) { localStorage.setItem(to + k.slice(from.length), localStorage.getItem(k)); localStorage.removeItem(k) }
+  }
+  write(PROFILES_KEY, listProfiles().filter((p) => p.id !== fromId))
+}
+
+export function removeProfileRecord(id) {
+  write(PROFILES_KEY, listProfiles().filter((p) => p.id !== id))
+}
+
 export function updateProfile(id, patch) {
   write(PROFILES_KEY, listProfiles().map((p) => (p.id === id ? { ...p, ...patch } : p)))
 }

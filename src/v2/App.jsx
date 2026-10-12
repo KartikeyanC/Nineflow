@@ -5,8 +5,7 @@ import MobileNav from '../components/MobileNav'
 import Dock, { MobileDock } from '../components/Dock'
 import QuickAddModal from '../components/QuickAddModal'
 import TaskPanel from '../components/TaskPanel'
-import Onboarding from '../components/Onboarding'
-import { currentProfile } from '../lib/profiles'
+import AuthGate from '../features/AuthGate'
 import FocusMode from '../components/FocusMode'
 import PipQuickList from '../components/PipQuickList'
 import CalendarToast from '../components/CalendarToast'
@@ -17,6 +16,7 @@ import Settings from '../views/Settings'
 import Work from '../work/Work'
 import Today from './views/Today'
 import Sidebar from './Sidebar'
+import { BrandMark, Wordmark } from '../components/Brand'
 import Notices from '../features/Notices'
 import Ritual from '../features/Ritual'
 import WelcomeBack from '../features/WelcomeBack'
@@ -32,11 +32,8 @@ function MobileBar() {
   const dark = settings.theme === 'dark'
   return (
     <div className="sm:hidden sticky top-0 z-20 flex items-center gap-2.5 px-4 h-14 bg-page/75 backdrop-blur-xl">
-      <span className="relative h-8 w-8 rounded-[11px] bg-ink text-page flex items-center justify-center">
-        <span className="font-serif italic text-[17px] leading-none -mt-0.5">d</span>
-        <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-accent ring-2 ring-page" />
-      </span>
-      <span className="text-[14px] font-bold tracking-tight">Daily Planner</span>
+      <BrandMark size={32} />
+      <Wordmark className="text-[15px]" />
       <span className="ml-auto"><InterruptButton compact /></span>
       <button type="button" title="Toggle dark mode" onClick={() => updateSettings({ theme: dark ? 'light' : 'dark' })}
         className=" h-9 w-9 rounded-full inline-flex items-center justify-center text-muted bg-card shadow-soft">
@@ -101,12 +98,14 @@ function Shell() {
   )
 }
 
-// No signed-in profile → onboarding / login, same as v1.
+// Signing in with Google is required; the planner then loads that
+// account's data (kept in sync with its Google Drive).
 export default function App() {
-  if (!currentProfile()) return <Onboarding />
   return (
-    <PlannerProvider>
-      <Shell />
-    </PlannerProvider>
+    <AuthGate>
+      <PlannerProvider>
+        <Shell />
+      </PlannerProvider>
+    </AuthGate>
   )
 }

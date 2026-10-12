@@ -1,9 +1,11 @@
 import React from 'react'
-import { LayoutDashboard, KanbanSquare, CalendarRange, CalendarDays, Settings, Plus, Moon, Sun, Sparkles, Briefcase } from 'lucide-react'
+import { LayoutDashboard, KanbanSquare, CalendarRange, CalendarDays, Settings, Plus, Moon, Sun, Briefcase } from 'lucide-react'
+import { BrandMark, Wordmark } from './Brand'
 import { usePlanner } from '../store/PlannerContext'
 import { dayStats } from '../lib/tasks'
 import { cx, ProgressBar } from './ui'
 import { InterruptButton } from '../features/Interrupt'
+import { CloudStatusPill } from '../features/CloudStatus'
 
 const NAV = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -23,10 +25,8 @@ export default function Sidebar() {
     <aside className="card sticky top-4 h-[calc(100vh-2rem)] w-[72px] lg:w-[232px] shrink-0 hidden sm:flex flex-col p-3 lg:p-4 transition-[width] duration-200">
       {/* Brand */}
       <div className="flex items-center gap-2.5 px-1 lg:px-2 h-10 mb-4">
-        <div className="h-8 w-8 rounded-xl bg-ink text-page flex items-center justify-center shrink-0">
-          <Sparkles size={16} />
-        </div>
-        <span className="h-display text-[17px] hidden lg:block">Daily Planner</span>
+        <BrandMark size={32} />
+        <Wordmark className="text-[17px] hidden lg:block" />
       </div>
 
       {/* Nav */}
@@ -77,6 +77,8 @@ export default function Sidebar() {
         </div>
       </div>
 
+      <div className="mt-2 hidden lg:flex"><CloudStatusPill /></div>
+      <div className="mt-2 flex lg:hidden justify-center"><CloudStatusPill iconOnly /></div>
       <button
         type="button"
         onClick={() => setQuickAdd({})}

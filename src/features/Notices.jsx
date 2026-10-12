@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { RotateCcw, X, AlertTriangle, Download } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
+import { CloudBanner } from './CloudStatus'
 
 const UNDO_SECONDS = 10
 
@@ -9,6 +10,7 @@ export default function Notices() {
   return (
     <>
       <SaveErrorBanner />
+      <CloudBanner />
       <UndoToast />
     </>
   )

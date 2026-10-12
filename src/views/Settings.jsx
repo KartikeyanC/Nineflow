@@ -1,7 +1,8 @@
 import React, { useRef, useState } from 'react'
-import { Plus, Trash2, Download, Upload, Sparkles, AlertTriangle, CalendarPlus, LogOut } from 'lucide-react'
+import { Plus, Trash2, Download, Upload, Sparkles, AlertTriangle, CalendarPlus } from 'lucide-react'
 import { downloadIcs } from '../lib/calendar'
-import { currentProfile, updateProfile, deleteProfile, signOut, listProfiles, initials, OCCUPATIONS, setProfilePin } from '../lib/profiles'
+import AccountSection from '../features/Account'
+import InstallApp from '../features/InstallApp'
 import { usePlanner } from '../store/PlannerContext'
 import { COLOR_IDS, colorOf } from '../lib/colors'
 import { validateBackup } from '../lib/storage'
@@ -74,8 +75,8 @@ export default function Settings() {
       </header>
 
       <div className="space-y-4">
-        <ProfileSection />
-
+        <AccountSection />
+        <InstallApp />
         {/* Categories */}
         <section className="card p-5">
           <h2 className="h-display text-base mb-1">Categories</h2>
@@ -126,7 +127,7 @@ export default function Settings() {
             <div className="flex flex-col items-end gap-1.5">
               <div className="flex items-center gap-2">
                 {settings.reminders.enabled && (
-                  <select className="input w-auto py-1.5" value={settings.reminders.minutes} aria-label="Minutes before"
+                  <select className="input w-auto min-w-[10rem] py-1.5" value={settings.reminders.minutes} aria-label="Minutes before"
                     onChange={(e) => updateSettings({ reminders: { ...settings.reminders, minutes: Number(e.target.value) } })}>
                     {[0, 5, 10, 15, 30].map((m) => <option key={m} value={m}>{m ? `${m} min before` : 'At start time'}</option>)}
                   </select>
@@ -171,7 +172,7 @@ export default function Settings() {
         {/* Data */}
         <section className="card p-5">
           <h2 className="h-display text-base mb-1">Your data</h2>
-          <p className="text-sm text-muted mb-4">{tasks.length} tasks and {habits.length} habits in localStorage. Nothing leaves this browser. The backup file also includes your Work OS data.</p>
+          <p className="text-sm text-muted mb-4">{tasks.length} tasks and {habits.length} habits, saved on this device and in your Google Drive. The backup file also includes your Work OS data.</p>
           <div className="flex flex-wrap gap-2">
             <button type="button" className="btn-ghost" onClick={exportData}><Download size={14} /> Export JSON</button>
             <button type="button" className="btn-ghost" onClick={() => fileRef.current?.click()}><Upload size={14} /> Import JSON</button>
@@ -233,54 +234,6 @@ export default function Settings() {
 }
 
 // Local profile: edit details, switch, sign out, delete.
-function ProfileSection() {
-  const [p, setP] = useState(() => currentProfile())
-  const [newPin, setNewPin] = useState('')
-  // The stored PIN is a hash, so the field only ever takes a new one.
-  const changePin = async (pin) => {
-    await setProfilePin(p.id, pin)
-    setP(listProfiles().find((x) => x.id === p.id))
-    setNewPin('')
-  }
-  const [confirmDelete, setConfirmDelete] = useState(false)
-  if (!p) return null
-  const c = colorOf(p.color)
-  const save = (patch) => { updateProfile(p.id, patch); setP({ ...p, ...patch }) }
-  return (
-    <section className="card p-5">
-      <div className="flex items-center gap-3 mb-4">
-        <span className={cx('h-12 w-12 rounded-full flex items-center justify-center font-bold text-lg', c.bg, c.text)}>{initials(p.name)}</span>
-        <div className="min-w-0 flex-1">
-          <h2 className="h-display text-base">Your profile</h2>
-          <p className="text-sm text-muted">Stored in this browser only · {listProfiles().length} profile{listProfiles().length === 1 ? '' : 's'} on this device</p>
-        </div>
-        <button type="button" className="btn-ghost h-9 py-0" onClick={() => { signOut(); window.location.reload() }}><LogOut size={14} /> {listProfiles().length > 1 ? 'Switch / sign out' : 'Sign out'}</button>
-      </div>
-      <div className="grid sm:grid-cols-2 gap-3">
-        <label className="block"><span className="block text-xs font-semibold text-muted mb-1">Name</span><input className="input" value={p.name} onChange={(e) => save({ name: e.target.value })} /></label>
-        <label className="block"><span className="block text-xs font-semibold text-muted mb-1">Email</span><input type="email" className="input" value={p.email} onChange={(e) => save({ email: e.target.value })} /></label>
-        <label className="block"><span className="block text-xs font-semibold text-muted mb-1">Occupation</span>
-          <select className="input" value={p.occupation} onChange={(e) => save({ occupation: e.target.value })}><option value="">—</option>{OCCUPATIONS.map((o) => <option key={o} value={o}>{o}</option>)}</select></label>
-        <div className="block">
-          <label htmlFor="profile-pin" className="block text-xs font-semibold text-muted mb-1">PIN {p.pin ? '· set' : '· none'}</label>
-          <div className="flex items-center gap-2">
-            <input id="profile-pin" inputMode="numeric" maxLength={4} className="input w-32 text-center tracking-[0.3em]" placeholder={p.pin ? '••••' : '4 digits'}
-              value={newPin} onChange={(e) => { const v = e.target.value.replace(/\D/g, '').slice(0, 4); setNewPin(v); if (v.length === 4) changePin(v) }} />
-            {p.pin && <button type="button" className="btn-ghost h-9 py-0" onClick={() => changePin('')}>Remove</button>}
-          </div>
-          <p className="text-[11px] text-faint mt-1">Type 4 digits to set a new PIN. It locks the profile on this browser; it doesn't encrypt your data.</p>
-        </div>
-      </div>
-      <div className="mt-4 flex items-center gap-2">
-        {confirmDelete ? (
-          <><span className="text-sm font-semibold text-coral-fg">Delete this profile and all its data?</span>
-            <button type="button" className="btn-ghost h-8 py-0 px-3" onClick={() => setConfirmDelete(false)}>Cancel</button>
-            <button type="button" className="btn-black h-8 py-0 px-3 bg-coral-fg" onClick={() => { deleteProfile(p.id); window.location.reload() }}>Delete</button></>
-        ) : <button type="button" className="text-xs font-semibold text-muted hover:text-coral-fg" onClick={() => setConfirmDelete(true)}>Delete profile…</button>}
-      </div>
-    </section>
-  )
-}
 
 function Row({ label, hint, children }) {
   return (

@@ -6,8 +6,7 @@ import MobileNav from './components/MobileNav'
 import Dock, { MobileDock } from './components/Dock'
 import QuickAddModal from './components/QuickAddModal'
 import TaskPanel from './components/TaskPanel'
-import Onboarding from './components/Onboarding'
-import { currentProfile } from './lib/profiles'
+import AuthGate from './features/AuthGate'
 import FocusMode from './components/FocusMode'
 import PipQuickList from './components/PipQuickList'
 import CalendarToast from './components/CalendarToast'
@@ -86,13 +85,14 @@ function Shell() {
   )
 }
 
-// No signed-in profile → onboarding / login. Everything else loads inside
-// that profile's storage namespace.
+// Signing in with Google is required; the planner then loads that
+// account's data (kept in sync with its Google Drive).
 export default function App() {
-  if (!currentProfile()) return <Onboarding />
   return (
-    <PlannerProvider>
-      <Shell />
-    </PlannerProvider>
+    <AuthGate>
+      <PlannerProvider>
+        <Shell />
+      </PlannerProvider>
+    </AuthGate>
   )
 }

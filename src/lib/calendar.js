@@ -18,7 +18,7 @@ export function googleCalendarUrl(task, categoryName) {
   if (!task.date) return null
   const { allDay, start, end } = taskWindow(task)
   const dates = allDay ? `${dateOnly(start)}/${dateOnly(end)}` : `${stamp(start)}/${stamp(end)}`
-  const details = [task.description, categoryName ? `Category: ${categoryName}` : null, `Priority: ${task.priority}`, 'From Daily Planner'].filter(Boolean).join('\n')
+  const details = [task.description, categoryName ? `Category: ${categoryName}` : null, `Priority: ${task.priority}`, 'From NineFlow'].filter(Boolean).join('\n')
   const p = new URLSearchParams({ action: 'TEMPLATE', text: task.title, dates, details })
   if (task.recurrence) p.set('recur', `RRULE:${rrule(task.recurrence)}`)
   return `https://calendar.google.com/calendar/render?${p.toString()}`
@@ -42,7 +42,7 @@ export function buildIcs(tasks, categories = []) {
   const catName = (id) => categories.find((c) => c.id === id)?.name
   const now = format(new Date(), "yyyyMMdd'T'HHmmss")
   const seenSeries = new Set()
-  const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Daily Planner//EN', 'CALSCALE:GREGORIAN', 'X-WR-CALNAME:Daily Planner']
+  const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//NineFlow//EN', 'CALSCALE:GREGORIAN', 'X-WR-CALNAME:NineFlow']
   const sorted = [...tasks].filter((t) => t.date).sort((a, b) => a.date.localeCompare(b.date))
   for (const t of sorted) {
     if (t.seriesId && t.recurrence) {
