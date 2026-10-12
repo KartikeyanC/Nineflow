@@ -40,7 +40,7 @@ function useWorkspaces() {
 const Tile = ({ ws, size = 28 }) => {
   const c = colorOf(ws.color)
   return (
-    <span className={cx('shrink-0 rounded-lg inline-flex items-center justify-center font-bold', c.bg, c.text)} style={{ width: size, height: size, fontSize: size * 0.43 }}>
+    <span className={cx('shrink-0 rounded-full inline-flex items-center justify-center font-bold', c.bg, c.text)} style={{ width: size, height: size, fontSize: size * 0.43 }}>
       {(ws.name.trim()[0] || '?').toUpperCase()}
     </span>
   )
@@ -134,7 +134,7 @@ function WorkspaceList({ onClose }) {
         ) : (
           <button type="button" onClick={() => { setAdding(true); setEditing(null); setConfirm(null); setText(''); setError(null) }}
             className="flex w-full items-center gap-2.5 rounded-xl p-1.5 text-[13px] font-semibold text-muted hover:bg-subtle hover:text-ink transition">
-            <span className="h-7 w-7 rounded-lg border border-dashed border-line inline-flex items-center justify-center"><Plus size={14} /></span>
+            <span className="h-7 w-7 rounded-full border border-dashed border-line inline-flex items-center justify-center"><Plus size={14} /></span>
             New workspace
           </button>
         )}
