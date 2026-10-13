@@ -3,21 +3,23 @@ import { ArrowLeft, Info, Loader2, Sparkles } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 import { usePlanner } from '../store/PlannerContext'
 import { fmtMinutes, todayKey } from '../lib/tasks'
-import { promptToTasks } from '../lib/aiTasks'
-import { CheckCircle, Modal, cx } from './ui'
+import { meetingToTasks, promptToTasks } from '../lib/aiTasks'
+import { CheckCircle, Modal, Segmented, cx } from './ui'
 
-// "Prompt to list": write what's on your mind, Claude turns it into tasks, and
-// nothing is added until the preview is confirmed. One Undo takes it all back.
+// "Prompt to list": write what's on your mind (or paste meeting notes), Claude
+// turns it into tasks, and nothing is added until the preview is confirmed.
+// One Undo takes it all back.
 
 const EXAMPLES = [
   'Launch the website on Friday: write copy, fix mobile layout, test checkout, announce on social',
   'Move house next month: book movers, pack the kitchen, change address, set up internet',
 ]
+const MODES = [{ value: 'list', label: 'A to-do note' }, { value: 'meeting', label: 'Meeting notes' }]
 
 export function PromptListButton() {
   const { setPromptListOpen } = usePlanner()
   return (
-    <button type="button" onClick={() => setPromptListOpen(true)} title="Turn a note into a to-do list with AI"
+    <button type="button" onClick={() => setPromptListOpen(true)} title="Turn a note or meeting notes into tasks with AI"
       className="group mt-2 h-10 w-full inline-flex items-center justify-center lg:justify-start gap-2.5 rounded-full pl-1.5 lg:pr-3 bg-card shadow-soft text-ink transition duration-300 hover:-translate-y-px active:scale-[0.97]">
       <span className="h-7 w-7 rounded-full inline-flex items-center justify-center bg-peach text-peach-fg transition duration-500 group-hover:scale-110"><Sparkles size={14} /></span>
       <span className="hidden lg:inline text-[13px] font-semibold">Prompt to list</span>
@@ -27,15 +29,19 @@ export function PromptListButton() {
 
 export default function PromptToList() {
   const { promptListOpen: open, setPromptListOpen, settings, addTasks, now, setView, setDashboardDate } = usePlanner()
+  const [mode, setMode] = useState('list') // 'list' | 'meeting'
   const [text, setText] = useState('')
   const [stage, setStage] = useState('form') // 'form' | 'loading' | 'preview'
   const [items, setItems] = useState([])
+  const [meeting, setMeeting] = useState(null) // { title, summary, decisions } in meeting mode
+  const [saveNote, setSaveNote] = useState(true)
   const [off, setOff] = useState(() => new Set())
   const [error, setError] = useState('')
   const close = () => setPromptListOpen(false)
+  const meetingMode = mode === 'meeting'
 
   useEffect(() => {
-    if (open) { setText(''); setStage('form'); setItems([]); setOff(new Set()); setError('') }
+    if (open) { setMode('list'); setText(''); setStage('form'); setItems([]); setMeeting(null); setSaveNote(true); setOff(new Set()); setError('') }
   }, [open])
 
   const make = async () => {
@@ -43,8 +49,15 @@ export default function PromptToList() {
     setError('')
     setStage('loading')
     try {
-      const list = await promptToTasks(text.trim(), { today: todayKey(), categories: settings.categories })
-      setItems(list)
+      const opts = { today: todayKey(), categories: settings.categories }
+      if (meetingMode) {
+        const r = await meetingToTasks(text.trim(), opts)
+        setMeeting({ title: r.title, summary: r.summary, decisions: r.decisions })
+        setItems(r.tasks)
+      } else {
+        setItems(await promptToTasks(text.trim(), opts))
+        setMeeting(null)
+      }
       setOff(new Set())
       setStage('preview')
     } catch (e) {
@@ -55,14 +68,23 @@ export default function PromptToList() {
 
   const picked = items.filter((_, i) => !off.has(i))
   const toggle = (i) => setOff((s) => { const n = new Set(s); n.has(i) ? n.delete(i) : n.add(i); return n })
+  const writeNote = meetingMode && meeting && saveNote
+  const count = picked.length + (writeNote ? 1 : 0)
 
   const add = () => {
-    if (!picked.length) return
+    if (!count) return
     const fallback = settings.categories[0]?.id
-    addTasks(picked.map((t) => ({
+    const list = picked.map((t) => ({
       title: t.title, date: t.date || todayKey(), startTime: t.startTime, durationMinutes: t.durationMinutes,
       priority: t.priority, category: t.category || fallback,
-    })), `Added ${picked.length} ${picked.length === 1 ? 'task' : 'tasks'} from your note`)
+    }))
+    if (writeNote) {
+      // The summary is kept as a finished task, so it sits in the day's log.
+      const when = new Date().toISOString()
+      const body = [meeting.summary, meeting.decisions.length ? `Decisions:\n${meeting.decisions.map((d) => `- ${d}`).join('\n')}` : ''].filter(Boolean).join('\n\n')
+      list.unshift({ title: `Meeting: ${meeting.title}`, description: body, date: todayKey(), startTime: null, durationMinutes: 5, priority: 'low', category: fallback, status: 'completed', completedAt: when })
+    }
+    addTasks(list, meetingMode ? `Added ${count} ${count === 1 ? 'item' : 'items'} from your meeting` : `Added ${count} ${count === 1 ? 'task' : 'tasks'} from your note`)
     close()
     const first = picked.map((t) => t.date).filter(Boolean).sort()[0]
     if (first) setDashboardDate(first)
@@ -70,35 +92,60 @@ export default function PromptToList() {
   }
 
   return (
-    <Modal open={open} onClose={close} width="max-w-xl" title={stage === 'preview' ? 'Your list' : 'Prompt to list'}>
+    <Modal open={open} onClose={close} width="max-w-xl" title={stage === 'preview' ? (meetingMode ? 'From your meeting' : 'Your list') : 'Prompt to list'}>
       {stage !== 'preview' ? (
         <form onSubmit={(e) => { e.preventDefault(); make() }}>
-          <p className="text-sm text-muted -mt-1 mb-3">Write what you need to get done, as messy as you like. Mention days or times and they'll be used.</p>
-          <textarea autoFocus className="input min-h-[132px] resize-y leading-relaxed" value={text} maxLength={1500} disabled={stage === 'loading'}
+          <Segmented size="sm" value={mode} onChange={(m) => { setMode(m); setText(''); setError('') }} options={MODES} className="mb-3" />
+          <p className="text-sm text-muted mb-3">
+            {meetingMode
+              ? 'Paste meeting notes or a transcript. You get a short summary, the decisions, and the action items as tasks.'
+              : "Write what you need to get done, as messy as you like. Mention days or times and they'll be used."}
+          </p>
+          <textarea autoFocus className={cx('input resize-y leading-relaxed', meetingMode ? 'min-h-[200px]' : 'min-h-[132px]')} value={text} maxLength={meetingMode ? 12000 : 1500} disabled={stage === 'loading'}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); make() } }}
-            placeholder={EXAMPLES[0]} aria-label="What do you need to do?" />
-          {!text && (
+            placeholder={meetingMode ? 'Ravi: we agreed to launch on the 24th. Priya will send the revised quote by Friday. I need to book the venue...' : EXAMPLES[0]}
+            aria-label={meetingMode ? 'Meeting notes' : 'What do you need to do?'} />
+          {!text && !meetingMode && (
             <div className="mt-2 flex flex-wrap gap-1.5">
               {EXAMPLES.map((ex) => (
                 <button key={ex} type="button" onClick={() => setText(ex)} className="pill h-7 px-3 text-[11px] border border-line bg-card text-muted hover:text-ink transition max-w-full truncate">{ex}</button>
               ))}
             </div>
           )}
+          {meetingMode && text.length > 0 && <p className="mt-1 text-[11px] text-faint tnum">{text.length.toLocaleString()} of 12,000 characters</p>}
           {error && (
             <p role="alert" className="mt-3 rounded-xl bg-coral/60 text-coral-fg px-3 py-2 text-[13px] inline-flex items-start gap-2"><Info size={14} className="mt-0.5 shrink-0" /> {error}</p>
           )}
-          <div className="flex items-center justify-between mt-5">
-            <span className="text-xs text-faint">Your note is sent to Claude to make the list. Nothing is added until you confirm.</span>
-            <button type="submit" disabled={!text.trim() || stage === 'loading'} className={cx('btn-black shrink-0', (!text.trim() || stage === 'loading') && 'opacity-40')}>
-              {stage === 'loading' ? <><Loader2 size={14} className="animate-spin" /> Making your list…</> : <>Make my list <Sparkles size={14} /></>}
+          <div className="flex items-center justify-between mt-5 gap-3">
+            <span className="text-xs text-faint">{meetingMode ? 'Your notes are sent to Claude to find the tasks.' : 'Your note is sent to Claude to make the list.'} Nothing is added until you confirm.</span>
+            <button type="submit" disabled={text.trim().length < (meetingMode ? 20 : 1) || stage === 'loading'} className={cx('btn-black shrink-0', (text.trim().length < (meetingMode ? 20 : 1) || stage === 'loading') && 'opacity-40')}>
+              {stage === 'loading' ? <><Loader2 size={14} className="animate-spin" /> {meetingMode ? 'Reading…' : 'Making your list…'}</> : <>{meetingMode ? 'Find the tasks' : 'Make my list'} <Sparkles size={14} /></>}
             </button>
           </div>
         </form>
       ) : (
         <div>
-          <p className="text-sm text-muted">{items.length} {items.length === 1 ? 'task' : 'tasks'}. Untick any you don't want.</p>
-          <ul className="mt-3 max-h-[46vh] overflow-y-auto -mx-1 px-1 space-y-0.5" aria-label="Tasks from your note">
+          {meetingMode && meeting && (
+            <div className="mb-4 rounded-2xl bg-page border border-line p-3.5">
+              <p className="text-sm font-bold">{meeting.title}</p>
+              <p className="mt-1 text-[13px] text-muted leading-relaxed whitespace-pre-line">{meeting.summary}</p>
+              {meeting.decisions.length > 0 && (
+                <>
+                  <p className="mt-2.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-faint">Decisions</p>
+                  <ul className="mt-1 space-y-0.5 text-[13px]">{meeting.decisions.map((d, i) => <li key={i} className="flex gap-2"><span className="text-faint">•</span><span>{d}</span></li>)}</ul>
+                </>
+              )}
+              <label className="mt-3 flex items-center gap-2.5 text-[13px] cursor-pointer">
+                <input type="checkbox" className="h-4 w-4 accent-[#F2420E]" checked={saveNote} onChange={(e) => setSaveNote(e.target.checked)} />
+                Also save this summary as a finished task
+              </label>
+            </div>
+          )}
+          <p className="text-sm text-muted">
+            {items.length === 0 ? 'No action items were found in these notes.' : `${items.length} ${items.length === 1 ? 'task' : 'tasks'}. Untick any you don't want.`}
+          </p>
+          <ul className="mt-3 max-h-[40vh] overflow-y-auto -mx-1 px-1 space-y-0.5" aria-label="Tasks from your note">
             {items.map((t, i) => {
               const on = !off.has(i)
               const cat = settings.categories.find((c) => c.id === t.category)
@@ -117,8 +164,8 @@ export default function PromptToList() {
           </ul>
           <div className="flex items-center justify-between mt-6">
             <button type="button" onClick={() => setStage('form')} className="btn-ghost"><ArrowLeft size={14} /> Change</button>
-            <button type="button" onClick={add} disabled={!picked.length} className={cx('btn-black', !picked.length && 'opacity-40')}>
-              Add {picked.length} {picked.length === 1 ? 'task' : 'tasks'}
+            <button type="button" onClick={add} disabled={!count} className={cx('btn-black', !count && 'opacity-40')}>
+              Add {count} {count === 1 ? 'item' : 'items'}
             </button>
           </div>
         </div>

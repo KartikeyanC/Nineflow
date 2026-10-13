@@ -9,9 +9,16 @@ function devApi(mode) {
     name: 'dev-api',
     configureServer(server) {
       Object.assign(process.env, loadEnv(mode, process.cwd(), ''))
-      server.middlewares.use('/api/prompt-to-tasks', async (req, res) => {
-        const { default: handler } = await server.ssrLoadModule('/api/prompt-to-tasks.js')
-        await handler(req, res)
+      server.middlewares.use('/api', async (req, res, next) => {
+        const name = (req.url || '').split('?')[0].replace(/^\//, '')
+        if (!/^[a-z-]+$/.test(name) || name.startsWith('_')) return next()
+        try {
+          const { default: handler } = await server.ssrLoadModule(`/api/${name}.js`)
+          await handler(req, res)
+        } catch {
+          res.statusCode = 404
+          res.end('Not found')
+        }
       })
     },
   }
