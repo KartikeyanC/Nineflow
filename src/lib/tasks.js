@@ -45,6 +45,7 @@ export function createTask(fields = {}) {
     createdAt: new Date().toISOString(),
     sessions: [],
     subtasks: [], // [{ id, title, done }]: the steps inside the task
+    column: null, // a custom Board column id (see lib/columns.js), or null: the original column of its status
     reminders: null, // null = the Settings default; [] = none; [10, 1440] = minutes before the start
     tags: [], // ['client-a', 'q4']: free labels, any number per task (up to 6)
     seriesId: null,
@@ -77,7 +78,8 @@ export function withStatus(task, status, now = new Date()) {
   if (status === 'completed') completedAt = iso
   else if (task.status === 'completed') completedAt = null
 
-  return { ...task, status, sessions, startedAt, completedAt }
+  // A new status puts the task in that status's own column; moveTask picks a custom one afterwards.
+  return { ...task, status, column: null, sessions, startedAt, completedAt }
 }
 
 // An open session counts up to `now`, capped at 8h so a forgotten timer

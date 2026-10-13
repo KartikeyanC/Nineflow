@@ -3,6 +3,7 @@ import { Plus, Trash2, Download, Upload, Sparkles, AlertTriangle, CalendarPlus, 
 import { downloadIcs } from '../lib/calendar'
 import { connectCalendar, disconnectCalendar, syncNow, syncedEvents, useCalendarOn, useCalendarStatus } from '../features/CalendarSync'
 import { isConfigured } from '../lib/google'
+import ColumnsEditor from '../components/ColumnsEditor'
 import { cleanTemplates, cleanViews, critCount } from '../lib/views'
 import { setShowEvents, useCalendarEvents, useShowEvents } from '../lib/gcalEvents'
 import { format } from 'date-fns'
@@ -294,6 +295,12 @@ export default function Settings() {
             <Segmented size="sm" value={settings.theme} onChange={(v) => updateSettings({ theme: v })}
               options={[{ value: 'light', label: 'Light' }, { value: 'dark', label: 'Dark' }]} />
           </Row>
+        </section>
+
+        {/* Board columns */}
+        <section className="card p-5">
+          <h2 className="h-display text-base mb-1">Board columns</h2>
+          <ColumnsEditor />
         </section>
 
         {/* Templates and saved views */}

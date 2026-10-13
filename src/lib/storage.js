@@ -3,6 +3,7 @@
 
 import { storageKey } from './profiles'
 import { cleanTags } from './taskMeta'
+import { COLUMNS_VERSION, DEFAULT_COLUMNS, cleanColumns, seedReview } from './columns'
 
 // Keys live inside the signed-in profile's namespace (see profiles.js).
 const TASKS_KEY = () => storageKey('tasks')
@@ -24,6 +25,7 @@ export const DEFAULT_SETTINGS = {
   pomodoro: { focus: 25, short: 5, long: 15, every: 4 }, // minutes; long break every N focus blocks
   quickList: { position: 'right', collapsed: false, filter: 'today' }, // position: 'right' | 'top' | 'bottom' | 'off'
   calendar: { promptOnAdd: true }, // offer an "Add to Google Calendar" link after adding a task
+  columns: DEFAULT_COLUMNS, // Board columns (see lib/columns.js)
   views: [], // saved Board filters: [{ id, name, text, crit }] (see lib/views.js)
   templates: [], // reusable tasks: [{ id, name, title, steps, ... }]
   modules: { work: true }, // which optional sections show in the navigation
@@ -114,6 +116,8 @@ export function loadSettings() {
     modules: { ...DEFAULT_SETTINGS.modules, ...(stored.modules || {}) },
     workHours: { ...DEFAULT_SETTINGS.workHours, ...(stored.workHours || {}) },
     reminders: { ...DEFAULT_SETTINGS.reminders, ...(stored.reminders || {}) },
+    columns: stored.columnsV === COLUMNS_VERSION ? cleanColumns(stored.columns) : seedReview(cleanColumns(stored.columns)),
+    columnsV: COLUMNS_VERSION,
     views: Array.isArray(stored.views) ? stored.views : [],
     templates: Array.isArray(stored.templates) ? stored.templates : [],
   }
@@ -147,6 +151,7 @@ function normalizeTask(t) {
     subtasks: Array.isArray(t.subtasks) ? t.subtasks.filter((s) => s && typeof s.title === 'string').map((s) => ({ id: s.id || uid(), title: s.title, done: !!s.done })) : [],
     reminders: Array.isArray(t.reminders) ? t.reminders.filter((m) => Number.isFinite(m) && m >= 0).slice(0, 6) : null,
     tags: cleanTags(t.tags),
+    column: typeof t.column === 'string' ? t.column : null,
     seriesId: t.seriesId ?? null,
     recurrence: t.recurrence && t.recurrence.freq ? { freq: t.recurrence.freq, until: t.recurrence.until ?? null, skip: t.recurrence.skip ?? [] } : null,
     // Work that interrupted the plan: { by, at, resume, resumeMode, resolved }

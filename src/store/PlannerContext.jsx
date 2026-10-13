@@ -8,6 +8,7 @@ import { createTask, dateKey, todayKey, withSessionPaused, withSessionResumed, w
 import { generateSample } from '../lib/sample'
 import { dueReminders } from '../lib/taskMeta'
 import { busyFor } from '../lib/gcalEvents'
+import { baseOfColumn, cleanColumns, columnOf, isOriginal } from '../lib/columns'
 import { currentProfileId } from '../lib/profiles'
 import { removeTasksFromWorkspace, sendTasksToWorkspace } from '../lib/workspaces'
 import { ensureRecurrences } from '../lib/recurrence'
@@ -112,7 +113,7 @@ export function PlannerProvider({ children }) {
     const { status, ...rest } = fields || {}
     let task = createTask(rest)
     if (task.recurrence) task.seriesId = task.id
-    if (status && status !== 'todo') task = withStatus(task, status)
+    if (status && status !== 'todo') task = { ...withStatus(task, status), column: rest.column ?? null }
     setTasks((ts) => [...ts, task])
     if (task.date) setLastAdded({ id: task.id, at: Date.now() })
     return task
@@ -312,11 +313,16 @@ export function PlannerProvider({ children }) {
 
   // Move a task to `status` and place it before `beforeId` in the global
   // array (append when beforeId is null). Column order is the array order.
-  const moveTask = useCallback((id, status, beforeId = null) => {
+  // `target` is a column id: one of the three originals ('todo', 'working',
+  // 'completed') or a custom column, which counts as the status it was made from.
+  const moveTask = useCallback((id, target, beforeId = null) => {
+    const cols = cleanColumns(settingsRef.current?.columns)
+    const col = cols.find((c) => c.id === target)
+    const status = col ? col.base : baseOfColumn(target, cols)
     setTasks((ts) => {
       const task = ts.find((t) => t.id === id)
       if (!task) return ts
-      const moved = withStatus(task, status)
+      const moved = { ...withStatus(task, status), column: col && !isOriginal(col) ? col.id : null }
       const rest = ts.filter((t) => t.id !== id)
       const at = beforeId ? rest.findIndex((t) => t.id === beforeId) : -1
       if (at < 0) return [...rest, moved]
@@ -325,16 +331,18 @@ export function PlannerProvider({ children }) {
   }, [])
 
   // Reorder the tasks of one status in place; other tasks keep their slots.
-  const sortStatus = useCallback((status, by) => {
+  const sortStatus = useCallback((column, by) => {
+    const cols = cleanColumns(settingsRef.current?.columns)
+    const inColumn = (t) => columnOf(t, cols) === column
     const PRI = { high: 0, medium: 1, low: 2 }
     const cmp =
       by === 'priority'
         ? (a, b) => PRI[a.priority] - PRI[b.priority] || (a.date || '9').localeCompare(b.date || '9')
         : (a, b) => (a.date || '9').localeCompare(b.date || '9') || (a.startTime || '9').localeCompare(b.startTime || '9')
     setTasks((ts) => {
-      const sorted = ts.filter((t) => t.status === status).sort(cmp)
+      const sorted = ts.filter(inColumn).sort(cmp)
       let i = 0
-      return ts.map((t) => (t.status === status ? sorted[i++] : t))
+      return ts.map((t) => (inColumn(t) ? sorted[i++] : t))
     })
   }, [])
 
@@ -342,10 +350,11 @@ export function PlannerProvider({ children }) {
   // only its latest missed occurrence, and only when the series has nothing
   // today; its other missed copies are dropped unless time was logged on
   // them. Previously every missed copy landed on today as a duplicate.
-  const moveOverdueToToday = useCallback((status = null) => {
+  const moveOverdueToToday = useCallback((column = null) => {
     const today = todayKey()
     const ts = tasksRef.current
-    const overdue = ts.filter((t) => t.date && t.date < today && t.status !== 'completed' && (!status || t.status === status))
+    const cols = cleanColumns(settingsRef.current?.columns)
+    const overdue = ts.filter((t) => t.date && t.date < today && t.status !== 'completed' && (!column || columnOf(t, cols) === column))
     if (!overdue.length) return 0
     const move = new Set(), drop = new Set(), bySeries = new Map()
     for (const t of overdue) {

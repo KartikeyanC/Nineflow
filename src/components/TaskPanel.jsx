@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { format, parseISO } from 'date-fns'
-import { Activity, CalendarDays, Clock, Timer, Tag, Flag, Trash2, X, Repeat, ArrowRight, CalendarPlus, Layers, Bell, Hash } from 'lucide-react'
+import { Activity, CalendarDays, Clock, Timer, Tag, Flag, Trash2, X, Repeat, ArrowRight, CalendarPlus, Layers, Bell, Hash, Columns3 } from 'lucide-react'
 import { googleCalendarUrl } from '../lib/calendar'
 import { currentProfileId } from '../lib/profiles'
+import { cleanColumns, columnOf } from '../lib/columns'
 import { currentWorkspaceId, listWorkspaces } from '../lib/workspaces'
 import { usePlanner } from '../store/PlannerContext'
 import { STATUSES, STATUS_LABEL, carriedLabel, fmtMinutes, isOverdue, todayKey, totalMinutes } from '../lib/tasks'
@@ -18,8 +19,9 @@ const STATUS_PILL = { todo: 'bg-lav text-lav-fg', working: 'bg-sky text-sky-fg',
 
 // Floating side panel that edits the selected task in place.
 export default function TaskPanel() {
-  const { tasks, settings, selectedId, setSelectedId, updateTask, setStatus, removeTask, removeSeries, setRecurrence, applyToUpcoming, moveToWorkspace, focus, startFocus, categoryById, now } = usePlanner()
+  const { tasks, settings, selectedId, setSelectedId, updateTask, setStatus, removeTask, removeSeries, setRecurrence, applyToUpcoming, moveToWorkspace, moveTask, focus, startFocus, categoryById, now } = usePlanner()
   const task = tasks.find((t) => t.id === selectedId)
+  const cols = cleanColumns(settings.columns)
   const [confirm, setConfirm] = useState(false)
   const panelRef = useRef(null)
   useDialogFocus(panelRef, !!task)
@@ -55,7 +57,7 @@ export default function TaskPanel() {
         className="absolute top-4 right-4 bottom-4 w-[min(460px,calc(100vw-2rem))] card shadow-modal animate-panel-in flex flex-col overflow-hidden outline-none">
         <header className="flex items-center justify-between px-6 pt-5 pb-3">
           <div className="flex items-center gap-2">
-            <span className={cx('pill', STATUS_PILL[task.status])}>{STATUS_LABEL[task.status]}</span>
+            <span className={cx('pill', STATUS_PILL[task.status])}>{cols.find((c) => c.id === columnOf(task, cols))?.name || STATUS_LABEL[task.status]}</span>
             {overdue && <span className="pill bg-page text-muted border border-line text-[10px]">carried over {carriedLabel(task.date, now)}</span>}
             {task.recurrence && <span className="pill bg-page text-muted border border-line"><Repeat size={11} /> {describe(task.recurrence)}</span>}
           </div>
@@ -92,6 +94,14 @@ export default function TaskPanel() {
               <Segmented size="sm" value={task.status} onChange={(s) => setStatus(task.id, s)}
                 options={STATUSES.map((s) => ({ value: s, label: STATUS_LABEL[s] }))} />
             </Row>
+            {cols.length > STATUSES.length && (
+              <Row icon={Columns3} label="Column">
+                <select className="input w-auto min-w-[9rem] py-1.5" value={columnOf(task, cols)} aria-label="Board column"
+                  onChange={(e) => moveTask(task.id, e.target.value)}>
+                  {cols.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+              </Row>
+            )}
             <Row icon={CalendarDays} label="Date">
               <div className="flex items-center gap-2">
                 <DateField value={task.date} onChange={(date) => updateTask(task.id, { date })} placeholder="No date" className="w-40" />

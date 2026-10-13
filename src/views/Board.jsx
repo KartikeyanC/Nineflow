@@ -7,23 +7,19 @@ import {
 import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { addDays, parseISO } from 'date-fns'
-import { Plus, MoreHorizontal, Search, LayoutGrid, List, ArrowUpDown, CalendarClock, CalendarCheck, Trash2, CheckSquare, X, Layers, SlidersHorizontal, Bookmark } from 'lucide-react'
+import { Plus, MoreHorizontal, Search, LayoutGrid, List, ArrowUpDown, CalendarClock, CalendarCheck, Trash2, CheckSquare, X, Layers, SlidersHorizontal, Bookmark, Columns3 } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
 import { currentProfileId } from '../lib/profiles'
 import { allTags } from '../lib/taskMeta'
 import { MAX_VIEWS, WHEN_OPTIONS, blankCrit, cleanViews, critCount, matches } from '../lib/views'
 import { uid } from '../lib/storage'
 import { currentWorkspaceId, listWorkspaces } from '../lib/workspaces'
-import { STATUSES, STATUS_LABEL, PRIORITIES, PRIORITY_LABEL, carriedLabel, dateKey, dueLabel, fmtMinutes, isOverdue } from '../lib/tasks'
-import { CategoryTag, CheckCircle, ConfirmDialog, Menu, PriorityPill, cx } from '../components/ui'
+import { STATUSES, PRIORITIES, PRIORITY_LABEL, carriedLabel, dateKey, dueLabel, fmtMinutes, isOverdue } from '../lib/tasks'
+import { cleanColumns, columnOf, isOriginal, styleOf } from '../lib/columns'
+import ColumnsEditor from '../components/ColumnsEditor'
+import { CategoryTag, CheckCircle, ConfirmDialog, Menu, Modal, PriorityPill, cx } from '../components/ui'
 import TaskCard from '../components/TaskCard'
 
-const COL = {
-  // To Do uses the app's accent colour (orange in both designs).
-  todo: { label: 'To Do', panel: 'bg-accent-soft/60', text: 'text-accent', header: 'bg-accent-soft' },
-  working: { label: 'Working', panel: 'bg-sky/60', text: 'text-sky-fg', header: 'bg-sky' },
-  completed: { label: 'Completed', panel: 'bg-mint/60', text: 'text-mint-fg', header: 'bg-mint' },
-}
 const RECENT_COMPLETED = 8
 
 // Cards change columns while dragging, so re-measure every frame of a drag.
@@ -36,11 +32,14 @@ const DROP_ANIMATION = {
   sideEffects: defaultDropAnimationSideEffects({ styles: { active: { opacity: '0.4' } } }),
 }
 
+// Columns are 'todo' / 'working' / 'completed' or 'col_…'; anything else is a card.
+const isColumnId = (id) => STATUSES.includes(id) || String(id).startsWith('col_')
+
 // Prefer a card under the pointer, then the column under it, then overlap.
 function collisionDetection(args) {
   const within = pointerWithin(args)
   if (within.length) {
-    const card = within.find((c) => !STATUSES.includes(c.id))
+    const card = within.find((c) => !isColumnId(c.id))
     return card ? [card] : within
   }
   return rectIntersection(args)
@@ -97,22 +96,25 @@ export default function Board() {
   const deleteView = () => { updateSettings({ views: views.filter((v) => v.id !== viewId) }); setViewId('') }
 
 
-  // Column id lists derived from the global array order.
+  // The Board's columns (settings.columns: the three originals plus any you added),
+  // and which tasks sit in each.
+  const cols = useMemo(() => cleanColumns(settings.columns), [settings.columns])
+  const colIds = useMemo(() => cols.map((c) => c.id), [cols])
   const columns = useMemo(() => {
-    const byStatus = Object.fromEntries(STATUSES.map((s) => [s, []]))
-    for (const t of visible) byStatus[t.status].push(t)
-    byStatus.completed.sort((a, b) => (b.completedAt || '').localeCompare(a.completedAt || ''))
-    return byStatus
-  }, [visible])
+    const byCol = Object.fromEntries(colIds.map((id) => [id, []]))
+    for (const t of visible) byCol[columnOf(t, cols)].push(t)
+    for (const c of cols) if (c.base === 'completed') byCol[c.id].sort((a, b) => (b.completedAt || '').localeCompare(a.completedAt || ''))
+    return byCol
+  }, [visible, cols, colIds])
 
-  const hiddenDone = Math.max(0, columns.completed.length - RECENT_COMPLETED)
-  const shownColumns = useMemo(() => ({
-    ...columns,
-    completed: showAllDone ? columns.completed : columns.completed.slice(0, RECENT_COMPLETED),
-  }), [columns, showAllDone])
+  // Finished columns show the newest few; the rest are one click away.
+  const hiddenDone = cols.filter((c) => c.base === 'completed').reduce((n, c) => n + Math.max(0, columns[c.id].length - RECENT_COMPLETED), 0)
+  const shownColumns = useMemo(() => Object.fromEntries(cols.map((c) => [c.id, c.base === 'completed' && !showAllDone ? columns[c.id].slice(0, RECENT_COMPLETED) : columns[c.id]])), [cols, columns, showAllDone])
+  const completedCount = cols.filter((c) => c.base === 'completed').reduce((n, c) => n + columns[c.id].length, 0)
+  const [editingColumns, setEditingColumns] = useState(false)
 
   const taskById = useMemo(() => new Map(tasks.map((t) => [t.id, t])), [tasks])
-  const shownIds = useMemo(() => STATUSES.flatMap((s) => shownColumns[s].map((t) => t.id)), [shownColumns])
+  const shownIds = useMemo(() => colIds.flatMap((s) => shownColumns[s].map((t) => t.id)), [colIds, shownColumns])
   const sendPicked = (workspaceId) => {
     const w = otherWorkspaces.find((x) => x.id === workspaceId)
     if (w && moveToWorkspace([...picked].filter((id) => taskById.has(id)), w)) stopSelecting()
@@ -132,17 +134,17 @@ export default function Board() {
   )
 
   const idLists = useMemo(
-    () => draft || Object.fromEntries(STATUSES.map((s) => [s, shownColumns[s].map((t) => t.id)])),
-    [draft, shownColumns],
+    () => draft || Object.fromEntries(colIds.map((s) => [s, shownColumns[s].map((t) => t.id)])),
+    [draft, colIds, shownColumns],
   )
 
   const containerOf = useCallback((id, lists) => {
-    if (STATUSES.includes(id)) return id
-    return STATUSES.find((s) => lists[s].includes(id)) || null
+    if (isColumnId(id)) return id
+    return Object.keys(lists).find((s) => lists[s].includes(id)) || null
   }, [])
 
   const onDragStart = ({ active }) => {
-    const lists = Object.fromEntries(STATUSES.map((s) => [s, shownColumns[s].map((t) => t.id)]))
+    const lists = Object.fromEntries(colIds.map((s) => [s, shownColumns[s].map((t) => t.id)]))
     draftRef.current = lists
     setDraft(lists)
     setActiveId(active.id)
@@ -158,7 +160,7 @@ export default function Board() {
     const next = { ...lists, [from]: lists[from].filter((id) => id !== active.id) }
     const target = [...lists[to]]
     let at
-    if (to === 'completed') {
+    if (cols.find((c) => c.id === to)?.base === 'completed') {
       // Completed is newest first, so a finished card always lands on top.
       at = 0
     } else {
@@ -185,7 +187,7 @@ export default function Board() {
     const status = containerOf(active.id, lists)
     if (!status) return
     let ids = lists[status]
-    if (over.id !== active.id && containerOf(over.id, lists) === status && !STATUSES.includes(over.id)) {
+    if (over.id !== active.id && containerOf(over.id, lists) === status && !isColumnId(over.id)) {
       ids = arrayMove(ids, ids.indexOf(active.id), ids.indexOf(over.id))
     }
     const beforeId = ids[ids.indexOf(active.id) + 1] ?? null
@@ -226,6 +228,12 @@ export default function Board() {
               showFilters || activeFilters ? 'bg-ink text-page border-ink' : 'bg-card border-line text-muted hover:text-ink')}>
             <SlidersHorizontal size={14} /> Filters{activeFilters > 0 && <span className="h-5 min-w-5 px-1 rounded-full bg-page text-ink text-[11px] font-bold inline-flex items-center justify-center">{activeFilters}</span>}
           </button>
+          {mode === 'board' && (
+            <button type="button" onClick={() => setEditingColumns(true)} title="Add, rename and reorder the Board's columns"
+              className="h-9 px-3.5 rounded-full border border-line bg-card text-[13px] font-semibold text-muted hover:text-ink inline-flex items-center gap-1.5 transition">
+              <Columns3 size={14} /> Columns
+            </button>
+          )}
           {otherWorkspaces.length > 0 && mode === 'board' && (
             <button type="button" onClick={() => (selecting ? stopSelecting() : setSelecting(true))} aria-pressed={selecting}
               title="Choose several tasks to move to another workspace"
@@ -298,72 +306,84 @@ export default function Board() {
       )}
 
       {mode === 'list' ? (
-        <ListView columns={columns} />
+        <ListView columns={columns} cols={cols} />
       ) : (
         <DndContext sensors={sensors} collisionDetection={collisionDetection} measuring={MEASURING}
           onDragStart={onDragStart} onDragOver={onDragOver} onDragEnd={onDragEnd} onDragCancel={cancelDrag}>
           {/* Phones: one column per screen, swipe between them. */}
-          <div className="flex md:grid md:grid-cols-3 gap-4 flex-1 min-h-0 overflow-x-auto md:overflow-visible snap-x snap-mandatory -mx-3 px-3 md:mx-0 md:px-0">
-            {STATUSES.map((s) => (
-              <Column
-                key={s}
-                status={s}
-                ids={idLists[s]}
-                taskById={taskById}
-                activeId={activeId}
-                selecting={selecting}
-                picked={picked}
-                onPick={togglePick}
-                highlighted={activeId != null && overColumn === s}
-                onAdd={() => setQuickAdd({ status: s })}
-                menu={[
-                  { label: 'Add task', icon: Plus, onSelect: () => setQuickAdd({ status: s }) },
-                  { label: 'Sort by priority', icon: ArrowUpDown, onSelect: () => sortStatus(s, 'priority') },
-                  { label: 'Sort by due date', icon: CalendarClock, onSelect: () => sortStatus(s, 'date') },
-                  'divider',
-                  s === 'completed'
-                    ? { label: 'Clear completed', icon: Trash2, danger: true, onSelect: () => setConfirmClear(true) }
-                    : { label: 'Move carried-over to today', icon: CalendarCheck, onSelect: () => moveOverdueToToday(s) },
-                ]}
-                footer={
-                  s === 'completed' && hiddenDone > 0 && !showAllDone ? (
-                    <button type="button" onClick={() => setShowAllDone(true)}
-                      className="text-xs font-semibold text-mint-fg hover:underline py-1">
-                      Show {hiddenDone} older completed task{hiddenDone === 1 ? '' : 's'}
-                    </button>
-                  ) : null
-                }
-              />
-            ))}
+          <div className="flex md:grid gap-4 flex-1 min-h-0 overflow-x-auto snap-x snap-mandatory -mx-3 px-3 md:mx-0 md:px-0 md:[grid-template-columns:repeat(var(--cols),minmax(250px,1fr))]"
+            style={{ '--cols': cols.length }}>
+            {cols.map((col) => {
+              const s = col.id
+              const done = col.base === 'completed'
+              return (
+                <Column
+                  key={s}
+                  col={col}
+                  ids={idLists[s]}
+                  taskById={taskById}
+                  activeId={activeId}
+                  selecting={selecting}
+                  picked={picked}
+                  onPick={togglePick}
+                  highlighted={activeId != null && overColumn === s}
+                  onAdd={() => setQuickAdd({ status: col.base, column: isOriginal(col) ? null : col.id })}
+                  menu={[
+                    { label: 'Add task', icon: Plus, onSelect: () => setQuickAdd({ status: col.base, column: isOriginal(col) ? null : col.id }) },
+                    { label: 'Sort by priority', icon: ArrowUpDown, onSelect: () => sortStatus(s, 'priority') },
+                    { label: 'Sort by due date', icon: CalendarClock, onSelect: () => sortStatus(s, 'date') },
+                    'divider',
+                    done
+                      ? { label: 'Clear completed', icon: Trash2, danger: true, onSelect: () => setConfirmClear(true) }
+                      : { label: 'Move carried-over to today', icon: CalendarCheck, onSelect: () => moveOverdueToToday(s) },
+                    'divider',
+                    { label: 'Edit columns…', icon: Columns3, onSelect: () => setEditingColumns(true) },
+                  ]}
+                  footer={
+                    done && hiddenDone > 0 && !showAllDone && columns[s].length > RECENT_COMPLETED ? (
+                      <button type="button" onClick={() => setShowAllDone(true)}
+                        className="text-xs font-semibold text-mint-fg hover:underline py-1">
+                        Show {columns[s].length - RECENT_COMPLETED} older completed task{columns[s].length - RECENT_COMPLETED === 1 ? '' : 's'}
+                      </button>
+                    ) : null
+                  }
+                />
+              )
+            })}
           </div>
           {/* Portalled to <body>: the view's entry animation leaves a transform on
               the page, which would offset a fixed-position overlay from the pointer. */}
           {createPortal(<DragOverlay dropAnimation={DROP_ANIMATION}>
             {activeTask ? (
               <div className="animate-card-lift rotate-[2deg] shadow-modal rounded-2xl cursor-grabbing">
-                <TaskCard task={activeTask} tone={STATUSES.find((s) => idLists[s].includes(activeTask.id))} />
+                <TaskCard task={activeTask} tone={cols.find((c) => idLists[c.id].includes(activeTask.id))?.base} />
               </div>
             ) : null}
           </DragOverlay>, document.body)}
         </DndContext>
       )}
 
+      <Modal open={editingColumns} onClose={() => setEditingColumns(false)} title="Board columns" width="max-w-lg">
+        <ColumnsEditor />
+      </Modal>
+
       <ConfirmDialog open={confirmClear} onClose={() => setConfirmClear(false)} onConfirm={clearCompleted}
-        title="Clear completed tasks?" body={`This deletes ${columns.completed.length} completed task${columns.completed.length === 1 ? '' : 's'}. Their logged focus time goes with them.`}
+        title="Clear completed tasks?" body={`This deletes ${completedCount} completed task${completedCount === 1 ? '' : 's'}. Their logged focus time goes with them.`}
         confirmLabel="Clear" />
     </div>
   )
 }
 
-function Column({ status, ids, taskById, activeId, selecting, picked, onPick, highlighted, onAdd, menu, footer }) {
+function Column({ col, ids, taskById, activeId, selecting, picked, onPick, highlighted, onAdd, menu, footer }) {
+  const status = col.id
   const { setNodeRef } = useDroppable({ id: status })
-  const c = COL[status]
+  const c = styleOf(col)
   return (
     <section ref={setNodeRef}
       className={cx('rounded-card p-3 flex flex-col min-h-[360px] transition-shadow duration-200 min-w-[86vw] md:min-w-0 snap-center', c.panel, highlighted && 'ring-2 ring-inset ring-current/25', c.text)}>
       <div className="flex items-center gap-2 px-1 mb-3">
         <span className="h-6 min-w-6 px-1.5 rounded-full bg-card text-ink text-xs font-bold inline-flex items-center justify-center shadow-soft">{ids.length}</span>
-        <h2 className={cx('font-bold text-sm', c.text)}>{c.label}</h2>
+        <h2 className={cx('font-bold text-sm truncate', c.text)}>{col.name}</h2>
         <div className="ml-auto flex items-center gap-0.5">
           <button type="button" onClick={onAdd} title="Add task" className="h-7 w-7 rounded-full inline-flex items-center justify-center hover:bg-card/70 transition">
             <Plus size={15} />
@@ -379,7 +399,7 @@ function Column({ status, ids, taskById, activeId, selecting, picked, onPick, hi
 
       <SortableContext items={ids} strategy={verticalListSortingStrategy}>
         <div className="flex flex-col gap-2.5 flex-1 overflow-y-auto pr-0.5 text-ink">
-          {ids.map((id) => taskById.get(id) && <SortableCard key={id} task={taskById.get(id)} tone={status} dragging={id === activeId} selecting={selecting} picked={picked.has(id)} onPick={() => onPick(id)} />)}
+          {ids.map((id) => taskById.get(id) && <SortableCard key={id} task={taskById.get(id)} tone={col.base} dragging={id === activeId} selecting={selecting} picked={picked.has(id)} onPick={() => onPick(id)} />)}
           {ids.length === 0 && (
             <div className={cx('flex-1 flex items-center justify-center text-xs font-semibold border-2 border-dashed rounded-2xl min-h-[96px]', c.text, 'border-current/30 opacity-70')}>
               Drop tasks here
@@ -406,17 +426,17 @@ function SortableCard({ task, tone, dragging, selecting, picked, onPick }) {
 
 // ---- list view ----------------------------------------------------------
 
-function ListView({ columns }) {
+function ListView({ columns, cols }) {
   const { categoryById, toggleComplete, setSelectedId, now } = usePlanner()
   return (
     <div className="space-y-4">
-      {STATUSES.map((s) => {
-        const c = COL[s]
-        const list = columns[s]
+      {cols.map((col) => {
+        const c = styleOf(col)
+        const list = columns[col.id]
         return (
-          <section key={s} className="card overflow-hidden">
+          <section key={col.id} className="card overflow-hidden">
             <div className={cx('flex items-center gap-2 px-5 py-3', c.header, c.text)}>
-              <h2 className="font-bold text-sm">{c.label}</h2>
+              <h2 className="font-bold text-sm">{col.name}</h2>
               <span className="h-5 min-w-5 px-1.5 rounded-full bg-card text-ink text-[11px] font-bold inline-flex items-center justify-center">{list.length}</span>
             </div>
             {list.length === 0 ? (
