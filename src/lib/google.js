@@ -13,6 +13,10 @@ export const isDesktop = !!desktop
 export const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || (mockEnabled ? 'mock-client-id' : '')
 export const isConfigured = () => (desktop ? desktop.googleConfigured : !!CLIENT_ID)
 const SCOPES = 'openid email profile https://www.googleapis.com/auth/drive.file'
+// Calendar access is asked for separately, when someone presses "Connect Google
+// Calendar" (never at sign-in), so people who don't use it never see it.
+export const CALENDAR_SCOPE = 'https://www.googleapis.com/auth/calendar.events'
+const CAL_TOKEN_KEY = 'daily-planner:gcal-token'
 const TOKEN_KEY = 'daily-planner:google-token' // sessionStorage: cleared when the browser session ends
 const ACCOUNT_KEY = 'daily-planner:account' // localStorage: who is signed in on this device (Google, or an email account with provider: 'email')
 const LAST_KEY = 'daily-planner:last-account' // localStorage: name/email/picture/provider only, kept after sign-out for "Continue as"
@@ -49,6 +53,45 @@ function saveToken(token, expiresIn) {
   try { sessionStorage.setItem(TOKEN_KEY, JSON.stringify({ token, expiresAt: Date.now() + expiresIn * 1000 })) } catch { /* ignore */ }
 }
 export function clearToken() { try { sessionStorage.removeItem(TOKEN_KEY) } catch { /* ignore */ } }
+
+// The Calendar token. In the desktop app one token carries every granted
+// scope, so it is the same token; in the browser it is a second one.
+export function getCalendarToken() {
+  if (desktop) return getToken()
+  try {
+    const t = JSON.parse(sessionStorage.getItem(CAL_TOKEN_KEY) || 'null')
+    return t && t.expiresAt - 60_000 > Date.now() ? t.token : null
+  } catch { return null }
+}
+export function clearCalendarToken() { try { sessionStorage.removeItem(CAL_TOKEN_KEY) } catch { /* ignore */ } }
+
+// Asks for the Calendar permission (Google's window; run it from a click).
+export async function requestCalendarToken({ hint } = {}) {
+  if (desktop) {
+    const r = await desktop.getToken({ interactive: true, scope: CALENDAR_SCOPE, hint })
+    if (!r.ok) throw new SignInError(r.code, r.message)
+    saveToken(r.token.access_token, r.token.expires_in)
+    return r.token.access_token
+  }
+  if (!CLIENT_ID) throw new SignInError('not_configured', 'Google sign-in is not set up yet (VITE_GOOGLE_CLIENT_ID is missing).')
+  const google = await loadGis().catch((e) => { throw new SignInError('offline', e.message) })
+  return new Promise((resolve, reject) => {
+    const client = google.accounts.oauth2.initTokenClient({
+      client_id: CLIENT_ID,
+      scope: CALENDAR_SCOPE,
+      callback: (r) => {
+        if (r.error) return reject(new SignInError(r.error, r.error_description || r.error))
+        if (!google.accounts.oauth2.hasGrantedAllScopes(r, CALENDAR_SCOPE)) {
+          return reject(new SignInError('calendar_not_granted', 'Calendar access was not allowed. Tick the calendar box in the Google window to connect.'))
+        }
+        try { sessionStorage.setItem(CAL_TOKEN_KEY, JSON.stringify({ token: r.access_token, expiresAt: Date.now() + (Number(r.expires_in) || 3600) * 1000 })) } catch { /* ignore */ }
+        resolve(r.access_token)
+      },
+      error_callback: (e) => reject(new SignInError(e?.type || 'unknown', e?.type === 'popup_closed' ? 'The Google window was closed before connecting.' : e?.message || 'Google could not connect the calendar.')),
+    })
+    client.requestAccessToken({ prompt: '', ...(hint ? { hint, login_hint: hint } : {}) })
+  })
+}
 
 if (desktop) {
   const keep = (t) => (t ? saveToken(t.access_token, t.expires_in) : clearToken())
@@ -118,6 +161,7 @@ export async function revokeToken() {
   if (desktop) { clearToken(); await desktop.signOut(); return }
   const t = getToken()
   clearToken()
+  clearCalendarToken()
   if (!t) return
   try {
     const google = await loadGis()

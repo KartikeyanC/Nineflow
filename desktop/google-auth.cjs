@@ -119,7 +119,7 @@ h1{font-size:24px;margin:0 0 8px}p{color:#786F68;margin:0}b{color:#C9420B}
 
 let pending = null // one sign-in at a time
 
-function signIn({ hint, prompt } = {}) {
+function signIn({ hint, prompt, scope } = {}) {
   if (!configured()) return Promise.reject(fail('not_configured', 'Google sign-in is not set up in this build (desktop/oauth.json is missing).'))
   if (pending) pending.cancel()
   return new Promise((resolve, reject) => {
@@ -169,7 +169,8 @@ function signIn({ hint, prompt } = {}) {
         client_id: oauthConfig().client_id,
         redirect_uri: `http://127.0.0.1:${server.address().port}`,
         response_type: 'code',
-        scope: SCOPES,
+        scope: scope ? `${SCOPES} ${scope}` : SCOPES,
+        include_granted_scopes: 'true',
         code_challenge: challenge,
         code_challenge_method: 'S256',
         state,
@@ -199,7 +200,9 @@ module.exports = {
   cached() { return access && access.expiresAt - 60_000 > Date.now() ? forRenderer() : null },
 
   // Silent when this computer is already signed in; otherwise the browser opens.
-  async getToken({ interactive = true, hint, prompt } = {}) {
+  async getToken({ interactive = true, hint, prompt, scope } = {}) {
+    // Asking for an extra permission (Google Calendar) always opens the browser.
+    if (scope) return signIn({ hint, prompt: 'consent', scope })
     const c = this.cached()
     if (c && prompt !== 'select_account') return c
     if (refreshToken && prompt !== 'select_account') {

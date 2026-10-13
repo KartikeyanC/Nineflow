@@ -45,6 +45,21 @@ function install() {
 
     if (u.pathname === '/oauth2/v3/userinfo') return json(ACCOUNT)
 
+    // Google Calendar (primary): events kept in localStorage['mock-calendar']
+    if (u.pathname.startsWith('/calendar/v3/calendars/primary/events')) {
+      const cal = (() => { try { return JSON.parse(localStorage.getItem('mock-calendar') || '{}') } catch { return {} } })()
+      const put = () => localStorage.setItem('mock-calendar', JSON.stringify(cal))
+      const eid = decodeURIComponent(u.pathname.split('/events')[1] || '').replace(/^\//, '')
+      if (!eid && method === 'POST') {
+        const ev = { ...JSON.parse(init.body), id: `mockev_${Math.random().toString(36).slice(2, 10)}` }
+        cal[ev.id] = ev; put(); return json(ev)
+      }
+      if (!eid && method === 'GET') return json({ items: Object.values(cal) })
+      if (!cal[eid]) return json({ error: 'not found' }, 404)
+      if (method === 'PATCH') { cal[eid] = { ...cal[eid], ...JSON.parse(init.body) }; put(); return json(cal[eid]) }
+      if (method === 'DELETE') { delete cal[eid]; put(); return new Response(null, { status: 204 }) }
+    }
+
     // List / search
     if (u.pathname === '/drive/v3/files' && method === 'GET') {
       const q = u.searchParams.get('q') || ''

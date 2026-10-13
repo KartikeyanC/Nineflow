@@ -3,7 +3,7 @@ import { addDays, format, isSameDay, parseISO, subDays } from 'date-fns'
 import { Bar, BarChart, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis } from 'recharts'
 import {
   ChevronLeft, ChevronRight, ArrowRight, Plus, X, Flame, ListChecks, CheckCircle2, Activity, Circle,
-  Sparkles, AlertTriangle, TrendingUp, Clock3, Flag, PieChart as PieIcon, Repeat, Wand2, Zap, Moon,
+  Sparkles, AlertTriangle, TrendingUp, Clock3, Flag, PieChart as PieIcon, Repeat, Wand2, Zap, Moon, CalendarDays,
 } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
 import {
@@ -11,6 +11,7 @@ import {
 } from '../lib/tasks'
 import { buildInsights } from '../lib/insights'
 import { describePlan } from '../lib/schedule'
+import { eventsOn, useCalendarEvents, useShowEvents } from '../lib/gcalEvents'
 import { currentProfile, firstName } from '../lib/profiles'
 import { colorOf, cssVar, PRIORITY_STYLE } from '../lib/colors'
 import { CategoryTag, CheckCircle, Segmented, cx } from '../components/ui'
@@ -126,6 +127,10 @@ function Schedule({ list, isToday, now }) {
   const [preview, setPreview] = useState(null) // plan awaiting Apply / Cancel
   const timed = list.filter((t) => t.startTime)
   const unscheduled = list.filter((t) => !t.startTime && t.status === 'todo').length
+  // Your Google Calendar events for the day (read-only), when switched on in Settings.
+  const showEvents = useShowEvents()
+  const calendar = useCalendarEvents()
+  const dayEvents = showEvents ? eventsOn(calendar.events, dashboardDate).sort((a, b) => Number(b.allDay) - Number(a.allDay) || a.startMin - b.startMin) : []
   const nowMin = now.getHours() * 60 + now.getMinutes()
   const [planMsg, setPlanMsg] = useState(null)
   // Show where tasks would go first; nothing moves until Apply.
@@ -159,6 +164,24 @@ function Schedule({ list, isToday, now }) {
             ))}
           </ul>
           {preview.unplaced.length > 0 && <p className="text-[11px] text-muted mt-1.5">{preview.unplaced.length} won't fit today.</p>}
+        </div>
+      )}
+      {dayEvents.length > 0 && (
+        <div className="mb-3 rounded-2xl bg-subtle/70 border border-dashed border-line px-3 py-2">
+          <p className="text-[11px] font-semibold text-faint inline-flex items-center gap-1.5 mb-1"><CalendarDays size={12} /> On your calendar</p>
+          <ul className="space-y-0.5">
+            {dayEvents.map((e) => {
+              const Tag = e.link ? 'a' : 'span'
+              return (
+                <li key={`${e.id}-${e.key}`}>
+                  <Tag {...(e.link ? { href: e.link, target: '_blank', rel: 'noopener noreferrer' } : {})} className="flex items-baseline gap-2.5 text-[13px] text-muted hover:text-ink">
+                    <span className="w-[4.5rem] shrink-0 text-[11px] font-semibold tnum">{e.allDay ? 'All day' : `${hh(e.startMin)}–${hh(Math.min(e.endMin, 1439))}`}</span>
+                    <span className="truncate font-semibold">{e.title}</span>
+                  </Tag>
+                </li>
+              )
+            })}
+          </ul>
         </div>
       )}
       {timed.length === 0 ? (

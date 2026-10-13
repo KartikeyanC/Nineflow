@@ -36,7 +36,9 @@
       <ul>
         <li><b>Your name, email address and profile picture</b>, to show who is signed in.</li>
         <li><b>Only the Drive files NineFlow creates</b>: a <b>Daily Planner</b> folder containing <b>planner-data.json</b> (and, if two devices save at the same moment, a <b>planner-data (conflict …).json</b> copy, so nothing is lost). Google&#39;s <code>drive.file</code> permission means NineFlow cannot see, open or change any other file in your Drive.</li>
-        <li>Nothing else: not your email, contacts, calendar or other files.</li>
+        <li><b>Only if you press “Connect Google Calendar” in Settings:</b> permission (<code>calendar.events</code>) to add, change and remove events on your primary calendar. NineFlow uses it only to create events for your dated tasks, update them when the task changes, and remove them when the task is deleted or you disconnect. If you also switch on <b>Show my calendar events</b>, it reads the events on your primary calendar while NineFlow is open, to show them next to your tasks and to keep &quot;Plan my day&quot; clear of your meetings. They are kept in memory only and never saved by NineFlow. You can disconnect in Settings, or at <a href="https://myaccount.google.com/permissions" rel="noopener">myaccount.google.com/permissions</a>.</li>
+        <li><b>Only when you use an AI feature</b> (Prompt to list, Meeting notes, Auto-fill, Ask NineFlow): the text you typed or pasted, and for Ask NineFlow a compact copy of your task titles, dates and time logged, are sent through NineFlow&#39;s server to Anthropic&#39;s Claude to produce the answer. They are not stored by NineFlow, and AI features do nothing until you press their button.</li>
+        <li>Nothing else: not your contacts or other files.</li>
       </ul>
 
       <h2>What is stored, and where</h2>

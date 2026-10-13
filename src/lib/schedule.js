@@ -11,9 +11,10 @@ export const toHHMMPublic = (min) => toHHMM(min)
 // Returns { patches: [{id, startTime}], unplaced: [task], end }.
 // Fills from `start` (or from now, if the day is today) to `end`, highest
 // priority first, longest first within a priority, leaving a short gap.
-export function planDay(tasks, key, now = new Date(), { start = 9 * 60, end = 18 * 60, gap = 5 } = {}) {
+export function planDay(tasks, key, now = new Date(), { start = 9 * 60, end = 18 * 60, gap = 5, busy: extraBusy = [] } = {}) {
   const list = tasksOn(tasks, key)
-  const busy = list.filter((t) => t.startTime).map((t) => { const s = toMin(t.startTime); return [s, s + t.durationMinutes] })
+  // Timed tasks, plus anything else that blocks the day (calendar meetings), as [start, end] minutes.
+  const busy = list.filter((t) => t.startTime).map((t) => { const s = toMin(t.startTime); return [s, s + t.durationMinutes] }).concat(extraBusy.map(([a, b]) => [a, b]))
   const candidates = list
     .filter((t) => !t.startTime && t.status === 'todo')
     .sort((a, b) => PRI[a.priority] - PRI[b.priority] || b.durationMinutes - a.durationMinutes)

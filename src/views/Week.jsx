@@ -2,10 +2,11 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { addDays, format, getISOWeek, isSameDay, isSameMonth, parseISO, startOfWeek } from 'date-fns'
 import { DndContext, KeyboardSensor, MouseSensor, TouchSensor, pointerWithin, useDraggable, useDroppable, useSensor, useSensors } from '@dnd-kit/core'
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { ChevronLeft, ChevronRight, Plus, Check, CheckCircle2, Flame, Wand2 } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Plus, Check, CheckCircle2, Flame, Wand2, CalendarDays } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
 import { dateKey, fmtMinutes, tasksOn, totalMinutes } from '../lib/tasks'
 import { unscheduledOn, describePlan } from '../lib/schedule'
+import { eventsOn, useCalendarEvents, useShowEvents } from '../lib/gcalEvents'
 import { colorOf, cssVar } from '../lib/colors'
 import { PriorityPill, ProgressBar, Segmented, cx } from '../components/ui'
 
@@ -79,13 +80,22 @@ export default function Week() {
   const unscheduled = planKey ? unscheduledOn(tasks, planKey).length : 0
   const [planMsg, setPlanMsg] = useState(null)
 
-  // Per-day task buckets, split into timed (with lanes) and untimed.
+  // Your Google Calendar events, when Settings → Show my calendar events is on.
+  const showEvents = useShowEvents()
+  const calendar = useCalendarEvents()
+  const events = showEvents ? calendar.events : []
+
+  // Per-day task buckets, split into timed (with lanes) and untimed. Calendar
+  // events share the lanes, so they sit beside tasks instead of under them.
   const byDay = useMemo(() => days.map((day) => {
-    const list = tasksOn(tasks, dateKey(day))
+    const key = dateKey(day)
+    const list = tasksOn(tasks, key)
     const timed = list.filter((t) => t.startTime)
     const untimed = list.filter((t) => !t.startTime)
-    return { day, key: dateKey(day), list, untimed, lanes: layoutLanes(timed) }
-  }), [tasks, days])
+    const todays = eventsOn(events, key)
+    const timedEvents = todays.filter((e) => !e.allDay).map((e) => ({ id: `ev:${e.id}:${key}`, startTime: toHHMM(Math.min(e.startMin, 1439)), durationMinutes: Math.max(15, e.endMin - e.startMin), event: e }))
+    return { day, key, list, untimed, allDayEvents: todays.filter((e) => e.allDay), lanes: layoutLanes([...timed, ...timedEvents]) }
+  }), [tasks, days, events])
 
   // Scroll the grid so "now" (or, outside 06:00–22:00, the start of your
   // working day) sits ~160px from the top on load.
@@ -200,8 +210,9 @@ export default function Week() {
           {/* No-time row */}
           <div className="grid gap-2 px-3 pt-2 pb-2 border-b border-line" style={{ gridTemplateColumns: colTemplate }}>
             <div className="text-[10px] font-bold text-faint uppercase tracking-wider flex items-center justify-center">No time</div>
-            {byDay.map(({ key, untimed }) => (
+            {byDay.map(({ key, untimed, allDayEvents }) => (
               <div key={key} className="min-h-[28px] flex flex-wrap gap-1 content-start">
+                {allDayEvents.slice(0, 2).map((e) => <EventChip key={e.id} event={e} />)}
                 {untimed.slice(0, 3).map((t) => <Chip key={t.id} task={t} />)}
                 {untimed.length > 3 && <span className="text-[10px] font-semibold text-faint self-center">+{untimed.length - 3} more</span>}
               </div>
@@ -229,9 +240,9 @@ export default function Week() {
               {byDay.map(({ day, key, lanes }) => (
                 <DayColumn key={key} dayKey={key} isToday={isSameDay(day, now)} hours={hours}
                   onSlot={(min) => setQuickAdd({ date: key, startTime: toHHMM(min), durationMinutes: 60 })}>
-                  {lanes.map(({ task, lane, lanes: n }) => (
-                    <Block key={task.id} task={task} lane={lane} lanes={n} onOpen={() => setSelectedId(task.id)} />
-                  ))}
+                  {lanes.map(({ task, lane, lanes: n }) => (task.event
+                    ? <EventBlock key={task.id} item={task} lane={lane} lanes={n} />
+                    : <Block key={task.id} task={task} lane={lane} lanes={n} onOpen={() => setSelectedId(task.id)} />))}
                 </DayColumn>
               ))}
 
@@ -346,6 +357,34 @@ function Block({ task, lane, lanes, onOpen }) {
       )}
       {height >= 72 && <PriorityPill priority={task.priority} className="mt-1 text-[10px] py-0" />}
     </div>
+  )
+}
+
+// A Google Calendar event: read-only, opens in Google Calendar.
+function EventBlock({ item, lane, lanes }) {
+  const e = item.event
+  const start = toMin(item.startTime)
+  const height = Math.max(22, item.durationMinutes * PX_PER_MIN)
+  const width = 100 / lanes
+  const Tag = e.link ? 'a' : 'div'
+  return (
+    <Tag {...(e.link ? { href: e.link, target: '_blank', rel: 'noopener noreferrer' } : {})}
+      aria-label={`Calendar event: ${e.title}, ${toHHMM(e.startMin)} to ${toHHMM(Math.min(e.endMin, 1439))}`}
+      style={{ top: (start - GRID_START) * PX_PER_MIN, height, left: `calc(${lane * width}% + 3px)`, width: `calc(${width}% - 6px)`, zIndex: 4 }}
+      className={cx('absolute rounded-xl border border-dashed border-faint/60 bg-subtle/80 px-2 py-1 overflow-hidden select-none text-muted hover:text-ink hover:border-faint transition', e.free && 'opacity-70')}>
+      <p className="text-xs font-bold leading-tight line-clamp-2 flex items-start gap-1"><CalendarDays size={11} className="mt-0.5 shrink-0" />{e.title}</p>
+      {height >= 40 && <p className="text-[10px] font-medium opacity-80">{toHHMM(e.startMin)} – {toHHMM(Math.min(e.endMin, 1439))}</p>}
+    </Tag>
+  )
+}
+
+function EventChip({ event }) {
+  const Tag = event.link ? 'a' : 'span'
+  return (
+    <Tag {...(event.link ? { href: event.link, target: '_blank', rel: 'noopener noreferrer' } : {})} title={`Calendar: ${event.title}`}
+      className="rounded-md px-1.5 py-0.5 text-[10px] font-semibold truncate max-w-full inline-flex items-center gap-1 border border-dashed border-faint/60 bg-subtle/80 text-muted hover:text-ink">
+      <CalendarDays size={9} className="shrink-0" /> <span className="truncate">{event.title}</span>
+    </Tag>
   )
 }
 

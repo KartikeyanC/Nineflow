@@ -23,6 +23,7 @@ There's no server. The browser talks to Google directly, so you only need an **O
 4. Add these **scopes**:
    - `openid`, `.../auth/userinfo.email`, `.../auth/userinfo.profile`
    - `.../auth/drive.file`: the app can only see the files it creates
+   - `.../auth/calendar.events`: only for the optional **Connect Google Calendar** button in Settings, which sends tasks to the person's primary calendar. It is requested separately, only when someone presses that button. You also need to enable the **Google Calendar API** (**APIs & Services → Library → Google Calendar API → Enable**).
 5. While the app is in **Testing**, add each person who will sign in under **Test users**. Only test users can sign in until you publish the app.
 
 ## 4. Create the OAuth client ID
@@ -57,7 +58,7 @@ To open it to everyone:
 1. Go to **APIs & Services → OAuth consent screen**. In newer consoles: **Google Auth Platform → Audience**.
 2. Under **Publishing status**, click **Publish app** and confirm. The status changes from *Testing* to *In production*.
 
-The planner only asks for basic scopes (`openid`, `email`, `profile`) and `drive.file`, which Google classes as non-sensitive. So publishing doesn't need Google's security review, and there's no 100-user cap. Two things are still worth knowing:
+The planner's sign-in only asks for basic scopes (`openid`, `email`, `profile`) and `drive.file`, which Google classes as non-sensitive. **The optional Calendar button asks for `calendar.events`, which Google classes as sensitive.** Once published, Google's verification review applies to that scope: a short demo video of the Connect Google Calendar flow, the privacy page, and a verified domain. Until it passes, people who press that button see the "Google hasn't verified this app" screen, and the 100-user cap applies to the calendar permission. Sign-in and Drive saving aren't affected. Two things are still worth knowing:
 
 - **Other people can't reach `localhost`.** For anyone else to use the planner, host it at a public address (for example on Vercel or Netlify). Then add that address under **Authorised JavaScript origins** on the client ID.
 - **Showing your app name and logo** on Google's consent screen may require **brand verification** (**Google Auth Platform → Branding**). That needs a homepage and the privacy page (`/privacy.html`) on a domain you've verified in Google Search Console. Sign-in works while verification is pending.

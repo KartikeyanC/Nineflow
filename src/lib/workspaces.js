@@ -7,8 +7,8 @@
 // the plain key names it always had, so nobody's data moves. Every other
 // workspace prefixes its keys with `ws_<id>.` (tasks → ws_k3f9.tasks), which
 // puts them in the same bundle and so in the same Drive file / account row.
-// Two names are account-wide rather than per workspace: `onboarded` (setup is
-// done once) and `workspaces` (the list below).
+// Three names are account-wide rather than per workspace: `onboarded` (setup is
+// done once), `workspaces` (the list below) and `gcal-on` (Google Calendar sync).
 //
 // The workspace in use is per device (a phone can be on Client A while the
 // laptop is on Personal), so it is kept outside the synced namespace.
@@ -16,7 +16,7 @@
 export const MAIN = 'main'
 export const WORKSPACE_LIMIT = 6
 export const NAME_MAX = 24
-export const ACCOUNT_LEVEL = new Set(['onboarded', 'workspaces'])
+export const ACCOUNT_LEVEL = new Set(['onboarded', 'workspaces', 'gcal-on', 'gcal-show'])
 
 const COLORS = ['lav', 'sky', 'mint', 'peach', 'coral', 'butter', 'rose', 'teal']
 const listKey = (pid) => `daily-planner:${pid}:workspaces`

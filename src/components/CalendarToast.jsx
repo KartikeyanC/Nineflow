@@ -2,12 +2,15 @@ import React, { useEffect } from 'react'
 import { CalendarPlus, X, Check } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
 import { googleCalendarUrl } from '../lib/calendar'
+import { useCalendarOn } from '../features/CalendarSync'
 
 // After a task is added, offer to put it on the user's Google Calendar.
 export default function CalendarToast() {
   const { lastAdded, setLastAdded, tasks, settings, categoryById } = usePlanner()
   const task = lastAdded ? tasks.find((t) => t.id === lastAdded.id) : null
-  const enabled = settings.calendar.promptOnAdd
+  // With Calendar sync on, new tasks go there by themselves, so no link is offered.
+  const syncing = useCalendarOn()
+  const enabled = settings.calendar.promptOnAdd && !syncing
 
   useEffect(() => {
     if (!lastAdded) return
