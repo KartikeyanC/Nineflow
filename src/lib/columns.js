@@ -26,17 +26,18 @@ export const DEFAULT_COLUMNS = [
 export const LEGACY_REVIEW_ID = 'col_review'
 export const COLUMNS_VERSION = 3
 
-// Literal class names, so Tailwind builds every one of them.
+// Literal class names, so Tailwind builds every one of them. `edge` is the dashed outline of the
+// "Add new task" button and the empty-column drop zone, in the column's own colour.
 export const COLUMN_STYLE = {
-  accent: { label: 'Orange', panel: 'bg-todo-soft/60', text: 'text-todo', header: 'bg-todo-soft', dot: 'bg-todo' },
-  sky: { label: 'Sky', panel: 'bg-sky/60', text: 'text-sky-fg', header: 'bg-sky', dot: 'bg-sky-fg' },
-  mint: { label: 'Mint', panel: 'bg-mint/60', text: 'text-mint-fg', header: 'bg-mint', dot: 'bg-mint-fg' },
-  lav: { label: 'Lavender', panel: 'bg-violet/60', text: 'text-violet-fg', header: 'bg-violet', dot: 'bg-violet-fg' },
-  butter: { label: 'Butter', panel: 'bg-butter/60', text: 'text-butter-fg', header: 'bg-butter', dot: 'bg-butter-fg' },
-  coral: { label: 'Coral', panel: 'bg-coral/60', text: 'text-coral-fg', header: 'bg-coral', dot: 'bg-coral-fg' },
-  peach: { label: 'Peach', panel: 'bg-peach/60', text: 'text-peach-fg', header: 'bg-peach', dot: 'bg-peach-fg' },
-  rose: { label: 'Rose', panel: 'bg-rose/60', text: 'text-rose-fg', header: 'bg-rose', dot: 'bg-rose-fg' },
-  teal: { label: 'Teal', panel: 'bg-teal/60', text: 'text-teal-fg', header: 'bg-teal', dot: 'bg-teal-fg' },
+  accent: { label: 'Orange', panel: 'bg-todo-soft/60', text: 'text-todo', header: 'bg-todo-soft', dot: 'bg-todo', edge: 'border-todo/50' },
+  sky: { label: 'Sky', panel: 'bg-sky/60', text: 'text-sky-fg', header: 'bg-sky', dot: 'bg-sky-fg', edge: 'border-sky-fg/50' },
+  mint: { label: 'Mint', panel: 'bg-mint/60', text: 'text-mint-fg', header: 'bg-mint', dot: 'bg-mint-fg', edge: 'border-mint-fg/50' },
+  lav: { label: 'Lavender', panel: 'bg-violet/60', text: 'text-violet-fg', header: 'bg-violet', dot: 'bg-violet-fg', edge: 'border-violet-fg/50' },
+  butter: { label: 'Butter', panel: 'bg-butter/60', text: 'text-butter-fg', header: 'bg-butter', dot: 'bg-butter-fg', edge: 'border-butter-fg/50' },
+  coral: { label: 'Coral', panel: 'bg-coral/60', text: 'text-coral-fg', header: 'bg-coral', dot: 'bg-coral-fg', edge: 'border-coral-fg/50' },
+  peach: { label: 'Peach', panel: 'bg-peach/60', text: 'text-peach-fg', header: 'bg-peach', dot: 'bg-peach-fg', edge: 'border-peach-fg/50' },
+  rose: { label: 'Rose', panel: 'bg-rose/60', text: 'text-rose-fg', header: 'bg-rose', dot: 'bg-rose-fg', edge: 'border-rose-fg/50' },
+  teal: { label: 'Teal', panel: 'bg-teal/60', text: 'text-teal-fg', header: 'bg-teal', dot: 'bg-teal-fg', edge: 'border-teal-fg/50' },
 }
 // In dark mode a Board card takes the colour of the column it sits in (light mode keeps
 // white cards on pastel columns). Keyed by the column's colour, not its status, so a

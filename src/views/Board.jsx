@@ -402,7 +402,7 @@ function Column({ col, ids, taskById, activeId, selecting, picked, onPick, highl
         <div className="flex flex-col gap-2.5 flex-1 overflow-y-auto pr-0.5 text-ink">
           {ids.map((id) => taskById.get(id) && <SortableCard key={id} task={taskById.get(id)} tone={col.color} dragging={id === activeId} selecting={selecting} picked={picked.has(id)} onPick={() => onPick(id)} />)}
           {ids.length === 0 && (
-            <div className={cx('flex-1 flex items-center justify-center text-xs font-semibold border-2 border-dashed rounded-2xl min-h-[96px]', c.text, 'border-current/30 opacity-70')}>
+            <div className={cx('flex-1 flex items-center justify-center text-xs font-semibold border-2 border-dashed rounded-2xl min-h-[96px]', c.text, c.edge, 'opacity-70')}>
               Drop tasks here
             </div>
           )}
@@ -411,7 +411,7 @@ function Column({ col, ids, taskById, activeId, selecting, picked, onPick, highl
       </SortableContext>
 
       <button type="button" onClick={onAdd}
-        className={cx('mt-2.5 w-full rounded-2xl border-2 border-dashed border-current/30 py-2.5 text-xs font-semibold inline-flex items-center justify-center gap-1 transition hover:bg-card/60', c.text)}>
+        className={cx('mt-2.5 w-full rounded-2xl border-2 border-dashed py-2.5 text-xs font-semibold inline-flex items-center justify-center gap-1 transition hover:bg-card/60', c.text, c.edge)}>
         <Plus size={14} /> Add new task
       </button>
     </section>
