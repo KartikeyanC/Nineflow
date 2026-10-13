@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { format, parseISO } from 'date-fns'
-import { Activity, CalendarDays, Clock, Timer, Tag, Flag, Trash2, X, Repeat, ArrowRight, CalendarPlus, Layers } from 'lucide-react'
+import { Activity, CalendarDays, Clock, Timer, Tag, Flag, Trash2, X, Repeat, ArrowRight, CalendarPlus, Layers, Bell, Hash } from 'lucide-react'
 import { googleCalendarUrl } from '../lib/calendar'
 import { currentProfileId } from '../lib/profiles'
 import { currentWorkspaceId, listWorkspaces } from '../lib/workspaces'
@@ -8,6 +8,8 @@ import { usePlanner } from '../store/PlannerContext'
 import { STATUSES, STATUS_LABEL, carriedLabel, fmtMinutes, isOverdue, todayKey, totalMinutes } from '../lib/tasks'
 import { FREQS, FREQ_LABEL, describe } from '../lib/recurrence'
 import { CategoryPills, IconButton, PriorityPills, Segmented, cx, useDialogFocus } from './ui'
+import Checklist from './Checklist'
+import { RemindersField, SaveAsTemplate, TagsField } from './TaskExtras'
 import { DateField } from './DatePicker'
 import { TimeField } from './TimePicker'
 
@@ -83,6 +85,8 @@ export default function TaskPanel() {
             onChange={(e) => updateTask(task.id, { description: e.target.value })}
           />
 
+          <Checklist task={task} />
+
           <div className="mt-3 divide-y divide-line">
             <Row icon={Activity} label="Status">
               <Segmented size="sm" value={task.status} onChange={(s) => setStatus(task.id, s)}
@@ -133,6 +137,12 @@ export default function TaskPanel() {
             <Row icon={Flag} label="Priority" top>
               <PriorityPills value={task.priority} onChange={(priority) => updateTask(task.id, { priority })} />
             </Row>
+            <Row icon={Bell} label="Reminders" top>
+              <RemindersField task={task} />
+            </Row>
+            <Row icon={Hash} label="Tags" top>
+              <TagsField task={task} />
+            </Row>
             {otherWorkspaces.length > 0 && focus?.taskId !== task.id && (
               <Row icon={Layers} label="Workspace">
                 <select className="input h-9 py-0 w-full" value="" aria-label="Move this task to another workspace"
@@ -175,6 +185,7 @@ export default function TaskPanel() {
               <CalendarPlus size={14} /> Add to Google Calendar
             </a>
           )}
+          <div className="mt-3"><SaveAsTemplate task={task} /></div>
         </div>
 
         <footer className="px-6 py-4 border-t border-line flex items-center justify-between gap-3">

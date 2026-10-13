@@ -1,6 +1,11 @@
 import React, { useRef, useState } from 'react'
-import { Plus, Trash2, Download, Upload, Sparkles, AlertTriangle, CalendarPlus } from 'lucide-react'
+import { Plus, Trash2, Download, Upload, Sparkles, AlertTriangle, CalendarPlus, CalendarCheck, Loader2, RefreshCw } from 'lucide-react'
 import { downloadIcs } from '../lib/calendar'
+import { connectCalendar, disconnectCalendar, syncNow, syncedEvents, useCalendarOn, useCalendarStatus } from '../features/CalendarSync'
+import { isConfigured } from '../lib/google'
+import { cleanTemplates, cleanViews, critCount } from '../lib/views'
+import { setShowEvents, useCalendarEvents, useShowEvents } from '../lib/gcalEvents'
+import { format } from 'date-fns'
 import AccountSection from '../features/Account'
 import InstallApp from '../features/InstallApp'
 import { WorkspacesSection } from '../features/Workspaces'
@@ -10,6 +15,126 @@ import { validateBackup } from '../lib/storage'
 import { loadWork } from '../work/workStore'
 import { ConfirmDialog, Segmented, cx } from '../components/ui'
 import { TimeField } from '../components/TimePicker'
+
+// The things you saved: task templates (from a task's "Save as template") and
+// Board views (from Filters → Save view). Rename or delete them here.
+function LibrarySection() {
+  const { settings, updateSettings } = usePlanner()
+  const templates = cleanTemplates(settings.templates)
+  const views = cleanViews(settings.views)
+  const rename = (key, list, id, name) => { const n = name.trim().slice(0, 30); if (n) updateSettings({ [key]: list.map((x) => (x.id === id ? { ...x, name: n } : x)) }) }
+  const remove = (key, list, id) => updateSettings({ [key]: list.filter((x) => x.id !== id) })
+  const Item = ({ listKey, list, item, detail }) => (
+    <li className="flex items-center gap-2 rounded-xl px-2 py-1.5 hover:bg-page">
+      <input defaultValue={item.name} maxLength={30} aria-label={`Name of ${item.name}`} onBlur={(e) => rename(listKey, list, item.id, e.target.value)}
+        onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur() }} className="bg-transparent outline-none text-sm font-semibold min-w-0 flex-1" />
+      <span className="text-[11px] text-faint shrink-0 hidden sm:inline">{detail}</span>
+      <button type="button" aria-label={`Delete ${item.name}`} onClick={() => remove(listKey, list, item.id)}
+        className="h-7 w-7 shrink-0 rounded-full inline-flex items-center justify-center text-faint hover:bg-coral/60 hover:text-coral-fg transition"><Trash2 size={13} /></button>
+    </li>
+  )
+  return (
+    <section className="card p-5">
+      <h2 className="h-display text-base mb-1">Templates and saved views</h2>
+      <p className="text-sm text-muted mb-4">Save a task as a template from its panel, then start new tasks from it. Save a Board filter as a view from Board → Filters.</p>
+      <div className="grid sm:grid-cols-2 gap-5">
+        <div>
+          <p className="text-xs font-semibold text-muted mb-1.5">Templates · {templates.length}</p>
+          {templates.length === 0 ? <p className="text-sm text-faint">None yet.</p> : (
+            <ul>{templates.map((t) => <Item key={t.id} listKey="templates" list={templates} item={t} detail={t.steps.length ? `${t.steps.length} steps` : 'No steps'} />)}</ul>
+          )}
+        </div>
+        <div>
+          <p className="text-xs font-semibold text-muted mb-1.5">Saved views · {views.length}</p>
+          {views.length === 0 ? <p className="text-sm text-faint">None yet.</p> : (
+            <ul>{views.map((v) => <Item key={v.id} listKey="views" list={views} item={v} detail={`${critCount(v.crit, v.text)} filter${critCount(v.crit, v.text) === 1 ? '' : 's'}`} />)}</ul>
+          )}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// Connect / status / disconnect for the automatic Google Calendar sync.
+function CalendarConnect() {
+  const st = useCalendarStatus()
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState(null)
+  const [confirmOff, setConfirmOff] = useState(false)
+  const [removeEvents, setRemoveEvents] = useState(true)
+  const on = useCalendarOn()
+  const showEvents = useShowEvents()
+  const shown = useCalendarEvents()
+  if (!isConfigured()) return null
+
+  const connect = async () => {
+    setError(null); setBusy(true)
+    try { await connectCalendar() } catch (e) { setError(e.message || 'Could not connect Google Calendar.') } finally { setBusy(false) }
+  }
+  const disconnect = async () => {
+    setBusy(true)
+    await disconnectCalendar({ removeEvents })
+    setBusy(false); setConfirmOff(false)
+  }
+  const line = {
+    syncing: 'Syncing…',
+    ok: `Up to date${st.last ? ` · ${format(new Date(st.last), 'p')}` : ''} · ${syncedEvents()} events`,
+    idle: 'Connected. Syncing in a moment…',
+    'needs-auth': 'Click Reconnect to keep syncing. Google asks again about once an hour.',
+    offline: 'No connection. It will retry.',
+    error: st.message || 'Could not sync.',
+    off: '',
+  }[st.state]
+
+  return (
+    <div className="mb-5 rounded-2xl border border-line bg-page p-4">
+      <p className="text-sm font-semibold inline-flex items-center gap-2"><CalendarCheck size={15} className="text-accent" /> Send my tasks to Google Calendar</p>
+      <p className="text-[13px] text-muted mt-1">
+        Tasks with a date become events on your primary calendar (all-day if they have no start time), and change or disappear when the task does.
+        By default NineFlow only creates and edits its own events.
+      </p>
+      {!on ? (
+        <div className="mt-3">
+          <button type="button" className="btn-black" disabled={busy} onClick={connect}>
+            {busy ? <><Loader2 size={14} className="animate-spin" /> Connecting…</> : <><CalendarCheck size={14} /> Connect Google Calendar</>}
+          </button>
+        </div>
+      ) : confirmOff ? (
+        <div role="alert" className="mt-3 rounded-xl bg-card border border-line p-3">
+          <p className="text-[13px] font-semibold">Disconnect Google Calendar?</p>
+          <label className="mt-2 flex items-start gap-2.5 text-[13px] cursor-pointer">
+            <input type="checkbox" className="mt-0.5 h-4 w-4 accent-[#F2420E]" checked={removeEvents} onChange={(e) => setRemoveEvents(e.target.checked)} />
+            Also remove the events NineFlow added to my calendar
+          </label>
+          <div className="mt-3 flex gap-2">
+            <button type="button" className="btn-black h-8 py-0 px-3 bg-coral-fg" disabled={busy} onClick={disconnect}>{busy ? 'Disconnecting…' : 'Disconnect'}</button>
+            <button type="button" className="btn-ghost h-8 py-0 px-3" onClick={() => setConfirmOff(false)}>Keep it</button>
+          </div>
+        </div>
+      ) : (
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <span className={cx('text-[13px] font-semibold', st.state === 'error' || st.state === 'needs-auth' ? 'text-peach-fg' : 'text-mint-fg')} role="status">{line}</span>
+          <span className="flex-1" />
+          {st.state === 'needs-auth'
+            ? <button type="button" className="btn-black h-8 py-0 px-3" disabled={busy} onClick={connect}>Reconnect</button>
+            : <button type="button" className="btn-ghost h-8 py-0 px-3" disabled={st.state === 'syncing'} onClick={syncNow}><RefreshCw size={13} /> Sync now</button>}
+          <button type="button" className="btn-ghost h-8 py-0 px-3" onClick={() => setConfirmOff(true)}>Disconnect</button>
+        </div>
+      )}
+      {on && (
+        <div className="mt-4 pt-3 border-t border-line flex flex-wrap items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-sm font-semibold">Show my calendar events here</p>
+            <p className="text-[12px] text-muted">Meetings from your primary calendar appear in Day, Week and Today's schedule, and Plan my day avoids them. Read while NineFlow is open, never saved.{shown.state === 'error' && shown.message ? ` ${shown.message}` : ''}</p>
+          </div>
+          <Segmented size="sm" value={showEvents ? 'on' : 'off'} onChange={(v) => setShowEvents(v === 'on')} options={[{ value: 'on', label: 'On' }, { value: 'off', label: 'Off' }]} />
+        </div>
+      )}
+      {st.message && !on && <p className="mt-2 text-[12px] text-peach-fg font-semibold">{st.message}</p>}
+      {error && <p role="alert" className="mt-2 text-[13px] text-coral-fg font-semibold">{error}</p>}
+    </div>
+  )
+}
 
 export default function Settings() {
   const { settings, updateSettings, addCategory, updateCategory, removeCategory, tasks, habits, importData, loadSample, clearAll } = usePlanner()
@@ -171,6 +296,9 @@ export default function Settings() {
           </Row>
         </section>
 
+        {/* Templates and saved views */}
+        <LibrarySection />
+
         {/* Data */}
         <section className="card p-5">
           <h2 className="h-display text-base mb-1">Your data</h2>
@@ -187,8 +315,9 @@ export default function Settings() {
         {/* Calendar */}
         <section className="card p-5">
           <h2 className="h-display text-base mb-1">Google Calendar</h2>
+          <CalendarConnect />
           <p className="text-sm text-muted mb-4">
-            No sign-in needed. Each task has an <b className="text-ink">Add to Google Calendar</b> button that opens the event pre-filled in your own
+            Without connecting, each task has an <b className="text-ink">Add to Google Calendar</b> button that opens the event pre-filled in your own
             Google account; the .ics file imports everything at once (Google Calendar → Settings → Import &amp; export). Recurring series import with their repeat rule.
           </p>
           <Row label="Offer after adding" hint="Show a small “Add to Google Calendar” link each time you add a task.">

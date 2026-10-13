@@ -1,0 +1,86 @@
+// Small helpers for the two optional extras on a task: reminders and tags.
+import { addDays, format, parseISO } from 'date-fns'
+
+// ---- reminders -------------------------------------------------------------------
+// task.reminders is null (use the default from Settings), [] (none), or a list
+// of "minutes before the start" such as [10, 1440].
+export const REMINDER_CHOICES = [0, 5, 10, 30, 60, 1440]
+export const ANCHOR_DEFAULT = '09:00' // tasks with a date but no start time are reminded as if they started now
+
+export function reminderLabel(m) {
+  if (m === 0) return 'At start'
+  if (m < 60) return `${m} min before`
+  if (m < 1440) return `${m / 60} h before`
+  return `${m / 1440} day before`
+}
+export const reminderShort = (m) => (m === 0 ? 'At start' : m < 60 ? `${m} min` : m < 1440 ? `${m / 60} h` : `${m / 1440} day`)
+
+// The offsets that apply to a task: its own, else the Settings default when
+// that is on, else none.
+export function effectiveReminders(task, settings) {
+  if (Array.isArray(task.reminders)) return task.reminders
+  const r = settings?.reminders
+  return r?.enabled ? [r.minutes] : []
+}
+
+// When the task "starts" for reminder purposes, as a Date (local time).
+export function reminderAnchor(task, anchorTime = ANCHOR_DEFAULT) {
+  if (!task.date) return null
+  const [h, m] = (task.startTime || anchorTime).split(':').map(Number)
+  const d = parseISO(task.date)
+  d.setHours(h, m, 0, 0)
+  return d
+}
+
+// Reminders that are due at `now`: one per offset whose time has come and whose
+// start has not passed (at-start reminders get five minutes of grace, so a
+// slow timer or a just-opened app still fires them).
+export function dueReminders(tasks, settings, now = new Date()) {
+  const out = []
+  const today = format(now, 'yyyy-MM-dd')
+  const horizon = format(addDays(now, 2), 'yyyy-MM-dd')
+  for (const t of tasks) {
+    if (t.status !== 'todo' || !t.date || t.date < today || t.date > horizon) continue
+    const start = reminderAnchor(t, settings?.reminders?.dayTime || ANCHOR_DEFAULT)
+    if (!start) continue
+    // Without a start time only custom reminders apply, so "all day" tasks aren't nagged by the default.
+    if (!t.startTime && !Array.isArray(t.reminders)) continue
+    for (const offset of effectiveReminders(t, settings)) {
+      const at = new Date(start.getTime() - offset * 60_000)
+      const late = offset === 0 ? 5 * 60_000 : 0
+      if (now >= at && now.getTime() <= start.getTime() + late) {
+        out.push({ id: `${t.id}@${t.date}@${t.startTime || 'day'}@${offset}`, task: t, offset, minutesLeft: Math.max(0, Math.round((start - now) / 60_000)) })
+      }
+    }
+  }
+  // Several due at once (the app was closed for a while): only the nearest one
+  // is announced; the earlier ones are marked silent so they don't pile up.
+  const nearest = new Map()
+  for (const d of out) if (!nearest.has(d.task.id) || d.offset < nearest.get(d.task.id)) nearest.set(d.task.id, d.offset)
+  return out.map((d) => ({ ...d, silent: d.offset !== nearest.get(d.task.id) }))
+}
+
+// ---- tags --------------------------------------------------------------------------
+export const MAX_TAGS = 6
+export const TAG_MAX = 24
+
+// "#Q4 Plan" → "q4-plan": lower case, letters/digits/-/_ only.
+export function cleanTag(raw) {
+  return String(raw ?? '').toLowerCase().replace(/^[#@]+/, '').replace(/[^\p{L}\p{N}_-]+/gu, '-').replace(/^-+|-+$/g, '').slice(0, TAG_MAX)
+}
+export function cleanTags(list) {
+  const seen = new Set()
+  const out = []
+  for (const x of Array.isArray(list) ? list : []) {
+    const t = cleanTag(x)
+    if (t && !seen.has(t)) { seen.add(t); out.push(t) }
+  }
+  return out.slice(0, MAX_TAGS)
+}
+
+// Every tag in use, most used first.
+export function allTags(tasks) {
+  const n = new Map()
+  for (const t of tasks) for (const g of t.tags || []) n.set(g, (n.get(g) || 0) + 1)
+  return [...n.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([tag, count]) => ({ tag, count }))
+}

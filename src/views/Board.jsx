@@ -7,9 +7,12 @@ import {
 import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { addDays, parseISO } from 'date-fns'
-import { Plus, MoreHorizontal, Search, LayoutGrid, List, ArrowUpDown, CalendarClock, CalendarCheck, Trash2, CheckSquare, X, Layers } from 'lucide-react'
+import { Plus, MoreHorizontal, Search, LayoutGrid, List, ArrowUpDown, CalendarClock, CalendarCheck, Trash2, CheckSquare, X, Layers, SlidersHorizontal, Bookmark } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
 import { currentProfileId } from '../lib/profiles'
+import { allTags } from '../lib/taskMeta'
+import { MAX_VIEWS, WHEN_OPTIONS, blankCrit, cleanViews, critCount, matches } from '../lib/views'
+import { uid } from '../lib/storage'
 import { currentWorkspaceId, listWorkspaces } from '../lib/workspaces'
 import { STATUSES, STATUS_LABEL, PRIORITIES, PRIORITY_LABEL, carriedLabel, dateKey, dueLabel, fmtMinutes, isOverdue } from '../lib/tasks'
 import { CategoryTag, CheckCircle, ConfirmDialog, Menu, PriorityPill, cx } from '../components/ui'
@@ -44,9 +47,14 @@ function collisionDetection(args) {
 }
 
 export default function Board() {
-  const { tasks, now, settings, moveToWorkspace, moveTask, sortStatus, moveOverdueToToday, clearCompleted, setQuickAdd } = usePlanner()
+  const { tasks, now, settings, updateSettings, moveToWorkspace, moveTask, sortStatus, moveOverdueToToday, clearCompleted, setQuickAdd } = usePlanner()
   const [query, setQuery] = useState('')
-  const [filter, setFilter] = useState('all')
+  // Filters: a search plus When / Category / Priority / Tag, which can be saved as a named view.
+  const [crit, setCrit] = useState(blankCrit)
+  const [viewId, setViewId] = useState('')
+  const [showFilters, setShowFilters] = useState(false)
+  const [naming, setNaming] = useState(false)
+  const [viewName, setViewName] = useState('')
   const [mode, setMode] = useState('board')
   const [showAllDone, setShowAllDone] = useState(false)
   const [confirmClear, setConfirmClear] = useState(false)
@@ -66,20 +74,28 @@ export default function Board() {
   }, [selecting])
 
   // ---- filtering ----
-  const visible = useMemo(() => {
-    const q = query.trim().toLowerCase()
-    const today = dateKey(now)
-    const weekEnd = dateKey(addDays(now, 6))
-    return tasks.filter((t) => {
-      if (q && !`${t.title} ${t.description}`.toLowerCase().includes(q)) return false
-      if (filter === 'today') return t.date === today
-      if (filter === 'week') return t.date && t.date >= today && t.date <= weekEnd
-      if (filter === 'overdue') return isOverdue(t, now)
-      if (filter.startsWith('cat:')) return t.category === filter.slice(4)
-      if (filter.startsWith('pri:')) return t.priority === filter.slice(4)
-      return true
-    })
-  }, [tasks, query, filter, now])
+  const tagList = useMemo(() => allTags(tasks), [tasks])
+  const views = useMemo(() => cleanViews(settings.views), [settings.views])
+  const visible = useMemo(() => tasks.filter((t) => matches(t, crit, query, now)), [tasks, crit, query, now])
+  const activeFilters = critCount(crit, query)
+  const setC = (patch) => { setCrit((c) => ({ ...c, ...patch })); setViewId('') }
+  const applyView = (id) => {
+    const v = views.find((x) => x.id === id)
+    setViewId(v ? v.id : '')
+    setCrit(v ? { ...blankCrit(), ...v.crit } : blankCrit())
+    setQuery(v ? v.text : '')
+    if (v && critCount(v.crit) > 0) setShowFilters(true)
+  }
+  const clearFilters = () => { setCrit(blankCrit()); setQuery(''); setViewId('') }
+  const saveView = () => {
+    const name = viewName.trim()
+    if (!name || views.length >= MAX_VIEWS) return
+    const v = { id: uid(), name: name.slice(0, 30), text: query.trim(), crit }
+    updateSettings({ views: [...views, v] })
+    setViewId(v.id); setNaming(false); setViewName('')
+  }
+  const deleteView = () => { updateSettings({ views: views.filter((v) => v.id !== viewId) }); setViewId('') }
+
 
   // Column id lists derived from the global array order.
   const columns = useMemo(() => {
@@ -197,18 +213,19 @@ export default function Board() {
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-faint" />
             <input className="input pl-8 w-full sm:w-48 bg-card" placeholder="Search tasks" value={query} onChange={(e) => setQuery(e.target.value)} />
           </label>
-          <select className="input w-auto min-w-[10rem] bg-card" value={filter} onChange={(e) => setFilter(e.target.value)}>
-            <option value="all">All tasks</option>
-            <option value="today">Today</option>
-            <option value="week">This week</option>
-            <option value="overdue">Carried over</option>
-            <optgroup label="Category">
-              {settings.categories.map((c) => <option key={c.id} value={`cat:${c.id}`}>{c.name}</option>)}
-            </optgroup>
-            <optgroup label="Priority">
-              {PRIORITIES.map((p) => <option key={p} value={`pri:${p}`}>{PRIORITY_LABEL[p]}</option>)}
-            </optgroup>
+          <select className="input w-auto min-w-[9rem] bg-card" value={viewId} aria-label="Saved views" onChange={(e) => applyView(e.target.value)}>
+            <option value="">All tasks</option>
+            {views.length > 0 && (
+              <optgroup label="Saved views">
+                {views.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
+              </optgroup>
+            )}
           </select>
+          <button type="button" onClick={() => setShowFilters((v) => !v)} aria-expanded={showFilters} aria-controls="board-filters"
+            className={cx('h-9 px-3.5 rounded-full border text-[13px] font-semibold inline-flex items-center gap-1.5 transition',
+              showFilters || activeFilters ? 'bg-ink text-page border-ink' : 'bg-card border-line text-muted hover:text-ink')}>
+            <SlidersHorizontal size={14} /> Filters{activeFilters > 0 && <span className="h-5 min-w-5 px-1 rounded-full bg-page text-ink text-[11px] font-bold inline-flex items-center justify-center">{activeFilters}</span>}
+          </button>
           {otherWorkspaces.length > 0 && mode === 'board' && (
             <button type="button" onClick={() => (selecting ? stopSelecting() : setSelecting(true))} aria-pressed={selecting}
               title="Choose several tasks to move to another workspace"
@@ -228,6 +245,39 @@ export default function Board() {
           </div>
         </div>
       </header>
+
+      {showFilters && (
+        <div id="board-filters" className="mb-4 -mt-2 rounded-2xl bg-card border border-line p-3 flex flex-wrap items-end gap-3 animate-fade-in">
+          {[
+            ['When', 'when', WHEN_OPTIONS.map((o) => [o.value, o.label])],
+            ['Category', 'category', [['', 'Any category'], ...settings.categories.map((c) => [c.id, c.name])]],
+            ['Priority', 'priority', [['', 'Any priority'], ...PRIORITIES.map((p) => [p, PRIORITY_LABEL[p]])]],
+            ['Tag', 'tag', [['', 'Any tag'], ...tagList.map(({ tag, count }) => [tag, `#${tag} (${count})`])]],
+          ].map(([label, key, options]) => (
+            <label key={key} className="flex flex-col gap-1 min-w-[8.5rem]">
+              <span className="text-[11px] font-semibold text-muted">{label}</span>
+              <select className="input py-1.5 bg-page" value={crit[key]} onChange={(e) => setC({ [key]: e.target.value })}>
+                {options.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+              </select>
+            </label>
+          ))}
+          <div className="flex items-center gap-2 ml-auto">
+            {activeFilters > 0 && <button type="button" className="btn-ghost h-9 py-0 px-3" onClick={clearFilters}>Clear</button>}
+            {viewId && <button type="button" className="btn-ghost h-9 py-0 px-3 text-coral-fg" onClick={deleteView} title="Delete this saved view"><Trash2 size={13} /> Delete view</button>}
+            {!viewId && activeFilters > 0 && !naming && views.length < MAX_VIEWS && (
+              <button type="button" className="btn-black h-9 py-0 px-3.5" onClick={() => { setNaming(true); setViewName('') }}><Bookmark size={13} /> Save view</button>
+            )}
+            {naming && (
+              <form onSubmit={(e) => { e.preventDefault(); saveView() }} className="flex items-center gap-2">
+                <input autoFocus className="input h-9 py-0 w-40" placeholder="Name this view" maxLength={30} value={viewName} onChange={(e) => setViewName(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Escape') { e.stopPropagation(); setNaming(false) } }} aria-label="View name" />
+                <button type="submit" disabled={!viewName.trim()} className={cx('btn-black h-9 py-0 px-3.5', !viewName.trim() && 'opacity-40')}>Save</button>
+                <button type="button" onClick={() => setNaming(false)} aria-label="Cancel" className="h-8 w-8 rounded-full inline-flex items-center justify-center text-faint hover:bg-page hover:text-ink"><X size={14} /></button>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
 
       {selecting && mode === 'board' && (
         <div role="region" aria-label="Move selected tasks"

@@ -6,6 +6,8 @@ import {
 import { emptyWork, saveWork, workKey } from '../work/workStore'
 import { createTask, dateKey, todayKey, withSessionPaused, withSessionResumed, withStatus } from '../lib/tasks'
 import { generateSample } from '../lib/sample'
+import { dueReminders } from '../lib/taskMeta'
+import { busyFor } from '../lib/gcalEvents'
 import { currentProfileId } from '../lib/profiles'
 import { removeTasksFromWorkspace, sendTasksToWorkspace } from '../lib/workspaces'
 import { ensureRecurrences } from '../lib/recurrence'
@@ -46,6 +48,7 @@ export function PlannerProvider({ children }) {
   const [quickAdd, setQuickAdd] = useState(null) // null | { date?, status? }
   const [goalPlannerOpen, setGoalPlannerOpen] = useState(false) // the "plan a goal" window
   const [promptListOpen, setPromptListOpen] = useState(false) // the "prompt to list" window
+  const [askOpen, setAskOpen] = useState(false) // the "ask NineFlow" window
   // The day the planner is looking at, shared by every view: the Dashboard
   // shows it, the Week calendar shows its day or week, Month shows its month.
   const [dashboardDate, setDashboardDate] = useState(todayKey)
@@ -67,7 +70,9 @@ export function PlannerProvider({ children }) {
 
   // Latest tasks for callbacks that need them without re-creating themselves.
   const tasksRef = useRef(tasks)
+  const settingsRef = useRef(null) // latest settings for timers that must not restart on every change
   tasksRef.current = tasks
+  settingsRef.current = settings
 
   // A write that fails (storage full, private mode) is reported here so the
   // UI can tell the user their changes are not being kept.
@@ -213,7 +218,7 @@ export function PlannerProvider({ children }) {
   // planDay does both at once.
   const previewPlan = useCallback((key) => {
     const h = settings.workHours
-    return planDayPure(tasks, key, new Date(), { start: toMin(h.start), end: toMin(h.end) })
+    return planDayPure(tasks, key, new Date(), { start: toMin(h.start), end: toMin(h.end), busy: busyFor(key) })
   }, [tasks, settings.workHours])
   const applyPlan = useCallback((plan) => {
     if (!plan?.patches.length) return
@@ -512,7 +517,8 @@ export function PlannerProvider({ children }) {
   // `startNow`, whatever you were doing is paused (its timer stops), the new
   // task's timer starts, and timed tasks still ahead today can be pushed back
   // by its length. `resume` remembers what to go back to afterwards.
-  const logInterruption = useCallback(({ title, by = '', minutes = 30, category, startNow = true, shift = true }) => {
+  // `date` / `startTime` schedule it for another day or time; with `startNow` it is today, from now.
+  const logInterruption = useCallback(({ title, by = '', minutes = 30, category, startNow = true, shift = true, date, startTime }) => {
     const at = new Date()
     const today = dateKey(at)
     const nowMin = at.getHours() * 60 + at.getMinutes()
@@ -520,9 +526,9 @@ export function PlannerProvider({ children }) {
     const working = tasksRef.current.find((t) => t.status === 'working' && t.sessions.some((x) => x.end == null))
     const prev = !startNow ? null : f ? { id: f.taskId, mode: 'focus' } : working ? { id: working.id, mode: 'working' } : null
     let task = createTask({
-      title, date: today, durationMinutes: minutes, priority: 'high',
+      title, date: startNow ? today : (date || today), durationMinutes: minutes, priority: 'high',
       ...(category ? { category } : {}),
-      startTime: startNow ? hhmm(Math.floor(nowMin / 5) * 5) : null,
+      startTime: startNow ? hhmm(Math.floor(nowMin / 5) * 5) : (startTime || null),
       interruption: { by: by.trim(), at: at.toISOString(), resume: prev?.id || null, resumeMode: prev?.mode || null, resolved: false },
     })
     if (startNow && !f) task = withStatus(task, 'working', at)
@@ -616,35 +622,29 @@ export function PlannerProvider({ children }) {
     )
   }, [])
 
-  // Reminders: while the app is open, a browser notification a few minutes
-  // before a timed task starts. Opt-in from Settings; each task fires once.
+  // Reminders: while the app is open, a notification before a task starts, at
+  // the times the task asks for (or the Settings default). Each fires once.
+  // Needs the browser's notification permission, asked for when you choose a
+  // reminder; Settings → Reminders turns the default one on for every timed task.
   const remindedRef = useRef(new Set())
   useEffect(() => {
-    const r = settings.reminders
-    if (!r?.enabled || typeof Notification === 'undefined' || Notification.permission !== 'granted') return
     const check = () => {
-      const t0 = new Date()
-      const key = dateKey(t0)
-      const nowMin = t0.getHours() * 60 + t0.getMinutes()
-      for (const t of tasksRef.current) {
-        if (t.date !== key || !t.startTime || t.status !== 'todo') continue
-        const [h, m] = t.startTime.split(':').map(Number)
-        const until = h * 60 + m - nowMin
-        const id = `${t.id}@${key}@${t.startTime}`
-        if (until >= 0 && until <= r.minutes && !remindedRef.current.has(id)) {
-          remindedRef.current.add(id)
-          try {
-            new Notification(until === 0 ? `Starting now: ${t.title}` : `In ${until} min: ${t.title}`, {
-              body: `${t.startTime} · ${t.durationMinutes} min`, tag: id,
-            })
-          } catch { /* some browsers only allow notifications from a service worker */ }
-        }
+      if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return
+      for (const d of dueReminders(tasksRef.current, settingsRef.current, new Date())) {
+        if (remindedRef.current.has(d.id)) continue
+        remindedRef.current.add(d.id)
+        if (d.silent) continue
+        const t = d.task
+        const title = d.minutesLeft === 0 ? `Starting now: ${t.title}` : d.minutesLeft >= 120 ? `Soon: ${t.title}` : `In ${d.minutesLeft} min: ${t.title}`
+        try {
+          new Notification(title, { body: `${t.startTime ? `${t.startTime} · ` : ''}${t.durationMinutes} min`, tag: d.id })
+        } catch { /* some browsers only allow notifications from a service worker */ }
       }
     }
     check()
     const timer = setInterval(check, 20_000)
     return () => clearInterval(timer)
-  }, [settings.reminders])
+  }, [])
 
   const categoryById = useMemo(() => {
     const m = new Map(settings.categories.map((c) => [c.id, c]))
@@ -666,6 +666,8 @@ export function PlannerProvider({ children }) {
       setGoalPlannerOpen,
       promptListOpen,
       setPromptListOpen,
+      askOpen,
+      setAskOpen,
       dashboardDate,
       setDashboardDate,
       calendarMode,
@@ -728,7 +730,7 @@ export function PlannerProvider({ children }) {
     }),
     [
       tasks, settings, now, view, setView, selectedId, quickAdd, dashboardDate, calendarMode, openDay,
-      addTask, addTasks, moveToWorkspace, goalPlannerOpen, promptListOpen, updateTask, setSessions, setStatus, toggleComplete, moveTask, sortStatus,
+      addTask, addTasks, moveToWorkspace, goalPlannerOpen, promptListOpen, askOpen, updateTask, setSessions, setStatus, toggleComplete, moveTask, sortStatus,
       moveOverdueToToday, clearCompleted, removeTask, setRecurrence, removeSeries, applyToUpcoming, planDay,
       previewPlan, applyPlan, moveTasksTo,
       focus, startFocus, pauseFocus, resumeFocus, advanceFocus, stopFocus, setFocusOpen,

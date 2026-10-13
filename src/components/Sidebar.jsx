@@ -9,6 +9,7 @@ import { CloudStatusPill } from '../features/CloudStatus'
 import { WorkspaceMenu } from '../features/Workspaces'
 import { PlanGoalButton } from './GoalPlanner'
 import { PromptListButton } from './PromptToList'
+import { AskPlannerButton } from './AskPlanner'
 
 const NAV = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -95,6 +96,7 @@ export default function Sidebar() {
       <InterruptButton />
       <PlanGoalButton />
       <PromptListButton />
+      <AskPlannerButton />
 
       <button
         type="button"

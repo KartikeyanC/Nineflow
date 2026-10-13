@@ -21,6 +21,11 @@ export const STATUS_LABEL = { todo: 'To do', working: 'Working', completed: 'Com
 export const PRIORITIES = ['high', 'medium', 'low']
 export const PRIORITY_LABEL = { high: 'High', medium: 'Medium', low: 'Low' }
 
+export const newSubtask = (title) => ({ id: uid(), title: String(title).slice(0, 120), done: false })
+export const subProgress = (task) => {
+  const subs = task.subtasks || []
+  return { done: subs.filter((s) => s.done).length, total: subs.length }
+}
 export const todayKey = () => format(new Date(), 'yyyy-MM-dd')
 export const dateKey = (d) => format(d, 'yyyy-MM-dd')
 
@@ -39,6 +44,9 @@ export function createTask(fields = {}) {
     completedAt: null,
     createdAt: new Date().toISOString(),
     sessions: [],
+    subtasks: [], // [{ id, title, done }]: the steps inside the task
+    reminders: null, // null = the Settings default; [] = none; [10, 1440] = minutes before the start
+    tags: [], // ['client-a', 'q4']: free labels, any number per task (up to 6)
     seriesId: null,
     recurrence: null, // { freq, until, skip } | null
     interruption: null, // { by, at, resume, resumeMode, resolved } | null

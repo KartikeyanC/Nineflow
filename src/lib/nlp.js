@@ -24,7 +24,7 @@ function weekdayDate(now, idx, next = false) {
 export function parseQuickAdd(input, { categories = [], now = new Date(), ignore = [] } = {}) {
   let text = ` ${input} `
   const ignored = new Set(ignore.map((x) => x.toLowerCase()))
-  const out = { title: '', date: undefined, startTime: undefined, durationMinutes: undefined, priority: undefined, category: undefined, recurrence: undefined, tokens: [] }
+  const out = { title: '', date: undefined, startTime: undefined, durationMinutes: undefined, priority: undefined, category: undefined, recurrence: undefined, tags: [], tokens: [] }
   const take = (re, type, fn) => {
     const m = text.match(re)
     if (!m || ignored.has(m[0].trim().toLowerCase())) return
@@ -80,6 +80,14 @@ export function parseQuickAdd(input, { categories = [], now = new Date(), ignore
   if (out.startTime === undefined) take(/\s(?:at\s+|@\s*)([01]?\d|2[0-3]):([0-5]\d)\s/i, 'time', (m) => (out.startTime = hhmm(Number(m[1]), Number(m[2]))))
   if (out.startTime === undefined) take(/\s([01]?\d|2[0-3]):([0-5]\d)\s/, 'time', (m) => (out.startTime = hhmm(Number(m[1]), Number(m[2]))))
 
+  // Tags: @client-a @q4 (a letter first, so "@3pm" stays a time and "@noon" is read above)
+  text = text.replace(/\s@([a-z][\w-]*)(?=\s)/gi, (all, name) => {
+    if (ignored.has(all.trim().toLowerCase()) || out.tags.length >= 6) return all
+    out.tags.push(name.toLowerCase())
+    out.tokens.push({ type: 'tag', raw: all.trim() })
+    return ' '
+  })
+
   // Date: today, tomorrow, day after tomorrow, in N days, next week, (on/next) weekday, oct 12 / 12 oct, ISO
   if (out.date === undefined) {
     take(/\s(day\s+after\s+tomorrow)\s/i, 'date', () => (out.date = dateKey(addDays(now, 2))))
@@ -119,5 +127,5 @@ export function parseQuickAdd(input, { categories = [], now = new Date(), ignore
   return out
 }
 
-export const TOKEN_LABEL = { date: 'Date', time: 'Time', duration: 'Estimate', priority: 'Priority', category: 'Category', repeat: 'Repeat' }
+export const TOKEN_LABEL = { date: 'Date', time: 'Time', duration: 'Estimate', priority: 'Priority', category: 'Category', repeat: 'Repeat', tag: 'Tag' }
 export const fmtDateToken = (key, now = new Date()) => (key === dateKey(now) ? 'Today' : key === dateKey(addDays(now, 1)) ? 'Tomorrow' : format(parse(key, 'yyyy-MM-dd', now), 'EEE, MMM d'))

@@ -1,7 +1,8 @@
 import React, { useState } from 'react'
-import { CalendarDays, Timer, ArrowRight, Repeat, Check } from 'lucide-react'
+import { CalendarDays, Timer, ArrowRight, Repeat, Check, ListChecks, Bell } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
-import { carriedLabel, dueLabel, fmtMinutes, isOverdue, todayKey, totalMinutes } from '../lib/tasks'
+import { reminderShort } from '../lib/taskMeta'
+import { carriedLabel, dueLabel, fmtMinutes, isOverdue, subProgress, todayKey, totalMinutes } from '../lib/tasks'
 import { describe } from '../lib/recurrence'
 import { CategoryTag, CheckCircle, PriorityPill, cx } from './ui'
 
@@ -24,6 +25,7 @@ export default function TaskCard({ task, tone, dragging = false, handleProps, st
   const done = task.status === 'completed'
   const overdue = isOverdue(task, now)
   const due = dueLabel(task, now)
+  const sub = subProgress(task)
   // Estimate vs actual, shown once a task is finished.
   const actual = done ? totalMinutes(task, now) : 0
 
@@ -89,6 +91,13 @@ export default function TaskCard({ task, tone, dragging = false, handleProps, st
         </button>
       )}
 
+      {(task.tags || []).length > 0 && (
+        <p className="mt-2 flex flex-wrap gap-x-2 gap-y-0.5 text-[11px] font-semibold text-lav-fg">
+          {task.tags.slice(0, 3).map((t) => <span key={t}>#{t}</span>)}
+          {task.tags.length > 3 && <span className="text-faint">+{task.tags.length - 3}</span>}
+        </p>
+      )}
+
       <div className="mt-3 flex items-center gap-2">
         <CategoryTag category={categoryById(task.category)} />
         <span className="inline-flex items-center gap-1 text-[11px] text-faint font-medium" title={actual ? `Estimated ${fmtMinutes(task.durationMinutes)} · actual ${fmtMinutes(actual)}` : undefined}>
@@ -99,7 +108,13 @@ export default function TaskCard({ task, tone, dragging = false, handleProps, st
             </span>
           )}
         </span>
+        {sub.total > 0 && (
+          <span className={cx('inline-flex items-center gap-1 text-[11px] font-semibold tnum', sub.done === sub.total ? 'text-mint-fg' : 'text-faint')} title={`${sub.done} of ${sub.total} steps done`}>
+            <ListChecks size={12} /> {sub.done}/{sub.total}
+          </span>
+        )}
         {task.recurrence && <Repeat size={12} className="text-lav-fg" title={describe(task.recurrence)} />}
+        {Array.isArray(task.reminders) && task.reminders.length > 0 && <Bell size={12} className="text-faint" aria-label="Has reminders" title={`Reminders: ${task.reminders.map(reminderShort).join(', ')}`} />}
         <PriorityPill priority={task.priority} className="ml-auto" />
       </div>
     </div>

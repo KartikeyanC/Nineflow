@@ -7,11 +7,13 @@ import Dock, { MobileDock } from './components/Dock'
 import QuickAddModal from './components/QuickAddModal'
 import GoalPlanner from './components/GoalPlanner'
 import PromptToList from './components/PromptToList'
+import AskPlanner from './components/AskPlanner'
 import TaskPanel from './components/TaskPanel'
 import AuthGate from './features/AuthGate'
 import FocusMode from './components/FocusMode'
 import PipQuickList from './components/PipQuickList'
 import CalendarToast from './components/CalendarToast'
+import CalendarSync from './features/CalendarSync'
 import Notices from './features/Notices'
 import Ritual from './features/Ritual'
 import WelcomeBack from './features/WelcomeBack'
@@ -73,11 +75,13 @@ function Shell() {
       <QuickAddModal />
       <GoalPlanner />
       <PromptToList />
+      <AskPlanner />
       <TaskPanel />
       <FocusMode />
       <PipQuickList />
       <CalendarToast />
       <Notices />
+      <CalendarSync />
       <Ritual />
       <WelcomeBack />
       <Interrupt />

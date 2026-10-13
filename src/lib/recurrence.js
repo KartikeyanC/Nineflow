@@ -3,7 +3,7 @@
 // Occurrences are materialized lazily for a rolling horizon so every view
 // keeps deriving from the single tasks array.
 import { addDays, addMonths, format, parseISO } from 'date-fns'
-import { createTask, dateKey } from './tasks'
+import { createTask, dateKey, newSubtask } from './tasks'
 
 export const FREQS = ['daily', 'weekdays', 'weekly', 'monthly']
 export const FREQ_LABEL = { daily: 'Daily', weekdays: 'Weekdays', weekly: 'Weekly', monthly: 'Monthly' }
@@ -67,6 +67,10 @@ export function ensureRecurrences(tasks, now = new Date(), horizon = HORIZON_DAY
         durationMinutes: template.durationMinutes,
         category: template.category,
         priority: template.priority,
+        // Each day starts with the same steps, all unticked.
+        subtasks: (template.subtasks || []).map((s) => newSubtask(s.title)),
+        reminders: template.reminders ?? null,
+        tags: template.tags || [],
         seriesId,
         recurrence: rec,
       }))
