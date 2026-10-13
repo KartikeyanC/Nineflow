@@ -4,19 +4,14 @@ import { usePlanner } from '../store/PlannerContext'
 import { reminderShort } from '../lib/taskMeta'
 import { carriedLabel, dueLabel, fmtMinutes, isOverdue, subProgress, todayKey, totalMinutes } from '../lib/tasks'
 import { describe } from '../lib/recurrence'
+import { CARD_STYLE, STATUS_CARD_COLOR } from '../lib/columns'
 import { CategoryTag, CheckCircle, PriorityPill, cx } from './ui'
 
-// In dark mode a card takes the colour of the column it sits in: To Do orange,
-// Working blue, Completed green (light mode keeps white cards on pastel columns).
-const TONE = {
-  todo: 'dark:bg-accent-soft dark:border-accent/30',
-  working: 'dark:bg-sky dark:border-sky-fg/30',
-  completed: 'dark:bg-mint dark:border-mint-fg/30',
-}
+// In dark mode a card takes the colour of the column it sits in (see CARD_STYLE).
 
 // Board card. Presentation only; the parent attaches drag behaviour through
 // `innerRef`, `handleProps` and `style`. `tone` is the column it is in right
-// now (it changes while the card is dragged across, before the status does).
+// now, as a column colour (it changes while the card is dragged across, before the status does).
 // `select` ({ picked, onToggle }) puts it in "choose tasks" mode: tapping picks
 // the card instead of opening it, and the done circle becomes a pick circle.
 export default function TaskCard({ task, tone, dragging = false, handleProps, style, innerRef, select }) {
@@ -53,7 +48,7 @@ export default function TaskCard({ task, tone, dragging = false, handleProps, st
       aria-label={`${task.title || 'Untitled'}${overdue ? `, carried over ${carriedLabel(task.date, now)}` : ''}. Enter to open, Space to move.`}
       className={cx(
         'group bg-card rounded-2xl border border-line shadow-soft p-3.5 cursor-pointer select-none',
-        TONE[tone || task.status],
+        CARD_STYLE[tone] || CARD_STYLE[STATUS_CARD_COLOR[task.status]],
         // On the board dnd-kit owns `transform` (and its transition), so a CSS
         // transform transition or hover lift there would fight it and stutter.
         innerRef ? 'transition-shadow duration-200 hover:shadow-lift' : 'transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-lift',

@@ -356,7 +356,7 @@ export default function Board() {
           {createPortal(<DragOverlay dropAnimation={DROP_ANIMATION}>
             {activeTask ? (
               <div className="animate-card-lift rotate-[2deg] shadow-modal rounded-2xl cursor-grabbing">
-                <TaskCard task={activeTask} tone={cols.find((c) => idLists[c.id].includes(activeTask.id))?.base} />
+                <TaskCard task={activeTask} tone={cols.find((c) => idLists[c.id].includes(activeTask.id))?.color} />
               </div>
             ) : null}
           </DragOverlay>, document.body)}
@@ -399,7 +399,7 @@ function Column({ col, ids, taskById, activeId, selecting, picked, onPick, highl
 
       <SortableContext items={ids} strategy={verticalListSortingStrategy}>
         <div className="flex flex-col gap-2.5 flex-1 overflow-y-auto pr-0.5 text-ink">
-          {ids.map((id) => taskById.get(id) && <SortableCard key={id} task={taskById.get(id)} tone={col.base} dragging={id === activeId} selecting={selecting} picked={picked.has(id)} onPick={() => onPick(id)} />)}
+          {ids.map((id) => taskById.get(id) && <SortableCard key={id} task={taskById.get(id)} tone={col.color} dragging={id === activeId} selecting={selecting} picked={picked.has(id)} onPick={() => onPick(id)} />)}
           {ids.length === 0 && (
             <div className={cx('flex-1 flex items-center justify-center text-xs font-semibold border-2 border-dashed rounded-2xl min-h-[96px]', c.text, 'border-current/30 opacity-70')}>
               Drop tasks here

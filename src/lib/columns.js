@@ -35,6 +35,22 @@ export const COLUMN_STYLE = {
   rose: { label: 'Rose', panel: 'bg-rose/60', text: 'text-rose-fg', header: 'bg-rose', dot: 'bg-rose-fg' },
   teal: { label: 'Teal', panel: 'bg-teal/60', text: 'text-teal-fg', header: 'bg-teal', dot: 'bg-teal-fg' },
 }
+// In dark mode a Board card takes the colour of the column it sits in (light mode keeps
+// white cards on pastel columns). Keyed by the column's colour, not its status, so a
+// lavender "In review" column that counts as To do has lavender cards.
+export const CARD_STYLE = {
+  accent: 'dark:bg-accent-soft dark:border-accent/30',
+  sky: 'dark:bg-sky dark:border-sky-fg/30',
+  mint: 'dark:bg-mint dark:border-mint-fg/30',
+  lav: 'dark:bg-violet dark:border-violet-fg/30',
+  butter: 'dark:bg-butter dark:border-butter-fg/30',
+  coral: 'dark:bg-coral dark:border-coral-fg/30',
+  peach: 'dark:bg-peach dark:border-peach-fg/30',
+  rose: 'dark:bg-rose dark:border-rose-fg/30',
+  teal: 'dark:bg-teal dark:border-teal-fg/30',
+}
+// A card shown outside a column follows its status's original colour.
+export const STATUS_CARD_COLOR = { todo: 'accent', working: 'sky', completed: 'mint' }
 export const COLUMN_COLORS = Object.keys(COLUMN_STYLE)
 export const styleOf = (col) => COLUMN_STYLE[col.color] || COLUMN_STYLE.sky
 

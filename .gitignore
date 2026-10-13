@@ -11,3 +11,6 @@ dist
 # Desktop app: Google Desktop OAuth client, and built installers
 desktop/oauth.json
 release
+
+# Google OAuth client files downloaded from Google Cloud (they contain a secret)
+client_secret*.json
