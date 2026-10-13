@@ -28,6 +28,8 @@ nsis:
   shortcutName: NineFlow
   uninstallDisplayName: NineFlow
   artifactName: NineFlow-Setup-${version}.${ext}
+  # No .blockmap file next to the installer: it only serves auto-update, which this app doesn't use (publish: null).
+  differentialPackage: false
 mac:
   target:
     - target: dmg
