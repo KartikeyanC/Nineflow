@@ -1,9 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Zap, X, CornerUpLeft } from 'lucide-react'
+import { format, parseISO } from 'date-fns'
 import { usePlanner } from '../store/PlannerContext'
 import { dateKey, fmtMinutes, totalMinutes } from '../lib/tasks'
 import { dayLoad, hhmm, toMin } from '../lib/capacity'
 import { CategoryPills, cx, useDialogFocus } from '../components/ui'
+import { DateField } from '../components/DatePicker'
+import { TimeField } from '../components/TimePicker'
 
 // Interruptions: someone hands you urgent work mid-plan. Log it in a few
 // seconds; it goes onto today's plan, pauses what you were doing, and the
@@ -43,6 +46,12 @@ export default function Interrupt() {
   const hoursRef = useRef(null)
   const [category, setCategory] = useState(null)
   const [startNow, setStartNow] = useState(true)
+  // When it happens: a day and a start time (the end follows from the length). It opens on
+  // today at the current time, which is what "Start it now" means.
+  const [date, setDate] = useState(null) // 'yyyy-MM-dd'
+  const [start, setStart] = useState(null) // 'HH:mm', or null for no set time
+  const [nowSlot, setNowSlot] = useState('')
+  const [endError, setEndError] = useState(null)
   const [shift, setShift] = useState(true)
   const ref = useRef(null)
   useDialogFocus(ref, open)
@@ -51,6 +60,9 @@ export default function Interrupt() {
   useEffect(() => {
     const show = () => {
       setTitle(''); setBy(''); setPreset(30); setCustom(false); setStartNow(true); setShift(true)
+      const n = new Date()
+      const slot = hhmm(Math.floor((n.getHours() * 60 + n.getMinutes()) / 5) * 5)
+      setNowSlot(slot); setStart(slot); setDate(dateKey(n)); setEndError(null)
       setCategory(settings.categories.find((c) => c.id === 'work')?.id || settings.categories[0]?.id)
       setOpen(true)
     }
@@ -87,15 +99,33 @@ export default function Interrupt() {
   }, [tasks, focus])
   const later = useMemo(() => tasks.filter((t) => t.date === today && t.status === 'todo' && t.startTime && toMin(t.startTime) >= nowMin), [tasks, today, nowMin])
   const people = useMemo(() => [...new Set(tasks.map((t) => t.interruption?.by).filter(Boolean))].slice(0, 8), [tasks])
-  const load = useMemo(() => dayLoad(tasks, today, now, settings.workHours), [tasks, today, now, settings.workHours])
+  // Today, from this moment, is what "start it now" means; any other day or time is scheduled.
+  const isNow = date === today && start === nowSlot
+  const startsNow = startNow && isNow
+  const day = date || today
+  const dayLabel = day === today ? 'Today' : format(parseISO(day), 'EEE d MMM')
+  const endMin = start ? toMin(start) + minutes : null
+  const pastMidnight = endMin != null && endMin > 1440
+  const load = useMemo(() => dayLoad(tasks, day, now, settings.workHours), [tasks, day, now, settings.workHours])
   const after = load.over + minutes
-  const finish = (load.finish ?? Math.max(nowMin, toMin(settings.workHours.start))) + minutes
+  const workStart = toMin(settings.workHours.start)
+  const finish = !startsNow && endMin != null ? endMin : (load.finish ?? (day === today ? Math.max(nowMin, workStart) : workStart)) + minutes
+  const timeError = endError || (pastMidnight ? 'That runs past midnight. Start earlier or make it shorter.' : null)
+  const setEnd = (v) => {
+    const diff = toMin(v) - toMin(start)
+    if (diff <= 0) { setEndError('The end has to be after the start.'); return }
+    if (diff > MAX_MINUTES) { setEndError('Up to 12 hours. For longer work, add it as a task.'); return }
+    setEndError(null)
+    if (LENGTHS.includes(diff)) { setPreset(diff); setCustom(false) }
+    else { setCustom(true); setHours(String(Math.floor(diff / 60))); setMins(String(diff % 60)) }
+  }
+  const resetToNow = () => { setDate(today); setStart(nowSlot); setStartNow(true); setEndError(null) }
 
   if (!open) return null
   const submit = (e) => {
     e.preventDefault()
-    if (!title.trim() || customError) return
-    logInterruption({ title: title.trim(), by, minutes, category, startNow, shift: startNow && shift })
+    if (!title.trim() || customError || timeError) return
+    logInterruption({ title: title.trim(), by, minutes, category, startNow: startsNow, shift: startsNow && shift, date: day, startTime: start })
     setOpen(false)
   }
 
@@ -122,6 +152,22 @@ export default function Interrupt() {
           <input id="interrupt-by" className="input" list="interrupt-people" placeholder="Manager, client, teammate…" value={by} onChange={(e) => setBy(e.target.value)} />
           <datalist id="interrupt-people">{people.map((p) => <option key={p} value={p} />)}</datalist>
         </label>
+
+        <div className="grid gap-1.5">
+          <div className="flex items-center justify-between">
+            <span className="text-[12px] font-semibold text-muted">When?</span>
+            {!isNow && <button type="button" onClick={resetToNow} className="text-[12px] font-semibold text-muted hover:text-ink underline underline-offset-4 decoration-line hover:decoration-ink">Reset to now</button>}
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-[1.5fr_1fr_1fr] gap-x-2 gap-y-1">
+            <span className="col-span-2 sm:col-span-1 text-[11px] font-semibold text-faint">Date</span>
+            <span className="hidden sm:block text-[11px] font-semibold text-faint">Start</span>
+            <span className="hidden sm:block text-[11px] font-semibold text-faint">End</span>
+            <DateField value={date} onChange={setDate} allowClear={false} placeholder="Pick a date" className="col-span-2 sm:col-span-1 w-full" />
+            <div className="grid gap-1"><span className="sm:hidden text-[11px] font-semibold text-faint">Start</span><TimeField value={start} onChange={(v) => { setStart(v); setEndError(null) }} placeholder="No set time" className="w-full" /></div>
+            <div className={cx('grid gap-1', !start && 'opacity-50 pointer-events-none')}><span className="sm:hidden text-[11px] font-semibold text-faint">End</span><TimeField value={endMin != null && endMin <= 1440 ? hhmm(endMin) : null} onChange={setEnd} allowClear={false} placeholder="End" className="w-full" /></div>
+          </div>
+          {timeError && <p role="alert" className="text-[12px] font-semibold text-coral-fg">{timeError}</p>}
+        </div>
 
         <div className="grid gap-1.5">
           <span className="text-[12px] font-semibold text-muted">About how long?</span>
@@ -159,9 +205,12 @@ export default function Interrupt() {
         <CategoryPills categories={settings.categories} value={category} onChange={setCategory} />
 
         <div className="grid gap-2 rounded-2xl bg-subtle ring-hair p-3.5">
-          <Toggle checked={startNow} onChange={setStartNow} label="Start it now"
-            hint={current ? `Pauses “${current.title}” (${fmtMinutes(totalMinutes(current, now))} logged) and starts the timer on this. You'll be offered to go back to it.` : 'Starts the timer on this now.'} />
-          {startNow && later.length > 0 && (
+          {!isNow && (
+            <p className="text-[13px]"><b>Scheduled</b> for {dayLabel}{start ? ` at ${start}${endMin != null && endMin <= 1440 ? `–${hhmm(endMin)}` : ''}` : ''}. It goes on that day's plan; nothing is paused or pushed back.</p>
+          )}
+          {isNow && <Toggle checked={startNow} onChange={setStartNow} label="Start it now"
+            hint={current ? `Pauses “${current.title}” (${fmtMinutes(totalMinutes(current, now))} logged) and starts the timer on this. You'll be offered to go back to it.` : 'Starts the timer on this now.'} />}
+          {startsNow && later.length > 0 && (
             <Toggle checked={shift} onChange={setShift} label={`Push ${later.length} later task${later.length === 1 ? '' : 's'} back by ${fmtMinutes(minutes)}`}
               hint={`From ${later.map((t) => t.startTime).sort()[0]}, so nothing overlaps.`} />
           )}
@@ -171,15 +220,15 @@ export default function Interrupt() {
           {load.afterHours
             ? `Your work day is over; this adds ${fmtMinutes(minutes)} to today.`
             : after > 0
-              ? `Today will be ${fmtMinutes(after)} over capacity, finishing around ${hhmm(finish)}. You can move lower-priority work afterwards.`
-              : `Still fits: you'd finish around ${hhmm(finish)}.`}
+              ? `${dayLabel} will be ${fmtMinutes(after)} over capacity, finishing around ${hhmm(finish)}. You can move lower-priority work afterwards.`
+              : `Still fits: ${day === today ? "you'd" : `${dayLabel} would`} finish around ${hhmm(finish)}.`}
         </p>
 
         <footer className="flex items-center justify-end gap-2">
           <button type="button" className="btn-ghost" onClick={() => setOpen(false)}>Cancel</button>
-          <button type="submit" disabled={!title.trim() || !!customError}
+          <button type="submit" disabled={!title.trim() || !!customError || !!timeError}
             className="inline-flex items-center gap-2 h-10 rounded-full bg-accent text-white px-5 text-[13px] font-semibold transition hover:-translate-y-px active:scale-[0.97] disabled:opacity-40 disabled:pointer-events-none">
-            <Zap size={14} /> {startNow ? 'Log and start' : 'Add to today'}
+            <Zap size={14} /> {startsNow ? 'Log and start' : `Add to ${dayLabel === 'Today' ? 'today' : dayLabel}`}
           </button>
         </footer>
       </form>

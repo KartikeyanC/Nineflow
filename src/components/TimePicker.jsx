@@ -13,7 +13,9 @@ const ROW_H = 32
 export function TimeList({ value, onChange, allowClear = true, onClose }) {
   const listRef = useRef(null)
   useEffect(() => {
-    const idx = SLOTS.indexOf(value || '09:00')
+    const exact = SLOTS.indexOf(value || '09:00')
+    // A value like 14:35 isn't a slot: scroll to the slot it falls in.
+    const idx = exact >= 0 ? exact : Math.floor((Number(value.slice(0, 2)) * 60 + Number(value.slice(3, 5))) / 15)
     if (listRef.current && idx >= 0) listRef.current.scrollTop = Math.max(0, idx * ROW_H - ROW_H * 2)
   }, [value])
   const pick = (t) => { onChange(t); onClose?.() }
