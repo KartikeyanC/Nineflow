@@ -36,8 +36,8 @@ const importable = () => {
 }
 
 // NineFlow orange: main buttons, and the selected state of choices, on these screens.
-const ORANGE_BTN = 'inline-flex items-center justify-center gap-2 rounded-full font-semibold text-white bg-gradient-to-r from-[#FF8A1F] to-[#F2420E] shadow-[0_10px_28px_-10px_rgb(242_66_14/0.7)] transition hover:brightness-110 active:scale-[0.98] disabled:opacity-45 disabled:shadow-none disabled:pointer-events-none'
-const ORANGE_ON = 'bg-gradient-to-r from-[#FF8A1F] to-[#F2420E] text-white border-transparent'
+const ORANGE_BTN = 'inline-flex items-center justify-center gap-2 rounded-full font-semibold text-white bg-brand shadow-[0_10px_28px_-10px_rgb(242_66_14/0.7)] transition hover:brightness-110 active:scale-[0.98] disabled:opacity-45 disabled:shadow-none disabled:pointer-events-none'
+const ORANGE_ON = 'bg-brand text-white border-transparent'
 
 const GOOGLE_ON = isConfigured()
 const EMAIL_ON = supa.isConfigured()
@@ -109,12 +109,12 @@ function Poster() {
         <PosterFlow />
         <div className="relative">{logo}</div>
         <div className="relative max-w-md">
-          <h1 className="text-[56px] xl:text-[64px] leading-[0.98] font-black tracking-tight">Plan better.<br /><span className="bg-gradient-to-r from-[#FFB347] via-[#FF7A1A] to-[#F2420E] bg-clip-text text-transparent">Flow forward.</span></h1>
+          <h1 className="text-[56px] xl:text-[64px] leading-[0.98] font-black tracking-tight">Plan better.<br /><span className="bg-brand bg-clip-text text-transparent">Flow forward.</span></h1>
           <p className="mt-5 text-lg text-white/75">A planner, a focus timer and a work log in one place, {driveOnly ? 'saved in your own Google Drive' : 'saved to your account'}.</p>
           <ul className="mt-9 space-y-3.5">
             {[[ListChecks, 'Board, week and month views'], [Timer, 'Pomodoro that logs real focus time'], [BarChart3, 'Daily insights, habits and reports']].map(([Icon, t]) => (
               <li key={t} className="flex items-center gap-3 text-[15px] font-semibold text-white/90">
-                <span className="h-10 w-10 rounded-xl bg-[#F2420E]/15 ring-1 ring-[#FF7A1A]/30 text-[#FF9A4D] flex items-center justify-center"><Icon size={18} /></span>{t}
+                <span className="h-10 w-10 rounded-xl bg-[#FF6A13]/15 ring-1 ring-[#FF6A13]/30 text-[#FF6A13] flex items-center justify-center"><Icon size={18} /></span>{t}
               </li>
             ))}
           </ul>
@@ -130,7 +130,7 @@ function Poster() {
         style={{ background: `${POSTER_GLOW}, #111214` }}>
         <PosterFlow compact />
         <div className="relative">{logo}</div>
-        <p className="relative mt-5 text-[32px] sm:text-[40px] leading-[1.02] font-black tracking-tight">Plan better.<br /><span className="bg-gradient-to-r from-[#FFB347] via-[#FF7A1A] to-[#F2420E] bg-clip-text text-transparent">Flow forward.</span></p>
+        <p className="relative mt-5 text-[32px] sm:text-[40px] leading-[1.02] font-black tracking-tight">Plan better.<br /><span className="bg-brand bg-clip-text text-transparent">Flow forward.</span></p>
       </header>
     </>
   )
@@ -150,8 +150,8 @@ function PosterFlow({ compact = false }) {
       <defs>
         <linearGradient id={`${uid}a`} x1="0" y1="1" x2="1" y2="0">
           <stop offset="0" stopColor="#F2420E" />
-          <stop offset="0.55" stopColor="#FF7A1A" />
-          <stop offset="1" stopColor="#FFB347" />
+          <stop offset="0.55" stopColor="#FF6A13" />
+          <stop offset="1" stopColor="#FF9F1C" />
         </linearGradient>
         <linearGradient id={`${uid}b`} x1="0" y1="0" x2="1" y2="1">
           <stop offset="0" stopColor="#FF9F1C" stopOpacity="0" />
@@ -180,7 +180,7 @@ function Frame({ children, step, kicker, title, lead }) {
             <span>Step {step + 1} of {STEP_LABEL.length} · {STEP_LABEL[step]}</span>
             <span>{Math.round(((step + 1) / STEP_LABEL.length) * 100)}%</span>
           </div>
-          <div className="mt-2 h-1.5 rounded-full bg-line overflow-hidden"><div className="h-full rounded-full bg-gradient-to-r from-[#FF8A1F] to-[#F2420E] transition-all duration-500" style={{ width: `${((step + 1) / STEP_LABEL.length) * 100}%` }} /></div>
+          <div className="mt-2 h-1.5 rounded-full bg-line overflow-hidden"><div className="h-full rounded-full bg-brand transition-all duration-500" style={{ width: `${((step + 1) / STEP_LABEL.length) * 100}%` }} /></div>
         </div>
       )}
       {kicker && <p className="text-xs font-bold uppercase tracking-wider text-lav-fg mb-2">{kicker}</p>}
@@ -768,7 +768,7 @@ function Setup() {
                   className={cx('relative flex items-start gap-3 rounded-2xl border-2 p-3.5 text-left transition-all', on ? cx('border-transparent', c.bg) : 'border-line bg-card hover:border-faint hover:-translate-y-0.5')}>
                   <span className={cx('h-10 w-10 rounded-xl flex items-center justify-center shrink-0 transition', on ? 'bg-card ' + c.text : cx(c.bg, c.text))}><Icon size={18} /></span>
                   <span className="min-w-0"><span className={cx('block font-bold text-sm', on && c.text)}>{n.label}</span><span className={cx('block text-xs mt-0.5', on ? c.text + ' opacity-80' : 'text-muted')}>{n.hint}</span></span>
-                  {on && <span className="absolute top-2.5 right-2.5 h-5 w-5 rounded-full bg-[#F2420E] text-white flex items-center justify-center animate-pop"><Check size={12} strokeWidth={3} /></span>}
+                  {on && <span className="absolute top-2.5 right-2.5 h-5 w-5 rounded-full bg-[#FF6A13] text-white flex items-center justify-center animate-pop"><Check size={12} strokeWidth={3} /></span>}
                 </button>
               ) })}
             </div>

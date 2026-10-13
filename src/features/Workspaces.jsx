@@ -126,7 +126,7 @@ function WorkspaceList({ onClose }) {
               onChange={(e) => { setText(e.target.value); setError(null) }}
               onKeyDown={(e) => { if (e.key === 'Escape') { e.stopPropagation(); setAdding(false); setError(null) } }}
               className="input h-8 py-0 flex-1 min-w-0 text-[13px]" />
-            <button type="submit" disabled={!text.trim()} className="h-8 rounded-full px-3 text-[12px] font-semibold text-white bg-gradient-to-r from-[#FF8A1F] to-[#F2420E] disabled:opacity-45">Add</button>
+            <button type="submit" disabled={!text.trim()} className="h-8 rounded-full px-3 text-[12px] font-semibold text-white bg-brand disabled:opacity-45">Add</button>
             <button type="button" onClick={() => { setAdding(false); setError(null) }} aria-label="Cancel" className="h-8 w-8 rounded-full inline-flex items-center justify-center text-faint hover:bg-page hover:text-ink"><X size={15} /></button>
           </form>
         ) : full ? (

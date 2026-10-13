@@ -22,10 +22,10 @@
   --shadow: 70 52 30;
   --hair: rgb(70 52 30 / 0.07);
 
-  --accent: 240 94 45;        /* #F05E2D ember */
-  --accent-soft: 253 232 222;
+  --accent: 255 106 19;  /* #FF6A13, the logo orange */
+  --accent-soft: 255 236 224;
   --todo: 255 106 19;  /* To do = the logo orange (#FF6A13), the same in light and dark */
-  --todo-soft: 253 232 222;
+  --todo-soft: 255 236 224;
 
   --lav: 233 227 252;
   --lav-fg: 107 78 230;
@@ -39,8 +39,8 @@
   --coral-fg: 222 66 70;
   --mint: 221 243 230;
   --mint-fg: 30 152 100;
-  --peach: 253 235 214;
-  --peach-fg: 214 120 30;
+  --peach: 255 236 224;
+  --peach-fg: 255 106 19;
   --rose: 251 226 239;
   --rose-fg: 210 50 108;
   --teal: 214 241 240;
@@ -63,10 +63,10 @@
   --shadow: 0 0 0;
   --hair: rgb(255 255 255 / 0.07);
 
-  --accent: 255 122 80;
-  --accent-soft: 66 32 22;
+  --accent: 255 106 19;
+  --accent-soft: 74 40 20;
   --todo: 255 106 19;
-  --todo-soft: 66 32 22;
+  --todo-soft: 74 40 20;
 
   --lav: 44 38 76;
   --lav-fg: 180 164 255;
@@ -80,8 +80,8 @@
   --coral-fg: 255 122 118;
   --mint: 22 54 40;
   --mint-fg: 92 210 152;
-  --peach: 64 40 20;
-  --peach-fg: 255 164 94;
+  --peach: 74 40 20;
+  --peach-fg: 255 106 19;
   --rose: 64 26 46;
   --rose-fg: 255 128 174;
   --teal: 18 52 54;

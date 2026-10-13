@@ -112,8 +112,8 @@ function page(title, message) {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title} · NineFlow</title>
 <style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#FAF7F0;color:#111;font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
 .card{background:#fff;border:1px solid #ECE7DD;border-radius:20px;padding:32px 36px;max-width:420px;text-align:center}
-h1{font-size:24px;margin:0 0 8px}p{color:#786F68;margin:0}b{color:#C9420B}
-@media (prefers-color-scheme:dark){body{background:#161513;color:#F5F2EC}.card{background:#201F1C;border-color:#34322D}p{color:#A0998F}b{color:#FF9A5C}}</style></head>
+h1{font-size:24px;margin:0 0 8px}p{color:#786F68;margin:0}b{color:#FF6A13}
+@media (prefers-color-scheme:dark){body{background:#161513;color:#F5F2EC}.card{background:#201F1C;border-color:#34322D}p{color:#A0998F}b{color:#FF6A13}}</style></head>
 <body><div class="card"><h1>${title}</h1><p>${message}</p></div></body></html>`
 }
 

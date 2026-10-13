@@ -164,13 +164,13 @@ function NowCard({ list, isToday, dayKey, className, i }) {
     <div className={cx('bezel', r.className, className)} style={r.style}>
       <section className="relative overflow-hidden rounded-[22px] bg-[#161412] text-[#F4F0EA] h-full min-h-[236px] p-6 sm:p-7 flex flex-col shadow-[inset_0_1px_0_rgb(255_255_255/0.08)]">
         {/* ember glow */}
-        <div className="pointer-events-none absolute -top-24 -right-16 h-72 w-72 rounded-full bg-[rgb(240_94_45/0.35)] blur-3xl" />
+        <div className="pointer-events-none absolute -top-24 -right-16 h-72 w-72 rounded-full bg-[rgb(255_106_19/0.35)] blur-3xl" />
         <div className="pointer-events-none absolute -bottom-32 left-1/3 h-64 w-64 rounded-full bg-[rgb(120_100_255/0.18)] blur-3xl" />
 
         {!pick ? (
           <div className="relative flex-1 flex flex-col items-start justify-center">
             <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/50">All clear</span>
-            <p className="mt-3 font-serif text-[36px] leading-none">Nothing planned <em className="text-[#FF9A6E]">yet.</em></p>
+            <p className="mt-3 font-serif text-[36px] leading-none">Nothing planned <em className="text-[#FF6A13]">yet.</em></p>
             <button type="button" onClick={() => setQuickAdd({ date: dayKey })}
               className="group mt-6 inline-flex items-center gap-3 h-11 rounded-full bg-white text-[#161412] pl-5 pr-1.5 text-[13px] font-semibold transition hover:-translate-y-px active:scale-[0.97]">
               Plan something
@@ -182,8 +182,8 @@ function NowCard({ list, isToday, dayKey, className, i }) {
             <div className="relative flex items-center justify-between gap-3">
               <span className="inline-flex items-center gap-2 rounded-full bg-white/10 ring-1 ring-white/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/80">
                 <span className="relative flex h-2 w-2">
-                  {pick.kind === 'now' && <span className="absolute inset-0 rounded-full bg-[#FF7A50] animate-ping opacity-70" />}
-                  <span className="relative h-2 w-2 rounded-full bg-[#FF7A50]" />
+                  {pick.kind === 'now' && <span className="absolute inset-0 rounded-full bg-[#FF6A13] animate-ping opacity-70" />}
+                  <span className="relative h-2 w-2 rounded-full bg-[#FF6A13]" />
                 </span>
                 {label}
               </span>
@@ -206,12 +206,12 @@ function NowCard({ list, isToday, dayKey, className, i }) {
             <div className="relative mt-3 flex flex-wrap items-center gap-2 text-[12px] text-white/60">
               {cat && <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-0.5 font-semibold text-white/80"><i className="h-1.5 w-1.5 rounded-full" style={{ background: cssVar(colorOf(cat.color).var) }} />{cat.name}</span>}
               <span className="tnum">{fmtMinutes(pick.t.durationMinutes || 0)}</span>
-              {pick.t.priority === 'high' && <span className="text-[#FF9A6E] font-semibold">High priority</span>}
+              {pick.t.priority === 'high' && <span className="text-[#FF6A13] font-semibold">High priority</span>}
             </div>
 
             {pick.kind === 'now' && (
               <div className="relative mt-5 h-1.5 rounded-full bg-white/10 overflow-hidden">
-                <div className="h-full rounded-full bg-gradient-to-r from-[#FF7A50] to-[#FFB38F] transition-all duration-700" style={{ width: `${Math.round(pct * 100)}%` }} />
+                <div className="h-full rounded-full bg-brand transition-all duration-700" style={{ width: `${Math.round(pct * 100)}%` }} />
               </div>
             )}
 
@@ -219,8 +219,8 @@ function NowCard({ list, isToday, dayKey, className, i }) {
             <div className="relative flex flex-wrap items-end justify-between gap-4">
               <div className="flex flex-wrap items-center gap-2">
                 <button type="button" onClick={() => startFocus(pick.t.id)} disabled={focusing}
-                  className="group inline-flex items-center gap-3 h-11 rounded-full bg-[#FF7A50] text-[#1A0F0A] pl-1.5 pr-5 text-[13px] font-bold transition duration-300 hover:-translate-y-px active:scale-[0.97] disabled:opacity-60 shadow-[0_10px_28px_-10px_rgb(255_122_80/0.9)]">
-                  <span className="h-8 w-8 rounded-full bg-black/15 inline-flex items-center justify-center transition duration-500 group-hover:scale-110">
+                  className="group inline-flex items-center gap-3 h-11 rounded-full bg-brand text-white pl-1.5 pr-5 text-[13px] font-bold transition duration-300 hover:-translate-y-px active:scale-[0.97] disabled:opacity-60 shadow-[0_10px_28px_-10px_rgb(255_106_19/0.9)]">
+                  <span className="h-8 w-8 rounded-full bg-white/20 inline-flex items-center justify-center transition duration-500 group-hover:scale-110">
                     <Play size={13} fill="currentColor" />
                   </span>
                   {focusing ? 'Focusing…' : 'Start focus'}

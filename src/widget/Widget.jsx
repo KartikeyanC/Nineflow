@@ -83,7 +83,7 @@ export default function Widget() {
 
       {signedIn && total > 0 && (
         <div className="mx-4 h-1.5 rounded-full bg-line overflow-hidden" aria-hidden="true">
-          <div className="h-full rounded-full bg-gradient-to-r from-[#FF8A1F] to-[#F2420E] transition-all duration-500" style={{ width: `${(done.length / total) * 100}%` }} />
+          <div className="h-full rounded-full bg-brand transition-all duration-500" style={{ width: `${(done.length / total) * 100}%` }} />
         </div>
       )}
 
@@ -121,7 +121,7 @@ export default function Widget() {
       {desktop && (
         <footer className="px-3 pb-3 pt-2 border-t border-line" style={noDrag}>
           <button type="button" onClick={() => desktop.openApp()}
-            className="w-full h-9 rounded-full inline-flex items-center justify-center gap-2 text-[13px] font-semibold text-white bg-gradient-to-r from-[#FF8A1F] to-[#F2420E] hover:brightness-110 active:scale-[0.98] transition">
+            className="w-full h-9 rounded-full inline-flex items-center justify-center gap-2 text-[13px] font-semibold text-white bg-brand hover:brightness-110 active:scale-[0.98] transition">
             Open NineFlow <ExternalLink size={13} />
           </button>
         </footer>
