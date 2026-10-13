@@ -19,6 +19,7 @@ import { cleanColumns, columnOf, isOriginal, styleOf } from '../lib/columns'
 import ColumnsEditor from '../components/ColumnsEditor'
 import { CategoryTag, CheckCircle, ConfirmDialog, Menu, Modal, PriorityPill, cx } from '../components/ui'
 import TaskCard from '../components/TaskCard'
+import RequiredBadge from '../components/RequiredBadge'
 
 const RECENT_COMPLETED = 8
 
@@ -455,6 +456,7 @@ function ListView({ columns, cols }) {
                         {t.title}
                         {overdue && <span className="pill bg-page text-muted border border-line text-[10px] px-1.5 py-0 ml-2">{carriedLabel(t.date, now)}</span>}
                       </p>
+                      <RequiredBadge task={t} />
                       <CategoryTag category={categoryById(t.category)} className="hidden sm:inline-flex" />
                       <PriorityPill priority={t.priority} />
                       <span className="text-xs font-medium w-28 text-right text-muted">{dueLabel(t, now) || '—'}</span>

@@ -133,6 +133,11 @@ export function saveSettings(settings) {
 
 // Fill in any field an older record may lack so the rest of the app can
 // rely on the full shape.
+function cleanSkipped(v) {
+  if (!v || typeof v !== 'object' || typeof v.reason !== 'string') return null
+  return { at: typeof v.at === 'string' ? v.at : null, reason: v.reason.slice(0, 200), missing: Array.isArray(v.missing) ? v.missing.filter((m) => typeof m === 'string').slice(0, 30).map((m) => m.slice(0, 120)) : [] }
+}
+
 function normalizeTask(t) {
   return {
     id: t.id,
@@ -148,7 +153,9 @@ function normalizeTask(t) {
     completedAt: t.completedAt ?? null,
     createdAt: t.createdAt ?? new Date().toISOString(),
     sessions: Array.isArray(t.sessions) ? t.sessions : [],
-    subtasks: Array.isArray(t.subtasks) ? t.subtasks.filter((s) => s && typeof s.title === 'string').map((s) => ({ id: s.id || uid(), title: s.title, done: !!s.done })) : [],
+    subtasks: Array.isArray(t.subtasks) ? t.subtasks.filter((s) => s && typeof s.title === 'string').map((s) => ({ id: s.id || uid(), title: s.title, done: !!s.done, required: s.required === true })) : [],
+    requireRule: t.requireRule === 'any' ? 'any' : 'all',
+    skippedChecks: cleanSkipped(t.skippedChecks),
     reminders: Array.isArray(t.reminders) ? t.reminders.filter((m) => Number.isFinite(m) && m >= 0).slice(0, 6) : null,
     tags: cleanTags(t.tags),
     column: typeof t.column === 'string' ? t.column : null,

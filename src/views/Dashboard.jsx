@@ -15,6 +15,7 @@ import { eventsOn, useCalendarEvents, useShowEvents } from '../lib/gcalEvents'
 import { currentProfile, firstName } from '../lib/profiles'
 import { colorOf, cssVar, PRIORITY_STYLE } from '../lib/colors'
 import { CategoryTag, CheckCircle, Segmented, cx } from '../components/ui'
+import RequiredBadge from '../components/RequiredBadge'
 import { DateField } from '../components/DatePicker'
 import { CapacityBar, CarriedOver } from '../features/Planning'
 import { RitualPrompt } from '../features/Ritual'
@@ -275,6 +276,7 @@ function TaskList({ day, dayKey, isToday }) {
                   <div className="flex items-center gap-1.5 mt-0.5">
                     <CategoryTag category={categoryById(t.category)} className="text-[10px] py-0" />
                     {t.recurrence && <Repeat size={10} className="text-lav-fg" />}
+                    <RequiredBadge task={t} className="!text-[10px]" />
                     {t.status === 'working' && <span className="text-[10px] font-semibold text-sky-fg">Working</span>}
                     {t.interruption && <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-peach-fg"><Zap size={10} />Interruption{t.interruption.by ? ` · ${t.interruption.by}` : ''}</span>}
                     {od && <span className="text-[10px] font-semibold text-muted">{carriedLabel(t.date, now)}</span>}

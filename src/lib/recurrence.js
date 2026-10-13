@@ -68,7 +68,8 @@ export function ensureRecurrences(tasks, now = new Date(), horizon = HORIZON_DAY
         category: template.category,
         priority: template.priority,
         // Each day starts with the same steps, all unticked.
-        subtasks: (template.subtasks || []).map((s) => newSubtask(s.title)),
+        subtasks: (template.subtasks || []).map((s) => newSubtask(s.title, s.required === true)),
+        requireRule: template.requireRule === 'any' ? 'any' : 'all',
         reminders: template.reminders ?? null,
         tags: template.tags || [],
         seriesId,

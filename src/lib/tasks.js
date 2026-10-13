@@ -21,10 +21,22 @@ export const STATUS_LABEL = { todo: 'To do', working: 'Working', completed: 'Com
 export const PRIORITIES = ['high', 'medium', 'low']
 export const PRIORITY_LABEL = { high: 'High', medium: 'Medium', low: 'Low' }
 
-export const newSubtask = (title) => ({ id: uid(), title: String(title).slice(0, 120), done: false })
+// `required` steps must be ticked before the task can be completed (see checkGate). It has to be
+// exactly `true`: callers also pass this to .map(), which hands over the index as 2nd argument.
+export const newSubtask = (title, required) => ({ id: uid(), title: String(title).slice(0, 120), done: false, required: required === true })
 export const subProgress = (task) => {
   const subs = task.subtasks || []
   return { done: subs.filter((s) => s.done).length, total: subs.length }
+}
+// "Before you finish": a task with required steps can't become Completed until enough of them are ticked.
+// task.requireRule is 'all' (every required step) or 'any' (at least one).
+export const requiredSteps = (task) => (task.subtasks || []).filter((s) => s.required)
+export function checkGate(task) {
+  const req = requiredSteps(task)
+  const rule = task.requireRule === 'any' ? 'any' : 'all'
+  const ticked = req.filter((s) => s.done).length
+  const needed = req.length === 0 ? 0 : rule === 'any' ? 1 : req.length
+  return { required: req.length, ticked, needed, rule, blocked: ticked < needed, missing: req.filter((s) => !s.done) }
 }
 export const todayKey = () => format(new Date(), 'yyyy-MM-dd')
 export const dateKey = (d) => format(d, 'yyyy-MM-dd')
@@ -44,7 +56,9 @@ export function createTask(fields = {}) {
     completedAt: null,
     createdAt: new Date().toISOString(),
     sessions: [],
-    subtasks: [], // [{ id, title, done }]: the steps inside the task
+    subtasks: [], // [{ id, title, done, required }]: the steps inside the task
+    requireRule: 'all', // 'all' | 'any': how many of the required steps must be ticked to finish
+    skippedChecks: null, // { at, reason, missing: [titles] } when it was finished with "Finish anyway"
     column: null, // a custom Board column id (see lib/columns.js), or null: the original column of its status
     reminders: null, // null = the Settings default; [] = none; [10, 1440] = minutes before the start
     tags: [], // ['client-a', 'q4']: free labels, any number per task (up to 6)

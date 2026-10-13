@@ -4,6 +4,7 @@ import { usePlanner } from '../store/PlannerContext'
 import { reminderShort } from '../lib/taskMeta'
 import { carriedLabel, dueLabel, fmtMinutes, isOverdue, subProgress, todayKey, totalMinutes } from '../lib/tasks'
 import { describe } from '../lib/recurrence'
+import RequiredBadge from './RequiredBadge'
 import { CARD_STYLE, STATUS_CARD_COLOR } from '../lib/columns'
 import { CategoryTag, CheckCircle, PriorityPill, cx } from './ui'
 
@@ -108,6 +109,7 @@ export default function TaskCard({ task, tone, dragging = false, handleProps, st
             <ListChecks size={12} /> {sub.done}/{sub.total}
           </span>
         )}
+        <RequiredBadge task={task} />
         {task.recurrence && <Repeat size={12} className="text-lav-fg" title={describe(task.recurrence)} />}
         {Array.isArray(task.reminders) && task.reminders.length > 0 && <Bell size={12} className="text-faint" aria-label="Has reminders" title={`Reminders: ${task.reminders.map(reminderShort).join(', ')}`} />}
         <PriorityPill priority={task.priority} className="ml-auto" />

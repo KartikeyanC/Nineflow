@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { Timer, Repeat, CornerDownLeft, Sparkles, CalendarDays, Clock, Flag, Tag, Target, X, Loader2, WandSparkles, Hash, BookmarkPlus } from 'lucide-react'
+import { Timer, Repeat, CornerDownLeft, Sparkles, CalendarDays, Clock, Flag, Tag, Target, Lock, X, Loader2, WandSparkles, Hash, BookmarkPlus } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
 import { fmtMinutes, newSubtask, todayKey, PRIORITY_LABEL } from '../lib/tasks'
 import { FREQS, FREQ_LABEL, describe } from '../lib/recurrence'
@@ -194,8 +194,12 @@ export default function QuickAddModal() {
         {draft.subtasks.length > 0 && (
           <ul className="mt-2 flex flex-wrap gap-1.5" aria-label="Steps">
             {draft.subtasks.map((s) => (
-              <li key={s.id} className="pill bg-page text-muted border border-line pr-1">
+              <li key={s.id} className={cx('pill border pr-1', s.required ? 'bg-accent-soft text-accent border-accent/30' : 'bg-page text-muted border-line')}>
                 {s.title}
+                <button type="button" aria-pressed={!!s.required} aria-label={s.required ? `Step ${s.title} is required to finish. Press to make it optional` : `Make step ${s.title} required to finish`}
+                  title={s.required ? 'Required to finish' : 'Make required to finish'}
+                  onClick={() => set({ subtasks: draft.subtasks.map((x) => (x.id === s.id ? { ...x, required: !x.required } : x)) })}
+                  className="h-4 w-4 rounded-full inline-flex items-center justify-center hover:bg-line transition"><Lock size={10} /></button>
                 <button type="button" aria-label={`Remove step ${s.title}`} onClick={() => set({ subtasks: draft.subtasks.filter((x) => x.id !== s.id) })}
                   className="h-4 w-4 rounded-full inline-flex items-center justify-center hover:bg-line transition"><X size={10} /></button>
               </li>

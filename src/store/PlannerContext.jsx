@@ -4,7 +4,7 @@ import {
   onSaveStatus, saveFocus, saveHabits, saveSettings, saveTasks, syncedKeys, uid,
 } from '../lib/storage'
 import { emptyWork, saveWork, workKey } from '../work/workStore'
-import { createTask, dateKey, todayKey, withSessionPaused, withSessionResumed, withStatus } from '../lib/tasks'
+import { checkGate, createTask, dateKey, todayKey, withSessionPaused, withSessionResumed, withStatus } from '../lib/tasks'
 import { generateSample } from '../lib/sample'
 import { dueReminders } from '../lib/taskMeta'
 import { busyFor } from '../lib/gcalEvents'
@@ -298,17 +298,48 @@ export function PlannerProvider({ children }) {
     setTasks((ts) => ts.map((t) => (t.id === id ? { ...t, ...patch } : t)))
   }, [])
 
+  // ---- "Before you finish" ----
+  // A task with required steps can't become Completed until they are ticked. Everything that
+  // completes a task (the tick on a card, the status buttons, dragging to a Completed column,
+  // finishing a focus session) goes through the three functions below. A blocked attempt is
+  // held here while the Before-you-finish window (components/FinishGate.jsx) is open, and runs
+  // once the steps are ticked, or when "Finish anyway" gives a reason.
+  const [gateTaskId, setGateTaskId] = useState(null)
+  const gateRef = useRef(null) // { id, run }
+  const blockedFromFinishing = (id) => {
+    const t = tasksRef.current.find((x) => x.id === id)
+    return !!t && t.status !== 'completed' && checkGate(t).blocked
+  }
+  const holdForChecks = (id, run) => { gateRef.current = { id, run }; setGateTaskId(id) }
+  const closeGate = useCallback(() => { gateRef.current = null; setGateTaskId(null) }, [])
+  const finishGate = useCallback((reason = '') => {
+    const g = gateRef.current
+    if (!g) return
+    const t = tasksRef.current.find((x) => x.id === g.id)
+    const gate = t ? checkGate(t) : null
+    const why = String(reason || '').trim()
+    if (gate?.blocked && why.length < 3) return // the way out needs a reason
+    const skipped = gate?.blocked ? { at: new Date().toISOString(), reason: why.slice(0, 200), missing: gate.missing.map((s) => s.title) } : null
+    gateRef.current = null
+    setGateTaskId(null)
+    g.run()
+    setTasks((ts) => ts.map((x) => (x.id === g.id ? { ...x, skippedChecks: skipped } : x)))
+  }, [])
+
+  // All three return false when the task was held back by its required steps.
   const setStatus = useCallback((id, status) => {
-    if (!status) return
-    setTasks((ts) => ts.map((t) => (t.id === id ? withStatus(t, status) : t)))
+    if (!status) return false
+    const run = () => setTasks((ts) => ts.map((t) => (t.id === id ? withStatus(t, status) : t)))
+    if (status === 'completed' && blockedFromFinishing(id)) { holdForChecks(id, run); return false }
+    run()
+    return true
   }, [])
 
   const toggleComplete = useCallback((id) => {
-    setTasks((ts) =>
-      ts.map((t) =>
-        t.id === id ? withStatus(t, t.status === 'completed' ? 'todo' : 'completed') : t,
-      ),
-    )
+    const run = () => setTasks((ts) => ts.map((t) => (t.id === id ? withStatus(t, t.status === 'completed' ? 'todo' : 'completed') : t)))
+    if (blockedFromFinishing(id)) { holdForChecks(id, run); return false }
+    run()
+    return true
   }, [])
 
   // Move a task to `status` and place it before `beforeId` in the global
@@ -319,7 +350,7 @@ export function PlannerProvider({ children }) {
     const cols = cleanColumns(settingsRef.current?.columns)
     const col = cols.find((c) => c.id === target)
     const status = col ? col.base : baseOfColumn(target, cols)
-    setTasks((ts) => {
+    const run = () => setTasks((ts) => {
       const task = ts.find((t) => t.id === id)
       if (!task) return ts
       const moved = { ...withStatus(task, status), column: col && !isOriginal(col) ? col.id : null }
@@ -328,6 +359,9 @@ export function PlannerProvider({ children }) {
       if (at < 0) return [...rest, moved]
       return [...rest.slice(0, at), moved, ...rest.slice(at)]
     })
+    if (status === 'completed' && blockedFromFinishing(id)) { holdForChecks(id, run); return false }
+    run()
+    return true
   }, [])
 
   // Reorder the tasks of one status in place; other tasks keep their slots.
@@ -684,6 +718,9 @@ export function PlannerProvider({ children }) {
       openDay,
       addTask,
       addTasks,
+      gateTaskId,
+      closeGate,
+      finishGate,
       moveToWorkspace,
       updateTask,
       setSessions,
@@ -739,7 +776,7 @@ export function PlannerProvider({ children }) {
     }),
     [
       tasks, settings, now, view, setView, selectedId, quickAdd, dashboardDate, calendarMode, openDay,
-      addTask, addTasks, moveToWorkspace, goalPlannerOpen, promptListOpen, askOpen, updateTask, setSessions, setStatus, toggleComplete, moveTask, sortStatus,
+      addTask, addTasks, gateTaskId, closeGate, finishGate, moveToWorkspace, goalPlannerOpen, promptListOpen, askOpen, updateTask, setSessions, setStatus, toggleComplete, moveTask, sortStatus,
       moveOverdueToToday, clearCompleted, removeTask, setRecurrence, removeSeries, applyToUpcoming, planDay,
       previewPlan, applyPlan, moveTasksTo,
       focus, startFocus, pauseFocus, resumeFocus, advanceFocus, stopFocus, setFocusOpen,

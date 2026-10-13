@@ -124,7 +124,7 @@ export default function QuickList({ layout = 'column', onCollapse, collapseIcon 
                 <li key={t.id} onClick={() => open(t.id)} tabIndex={0} role="button"
                   onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && e.target === e.currentTarget) { e.preventDefault(); open(t.id) } }}
                   className="flex items-center gap-2.5 px-2 py-1.5 rounded-xl cursor-pointer hover:bg-page focus-visible:bg-page outline-none transition">
-                  <CheckCircle checked={false} onToggle={() => toggleComplete(t.id)} size="sm" />
+                  <CheckCircle checked={false} onToggle={() => { if (toggleComplete(t.id) === false && inPip) window.focus() }} size="sm" />
                   <div className="min-w-0 flex-1">
                     <p className="text-[13px] font-semibold truncate">{t.title}</p>
                     <p className="text-[10px] truncate text-faint">

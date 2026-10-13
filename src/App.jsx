@@ -6,6 +6,7 @@ import MobileNav from './components/MobileNav'
 import Dock, { MobileDock } from './components/Dock'
 import QuickAddModal from './components/QuickAddModal'
 import GoalPlanner from './components/GoalPlanner'
+import FinishGate from './components/FinishGate'
 import PromptToList from './components/PromptToList'
 import AskPlanner from './components/AskPlanner'
 import TaskPanel from './components/TaskPanel'
@@ -74,6 +75,7 @@ function Shell() {
 
       <QuickAddModal />
       <GoalPlanner />
+      <FinishGate />
       <PromptToList />
       <AskPlanner />
       <TaskPanel />

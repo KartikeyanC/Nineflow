@@ -16,6 +16,7 @@ import { describePlan } from '../../lib/schedule'
 import { currentProfile, firstName } from '../../lib/profiles'
 import { colorOf, cssVar } from '../../lib/colors'
 import { CategoryTag, CheckCircle, cx } from '../../components/ui'
+import RequiredBadge from '../../components/RequiredBadge'
 import { DateField } from '../../components/DatePicker'
 
 // v2 replacement for views/Dashboard.jsx. Asymmetric bento: an editorial
@@ -398,6 +399,7 @@ function TaskList({ day, dayKey, className, i }) {
                     {od && <span className="text-muted">{carriedLabel(t.date, now)}</span>}
                     {tab !== 'today' && t.date && t.date !== dayKey && <span className="text-faint">{format(parseISO(t.date), 'EEE d')}</span>}
                     {t.recurrence && <span className="inline-flex items-center gap-1 text-faint"><Repeat size={10} />Repeats</span>}
+                    <RequiredBadge task={t} />
                     {!t.recurrence && !od && <TimeNote t={t} now={now} />}
                   </div>
                 </div>

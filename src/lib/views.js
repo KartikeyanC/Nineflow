@@ -66,8 +66,16 @@ export function templateFromTask(task, name, id) {
     category: task.category || '',
     tags: cleanTags(task.tags),
     reminders: Array.isArray(task.reminders) ? task.reminders.filter((m) => Number.isFinite(m) && m >= 0).slice(0, 6) : null,
-    steps: (task.subtasks || []).map((s) => str(s.title, 120)).filter(Boolean).slice(0, 30),
+    ...stepsOf((task.subtasks || []).map((s) => [s.title, s.required === true])),
+    rule: task.requireRule === 'any' ? 'any' : 'all',
   }
+}
+
+// Steps are plain titles; `required` is a list of booleans in the same order (so templates saved
+// before required steps existed still load: none of their steps are required).
+function stepsOf(pairs) {
+  const kept = pairs.map(([title, req]) => [str(title, 120), req === true]).filter(([title]) => title).slice(0, 30)
+  return { steps: kept.map(([title]) => title), required: kept.map(([, req]) => req) }
 }
 
 export function cleanTemplates(list) {
@@ -82,7 +90,8 @@ export function cleanTemplates(list) {
     category: str(t.category, 40),
     tags: cleanTags(t.tags),
     reminders: Array.isArray(t.reminders) ? t.reminders.filter((m) => Number.isFinite(m) && m >= 0).slice(0, 6) : null,
-    steps: (Array.isArray(t.steps) ? t.steps : []).map((s) => str(s, 120)).filter(Boolean).slice(0, 30),
+    ...stepsOf((Array.isArray(t.steps) ? t.steps : []).map((s, i) => [s, Array.isArray(t.required) && t.required[i] === true])),
+    rule: t.rule === 'any' ? 'any' : 'all',
   }))
 }
 
@@ -96,6 +105,7 @@ export function taskFieldsFromTemplate(t, categories) {
     ...(categories.some((c) => c.id === t.category) ? { category: t.category } : {}),
     tags: t.tags,
     reminders: t.reminders,
-    subtasks: t.steps.map(newSubtask),
+    subtasks: t.steps.map((s, i) => newSubtask(s, t.required?.[i] === true)),
+    requireRule: t.rule === 'any' ? 'any' : 'all',
   }
 }

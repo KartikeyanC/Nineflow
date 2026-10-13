@@ -3,7 +3,7 @@ import { ExternalLink, Sparkles, X } from 'lucide-react'
 import { format } from 'date-fns'
 import { loadSettings, loadTasks, saveTasks, isOnboarded } from '../lib/storage'
 import { currentProfile, firstName } from '../lib/profiles'
-import { carriedLabel, dateKey, dueLabel, fmtMinutes, isOverdue, sortByTime, withStatus } from '../lib/tasks'
+import { carriedLabel, checkGate, dateKey, dueLabel, fmtMinutes, isOverdue, sortByTime, withStatus } from '../lib/tasks'
 import { CheckCircle, cx } from '../components/ui'
 import { Wordmark } from '../components/Brand'
 
@@ -48,10 +48,15 @@ export default function Widget() {
     }
   }, [tasks, today])
   const total = open.length + done.length
+  const [held, setHeld] = useState(null) // a task whose required steps are not ticked yet
 
   const toggle = (id) => {
     // Start from what is saved right now, not what this window last drew.
     const fresh = loadTasks()
+    const t = fresh.find((x) => x.id === id)
+    // Required steps are ticked in the planner (it lists them); finishing here would skip them.
+    if (t && t.status !== 'completed' && checkGate(t).blocked) { setHeld(id); return }
+    setHeld(null)
     saveTasks(fresh.map((t) => (t.id === id ? withStatus(t, t.status === 'completed' ? 'todo' : 'completed') : t)))
     setState(read())
   }
@@ -92,7 +97,7 @@ export default function Widget() {
             {open.length === 0 && <p className="px-2 py-3 text-sm font-semibold text-mint-fg inline-flex items-center gap-2"><Sparkles size={14} /> All done for today.</p>}
             <ul className="space-y-0.5">
               {open.map((t) => (
-                <Row key={t.id} task={t} onToggle={() => toggle(t.id)}
+                <Row key={t.id} task={t} onToggle={() => toggle(t.id)} held={held === t.id} onOpen={() => desktop?.openApp()}
                   sub={<>
                     <span className={cx(isOverdue(t, now) && 'text-coral-fg font-semibold')}>{isOverdue(t, now) ? carriedLabel(t.date, now) : dueLabel(t, now)}</span>
                     {' · '}{fmtMinutes(t.durationMinutes)}
@@ -124,13 +129,15 @@ export default function Widget() {
   )
 }
 
-function Row({ task, sub, done = false, onToggle }) {
+function Row({ task, sub, done = false, onToggle, held = false, onOpen }) {
   return (
     <li className="flex items-center gap-2.5 px-2 py-1.5 rounded-xl hover:bg-page transition">
       <CheckCircle checked={done} onToggle={onToggle} size="sm" />
       <div className="min-w-0 flex-1">
         <p className={cx('text-[13px] font-semibold truncate', done && 'line-through text-faint')} title={task.title}>{task.title}</p>
-        {sub && <p className="text-[10px] truncate text-faint">{sub}</p>}
+        {held
+          ? <p className="text-[10px] font-semibold text-accent" role="status">Has required steps. {onOpen && <button type="button" onClick={onOpen} className="underline underline-offset-2">Open NineFlow to tick them</button>}</p>
+          : sub && <p className="text-[10px] truncate text-faint">{sub}</p>}
       </div>
     </li>
   )
