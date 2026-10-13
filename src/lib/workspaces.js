@@ -102,6 +102,38 @@ export function removeWorkspace(pid, id) {
   if (currentWorkspaceId(pid) === id) switchWorkspace(pid, MAIN)
 }
 
+// ---- moving tasks between workspaces -------------------------------------------
+// Writes straight into the other workspace's saved tasks (it is read when you
+// switch to it), so nothing has to be open. A recurring task moves as a single
+// task, and one whose category the other workspace doesn't have takes that
+// workspace's first category.
+const keyIn = (pid, id, name) => `daily-planner:${pid}:${id === MAIN ? '' : `ws_${id}.`}${name}`
+const readJson = (k, fallback) => { try { const v = JSON.parse(read(k)); return v ?? fallback } catch { return fallback } }
+
+export function sendTasksToWorkspace(pid, targetId, tasks) {
+  const tKey = keyIn(pid, targetId, 'tasks')
+  const existing = readJson(tKey, [])
+  if (!Array.isArray(existing)) return null
+  const taken = new Set(existing.map((t) => t?.id))
+  const cats = (readJson(keyIn(pid, targetId, 'settings'), {}).categories || []).map((c) => c.id)
+  const moved = tasks.map((t) => {
+    let id = t.id
+    while (taken.has(id)) id = `${t.id}-${Math.random().toString(36).slice(2, 6)}`
+    taken.add(id)
+    return { ...t, id, category: !cats.length || cats.includes(t.category) ? t.category : cats[0] }
+  })
+  try { localStorage.setItem(tKey, JSON.stringify([...existing, ...moved])) } catch { return null }
+  return moved.map((t) => t.id)
+}
+
+// Undo of the above: takes those tasks back out of the other workspace.
+export function removeTasksFromWorkspace(pid, targetId, ids) {
+  const tKey = keyIn(pid, targetId, 'tasks')
+  const gone = new Set(ids)
+  const existing = readJson(tKey, [])
+  if (Array.isArray(existing)) write(tKey, JSON.stringify(existing.filter((t) => !gone.has(t?.id))))
+}
+
 // After signing out: this device forgets which workspace it was in.
 export function forgetWorkspace(pid) {
   try { localStorage.removeItem(currentKey(pid)) } catch { /* ignore */ }

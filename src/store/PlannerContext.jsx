@@ -6,6 +6,8 @@ import {
 import { emptyWork, saveWork, workKey } from '../work/workStore'
 import { createTask, dateKey, todayKey, withSessionPaused, withSessionResumed, withStatus } from '../lib/tasks'
 import { generateSample } from '../lib/sample'
+import { currentProfileId } from '../lib/profiles'
+import { removeTasksFromWorkspace, sendTasksToWorkspace } from '../lib/workspaces'
 import { ensureRecurrences } from '../lib/recurrence'
 import { planDay as planDayPure } from '../lib/schedule'
 import { hhmm, toMin } from '../lib/capacity'
@@ -74,13 +76,14 @@ export function PlannerProvider({ children }) {
 
   // Undo for destructive actions: keep the task list from just before the
   // action. The toast that offers it dismisses itself after a few seconds.
-  const [undo, setUndo] = useState(null) // { id, label, snapshot } | null
+  const [undo, setUndo] = useState(null) // { id, label, snapshot, onUndo? } | null
   const undoRef = useRef(undo)
   undoRef.current = undo
-  const offerUndo = useCallback((label) => setUndo({ id: Date.now(), label, snapshot: tasksRef.current }), [])
+  const offerUndo = useCallback((label, onUndo) => setUndo({ id: Date.now(), label, snapshot: tasksRef.current, onUndo }), [])
   const undoLast = useCallback(() => {
     const u = undoRef.current
     if (!u) return
+    u.onUndo?.()
     setTasks(u.snapshot)
     setUndo(null)
   }, [])
@@ -109,6 +112,25 @@ export function PlannerProvider({ children }) {
     if (task.date) setLastAdded({ id: task.id, at: Date.now() })
     return task
   }, [])
+
+  // Move one task (or a list of ids) to another workspace; they leave this one.
+  // One Undo brings them all back.
+  const moveToWorkspace = useCallback((idOrIds, workspace) => {
+    const pid = currentProfileId()
+    const want = new Set(Array.isArray(idOrIds) ? idOrIds : [idOrIds])
+    const found = tasksRef.current.filter((t) => want.has(t.id))
+    if (!pid || !found.length) return false
+    const carried = found.map((task) => ({ ...(task.status === 'working' ? withStatus(task, 'todo') : task), recurrence: null, seriesId: null, interruption: null }))
+    const sent = sendTasksToWorkspace(pid, workspace.id, carried)
+    if (!sent) return false
+    offerUndo(
+      found.length === 1 ? `Moved “${found[0].title || 'Untitled'}” to ${workspace.name}` : `Moved ${found.length} tasks to ${workspace.name}`,
+      () => removeTasksFromWorkspace(pid, workspace.id, sent),
+    )
+    setTasks((ts) => ts.filter((t) => !want.has(t.id)))
+    setSelectedId(null)
+    return true
+  }, [offerUndo])
 
   // Several tasks at once (a planned goal). One undo step takes them all back.
   const addTasks = useCallback((list, undoLabel) => {
@@ -651,6 +673,7 @@ export function PlannerProvider({ children }) {
       openDay,
       addTask,
       addTasks,
+      moveToWorkspace,
       updateTask,
       setSessions,
       setStatus,
@@ -705,7 +728,7 @@ export function PlannerProvider({ children }) {
     }),
     [
       tasks, settings, now, view, setView, selectedId, quickAdd, dashboardDate, calendarMode, openDay,
-      addTask, addTasks, goalPlannerOpen, promptListOpen, updateTask, setSessions, setStatus, toggleComplete, moveTask, sortStatus,
+      addTask, addTasks, moveToWorkspace, goalPlannerOpen, promptListOpen, updateTask, setSessions, setStatus, toggleComplete, moveTask, sortStatus,
       moveOverdueToToday, clearCompleted, removeTask, setRecurrence, removeSeries, applyToUpcoming, planDay,
       previewPlan, applyPlan, moveTasksTo,
       focus, startFocus, pauseFocus, resumeFocus, advanceFocus, stopFocus, setFocusOpen,

@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { CalendarDays, Timer, ArrowRight, Repeat } from 'lucide-react'
+import { CalendarDays, Timer, ArrowRight, Repeat, Check } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
 import { carriedLabel, dueLabel, fmtMinutes, isOverdue, todayKey, totalMinutes } from '../lib/tasks'
 import { describe } from '../lib/recurrence'
@@ -16,7 +16,9 @@ const TONE = {
 // Board card. Presentation only; the parent attaches drag behaviour through
 // `innerRef`, `handleProps` and `style`. `tone` is the column it is in right
 // now (it changes while the card is dragged across, before the status does).
-export default function TaskCard({ task, tone, dragging = false, handleProps, style, innerRef }) {
+// `select` ({ picked, onToggle }) puts it in "choose tasks" mode: tapping picks
+// the card instead of opening it, and the done circle becomes a pick circle.
+export default function TaskCard({ task, tone, dragging = false, handleProps, style, innerRef, select }) {
   const { categoryById, toggleComplete, setSelectedId, updateTask, now } = usePlanner()
   const [leaving, setLeaving] = useState(false)
   const done = task.status === 'completed'
@@ -40,7 +42,7 @@ export default function TaskCard({ task, tone, dragging = false, handleProps, st
       ref={innerRef}
       style={style}
       {...handleProps}
-      onClick={() => setSelectedId(task.id)}
+      onClick={() => (select ? select.onToggle() : setSelectedId(task.id))}
       // Enter opens the task; Space still picks the card up to move it.
       onKeyDown={(e) => {
         if (e.key === 'Enter' && e.target === e.currentTarget) { e.preventDefault(); setSelectedId(task.id); return }
@@ -54,6 +56,7 @@ export default function TaskCard({ task, tone, dragging = false, handleProps, st
         // transform transition or hover lift there would fight it and stutter.
         innerRef ? 'transition-shadow duration-200 hover:shadow-lift' : 'transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-lift',
         dragging && 'opacity-40 shadow-none',
+        select?.picked && 'ring-2 ring-accent',
         leaving && 'animate-card-out pointer-events-none',
       )}
     >
@@ -61,7 +64,12 @@ export default function TaskCard({ task, tone, dragging = false, handleProps, st
         <p className={cx('flex-1 min-w-0 text-sm font-bold leading-snug', done && 'line-through text-muted')}>
           {task.title || 'Untitled'}
         </p>
-        <CheckCircle checked={done || leaving} onToggle={onCheck} />
+        {select
+          ? <span role="checkbox" aria-checked={select.picked} aria-label="Select this task"
+              className={cx('shrink-0 h-5 w-5 rounded-md border-2 flex items-center justify-center', select.picked ? 'bg-accent border-accent text-white' : 'border-line bg-page')}>
+              {select.picked && <Check size={12} strokeWidth={3.5} />}
+            </span>
+          : <CheckCircle checked={done || leaving} onToggle={onCheck} />}
       </div>
 
       {due && (

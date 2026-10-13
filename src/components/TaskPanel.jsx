@@ -1,7 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { format, parseISO } from 'date-fns'
-import { Activity, CalendarDays, Clock, Timer, Tag, Flag, Trash2, X, Repeat, ArrowRight, CalendarPlus } from 'lucide-react'
+import { Activity, CalendarDays, Clock, Timer, Tag, Flag, Trash2, X, Repeat, ArrowRight, CalendarPlus, Layers } from 'lucide-react'
 import { googleCalendarUrl } from '../lib/calendar'
+import { currentProfileId } from '../lib/profiles'
+import { currentWorkspaceId, listWorkspaces } from '../lib/workspaces'
 import { usePlanner } from '../store/PlannerContext'
 import { STATUSES, STATUS_LABEL, carriedLabel, fmtMinutes, isOverdue, todayKey, totalMinutes } from '../lib/tasks'
 import { FREQS, FREQ_LABEL, describe } from '../lib/recurrence'
@@ -14,13 +16,17 @@ const STATUS_PILL = { todo: 'bg-lav text-lav-fg', working: 'bg-sky text-sky-fg',
 
 // Floating side panel that edits the selected task in place.
 export default function TaskPanel() {
-  const { tasks, settings, selectedId, setSelectedId, updateTask, setStatus, removeTask, removeSeries, setRecurrence, applyToUpcoming, focus, startFocus, categoryById, now } = usePlanner()
+  const { tasks, settings, selectedId, setSelectedId, updateTask, setStatus, removeTask, removeSeries, setRecurrence, applyToUpcoming, moveToWorkspace, focus, startFocus, categoryById, now } = usePlanner()
   const task = tasks.find((t) => t.id === selectedId)
   const [confirm, setConfirm] = useState(false)
   const panelRef = useRef(null)
   useDialogFocus(panelRef, !!task)
 
   useEffect(() => { setConfirm(false) }, [selectedId])
+
+  // The other workspaces this task could go to (none until a second one exists).
+  const pid = currentProfileId()
+  const otherWorkspaces = pid ? listWorkspaces(pid).filter((w) => w.id !== currentWorkspaceId(pid)) : []
   useEffect(() => {
     if (!task) return
     const onKey = (e) => e.key === 'Escape' && setSelectedId(null)
@@ -127,6 +133,15 @@ export default function TaskPanel() {
             <Row icon={Flag} label="Priority" top>
               <PriorityPills value={task.priority} onChange={(priority) => updateTask(task.id, { priority })} />
             </Row>
+            {otherWorkspaces.length > 0 && focus?.taskId !== task.id && (
+              <Row icon={Layers} label="Workspace">
+                <select className="input h-9 py-0 w-full" value="" aria-label="Move this task to another workspace"
+                  onChange={(e) => { const w = otherWorkspaces.find((x) => x.id === e.target.value); if (w) moveToWorkspace(task.id, w) }}>
+                  <option value="">Move to…</option>
+                  {otherWorkspaces.map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}
+                </select>
+              </Row>
+            )}
           </div>
 
           {upcoming.length > 0 && (

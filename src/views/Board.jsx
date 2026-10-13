@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import {
   DndContext, DragOverlay, KeyboardSensor, MeasuringStrategy, MouseSensor, TouchSensor, defaultDropAnimationSideEffects,
@@ -7,8 +7,10 @@ import {
 import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { addDays, parseISO } from 'date-fns'
-import { Plus, MoreHorizontal, Search, LayoutGrid, List, ArrowUpDown, CalendarClock, CalendarCheck, Trash2 } from 'lucide-react'
+import { Plus, MoreHorizontal, Search, LayoutGrid, List, ArrowUpDown, CalendarClock, CalendarCheck, Trash2, CheckSquare, X, Layers } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
+import { currentProfileId } from '../lib/profiles'
+import { currentWorkspaceId, listWorkspaces } from '../lib/workspaces'
 import { STATUSES, STATUS_LABEL, PRIORITIES, PRIORITY_LABEL, carriedLabel, dateKey, dueLabel, fmtMinutes, isOverdue } from '../lib/tasks'
 import { CategoryTag, CheckCircle, ConfirmDialog, Menu, PriorityPill, cx } from '../components/ui'
 import TaskCard from '../components/TaskCard'
@@ -42,12 +44,26 @@ function collisionDetection(args) {
 }
 
 export default function Board() {
-  const { tasks, now, settings, moveTask, sortStatus, moveOverdueToToday, clearCompleted, setQuickAdd } = usePlanner()
+  const { tasks, now, settings, moveToWorkspace, moveTask, sortStatus, moveOverdueToToday, clearCompleted, setQuickAdd } = usePlanner()
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState('all')
   const [mode, setMode] = useState('board')
   const [showAllDone, setShowAllDone] = useState(false)
   const [confirmClear, setConfirmClear] = useState(false)
+
+  // ---- choosing several cards to send to another workspace ----
+  const pid = currentProfileId()
+  const otherWorkspaces = pid ? listWorkspaces(pid).filter((w) => w.id !== currentWorkspaceId(pid)) : []
+  const [selecting, setSelecting] = useState(false)
+  const [picked, setPicked] = useState(() => new Set())
+  const stopSelecting = () => { setSelecting(false); setPicked(new Set()) }
+  const togglePick = (id) => setPicked((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n })
+  useEffect(() => {
+    if (!selecting) return undefined
+    const onKey = (e) => { if (e.key === 'Escape') stopSelecting() }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [selecting])
 
   // ---- filtering ----
   const visible = useMemo(() => {
@@ -80,6 +96,11 @@ export default function Board() {
   }), [columns, showAllDone])
 
   const taskById = useMemo(() => new Map(tasks.map((t) => [t.id, t])), [tasks])
+  const shownIds = useMemo(() => STATUSES.flatMap((s) => shownColumns[s].map((t) => t.id)), [shownColumns])
+  const sendPicked = (workspaceId) => {
+    const w = otherWorkspaces.find((x) => x.id === workspaceId)
+    if (w && moveToWorkspace([...picked].filter((id) => taskById.has(id)), w)) stopSelecting()
+  }
 
   // ---- drag and drop ----
   // While dragging we keep a local draft of the id lists and commit once at the end.
@@ -188,6 +209,14 @@ export default function Board() {
               {PRIORITIES.map((p) => <option key={p} value={`pri:${p}`}>{PRIORITY_LABEL[p]}</option>)}
             </optgroup>
           </select>
+          {otherWorkspaces.length > 0 && mode === 'board' && (
+            <button type="button" onClick={() => (selecting ? stopSelecting() : setSelecting(true))} aria-pressed={selecting}
+              title="Choose several tasks to move to another workspace"
+              className={cx('h-9 px-3.5 rounded-full border text-[13px] font-semibold inline-flex items-center gap-1.5 transition',
+                selecting ? 'bg-ink text-page border-ink' : 'bg-card border-line text-muted hover:text-ink')}>
+              <CheckSquare size={14} /> Select
+            </button>
+          )}
           <div className="inline-flex rounded-full border border-line bg-card p-1 gap-0.5">
             {[{ id: 'list', icon: List, label: 'List view' }, { id: 'board', icon: LayoutGrid, label: 'Board view' }].map((m) => (
               <button key={m.id} type="button" title={m.label} onClick={() => setMode(m.id)}
@@ -199,6 +228,24 @@ export default function Board() {
           </div>
         </div>
       </header>
+
+      {selecting && mode === 'board' && (
+        <div role="region" aria-label="Move selected tasks"
+          className="sticky top-2 z-40 mx-auto mb-4 w-fit flex items-center gap-2 rounded-full bg-ink text-page shadow-modal pl-5 pr-2 h-12 max-w-full animate-modal-in">
+          <span className="text-[13px] font-semibold tnum whitespace-nowrap">{picked.size === 0 ? 'Tap tasks to pick them' : `${picked.size} selected`}</span>
+          <button type="button" onClick={() => setPicked(picked.size === shownIds.length ? new Set() : new Set(shownIds))}
+            className="h-8 rounded-full px-3 text-[12px] font-semibold hover:bg-page/15 transition whitespace-nowrap">{picked.size === shownIds.length && shownIds.length > 0 ? 'Clear' : 'Select all'}</button>
+          <label className="relative inline-flex items-center">
+            <Layers size={13} className="absolute left-3 pointer-events-none" />
+            <select value="" disabled={picked.size === 0} aria-label="Move the selected tasks to a workspace" onChange={(e) => sendPicked(e.target.value)}
+              className={cx('h-8 rounded-full pl-8 pr-3 text-[12px] font-semibold bg-accent text-white border-0 outline-none cursor-pointer', picked.size === 0 && 'opacity-40 cursor-not-allowed')}>
+              <option value="">Move to…</option>
+              {otherWorkspaces.map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}
+            </select>
+          </label>
+          <button type="button" onClick={stopSelecting} aria-label="Cancel selecting" className="h-8 w-8 rounded-full inline-flex items-center justify-center hover:bg-page/15 transition"><X size={15} /></button>
+        </div>
+      )}
 
       {mode === 'list' ? (
         <ListView columns={columns} />
@@ -214,6 +261,9 @@ export default function Board() {
                 ids={idLists[s]}
                 taskById={taskById}
                 activeId={activeId}
+                selecting={selecting}
+                picked={picked}
+                onPick={togglePick}
                 highlighted={activeId != null && overColumn === s}
                 onAdd={() => setQuickAdd({ status: s })}
                 menu={[
@@ -255,7 +305,7 @@ export default function Board() {
   )
 }
 
-function Column({ status, ids, taskById, activeId, highlighted, onAdd, menu, footer }) {
+function Column({ status, ids, taskById, activeId, selecting, picked, onPick, highlighted, onAdd, menu, footer }) {
   const { setNodeRef } = useDroppable({ id: status })
   const c = COL[status]
   return (
@@ -279,7 +329,7 @@ function Column({ status, ids, taskById, activeId, highlighted, onAdd, menu, foo
 
       <SortableContext items={ids} strategy={verticalListSortingStrategy}>
         <div className="flex flex-col gap-2.5 flex-1 overflow-y-auto pr-0.5 text-ink">
-          {ids.map((id) => taskById.get(id) && <SortableCard key={id} task={taskById.get(id)} tone={status} dragging={id === activeId} />)}
+          {ids.map((id) => taskById.get(id) && <SortableCard key={id} task={taskById.get(id)} tone={status} dragging={id === activeId} selecting={selecting} picked={picked.has(id)} onPick={() => onPick(id)} />)}
           {ids.length === 0 && (
             <div className={cx('flex-1 flex items-center justify-center text-xs font-semibold border-2 border-dashed rounded-2xl min-h-[96px]', c.text, 'border-current/30 opacity-70')}>
               Drop tasks here
@@ -297,10 +347,11 @@ function Column({ status, ids, taskById, activeId, highlighted, onAdd, menu, foo
   )
 }
 
-function SortableCard({ task, tone, dragging }) {
-  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: task.id, transition: { duration: 220, easing: EASE } })
+function SortableCard({ task, tone, dragging, selecting, picked, onPick }) {
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: task.id, disabled: selecting, transition: { duration: 220, easing: EASE } })
   const style = { transform: CSS.Translate.toString(transform), transition }
-  return <TaskCard task={task} tone={tone} innerRef={setNodeRef} style={style} handleProps={{ ...attributes, ...listeners }} dragging={dragging} />
+  return <TaskCard task={task} tone={tone} innerRef={setNodeRef} style={style} dragging={dragging}
+    handleProps={selecting ? undefined : { ...attributes, ...listeners }} select={selecting ? { picked, onToggle: onPick } : undefined} />
 }
 
 // ---- list view ----------------------------------------------------------
