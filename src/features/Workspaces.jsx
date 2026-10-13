@@ -164,10 +164,10 @@ export function WorkspaceMenu({ compact = false, className }) {
     <div ref={root} className={cx('relative', className)}>
       <button type="button" onClick={() => setOpen(!open)} aria-haspopup="dialog" aria-expanded={open} title={`Workspace: ${current.name}`}
         className={cx('flex w-full items-center gap-2.5 rounded-full h-10 px-1.5 border border-line bg-page transition hover:border-faint',
-          compact ? 'justify-center lg:justify-start' : 'justify-start')}>
+          compact ? 'justify-center wide:justify-start' : 'justify-start')}>
         <Tile ws={current} size={28} />
-        <span className={cx('min-w-0 flex-1 truncate text-left text-[13px] font-semibold', compact && 'hidden lg:block')}>{current.name}</span>
-        <ChevronsUpDown size={14} className={cx('shrink-0 mr-1.5 text-faint', compact && 'hidden lg:block')} />
+        <span className={cx('min-w-0 flex-1 truncate text-left text-[13px] font-semibold', compact && 'hidden wide:block')}>{current.name}</span>
+        <ChevronsUpDown size={14} className={cx('shrink-0 mr-1.5 text-faint', compact && 'hidden wide:block')} />
       </button>
       {open && (
         <div role="dialog" aria-label="Workspaces"

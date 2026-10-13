@@ -31,7 +31,7 @@ export default function WorkDashboard() {
         <DateField value={to} onChange={(v) => v && setRange([from, v])} allowClear={false} className="w-36" />
         {Object.entries(P).map(([label, [a, b]]) => (
           <button key={label} type="button" onClick={() => setRange([key(a), key(b)])}
-            className={cx('rounded-full px-3 py-1.5 text-xs font-semibold transition', from === key(a) && to === key(b) ? 'bg-ink text-page' : 'bg-card border border-line text-muted hover:text-ink')}>{label}</button>
+            className={cx('rounded-full px-3 py-1.5 text-xs font-semibold transition', from === key(a) && to === key(b) ? 'bg-brand text-white' : 'bg-card border border-line text-muted hover:text-ink')}>{label}</button>
         ))}
         <span className="text-xs text-faint ml-auto">{stats.days} working days · {h1(stats.available)} h available</span>
       </div>

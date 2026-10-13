@@ -18,6 +18,7 @@ export const remainingMinutes = (t, now = new Date()) =>
 // The load of one day against your working hours.
 //   capacity  - working minutes in the whole day (break excluded)
 //   available - working minutes still ahead (today: from now on)
+//   review    - estimated minutes sitting with someone else (not part of left)
 //   left      - estimated minutes of open work still to do
 //   over      - left - available (positive = more than fits)
 //   finish    - minute of day you'd finish if you started now and kept going
@@ -37,13 +38,16 @@ export function dayLoad(tasks, key, now = new Date(), hours = DEFAULT_WORK_HOURS
   const done = sum(list.filter((t) => t.status === 'completed'), (t) => t.durationMinutes || 0)
   const working = sum(list.filter((t) => t.status === 'working'), (t) => remainingMinutes(t, now))
   const todo = sum(list.filter((t) => t.status === 'todo'), (t) => remainingMinutes(t, now))
+  // Work in review is waiting on someone else, so it never eats your capacity.
+  // It is still shown on the bar, so the time doesn't quietly disappear.
+  const review = sum(list.filter((t) => t.status === 'review'), (t) => remainingMinutes(t, now))
   const left = working + todo
   // Assumes you still take the rest of your break.
   const finish = left > 0 ? from + left + breakLeft : null
 
   return {
-    key, isToday, start, end, capacity, available, done, working, todo, left,
-    planned: done + left, over: left - available, finish, afterHours: isToday && nowMin >= end,
+    key, isToday, start, end, capacity, available, done, working, todo, review, left,
+    planned: done + left + review, over: left - available, finish, afterHours: isToday && nowMin >= end,
   }
 }
 

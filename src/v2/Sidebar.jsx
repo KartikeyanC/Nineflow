@@ -12,6 +12,7 @@ import { PlanGoalButton } from '../components/GoalPlanner'
 import { PromptListButton } from '../components/PromptToList'
 import { AskPlannerButton } from '../components/AskPlanner'
 import { BrandMark, Wordmark } from '../components/Brand'
+import SidebarToggle from '../components/SidebarToggle'
 
 // Floating "island" sidebar: icons only between 640px and 1024px, full
 // labels from 1024px. Phones use MobileNav instead.
@@ -33,11 +34,12 @@ export default function Sidebar() {
   const items = NAV.filter(({ id }) => id !== 'work' || settings.modules?.work)
 
   return (
-    <aside className="hidden sm:flex sticky z-20 top-4 h-[calc(100dvh-2rem)] w-[76px] lg:w-[252px] shrink-0 flex-col rounded-[28px] bg-card/75 backdrop-blur-xl shadow-soft p-3 lg:p-3.5 transition-[width] duration-500 ease-spring">
+    <aside className="hidden sm:flex sticky z-20 top-4 h-[calc(100dvh-2rem)] w-[76px] wide:w-[252px] shrink-0 flex-col rounded-[28px] bg-card/75 backdrop-blur-xl shadow-soft p-3 wide:p-3.5 transition-[width] duration-500 ease-spring">
+      <SidebarToggle />
       {/* Brand */}
-      <div className="flex items-center gap-3 h-11 px-1.5 lg:px-2">
+      <div className="flex items-center gap-3 h-11 px-1.5 wide:px-2">
         <BrandMark size={36} />
-        <div className="hidden lg:block min-w-0">
+        <div className="hidden wide:block min-w-0">
           <p className="text-[15px] leading-tight"><Wordmark /></p>
           <p className="text-[11px] text-faint leading-tight">Plan better. Flow forward.</p>
         </div>
@@ -46,12 +48,12 @@ export default function Sidebar() {
 
       {/* Command pill: opens quick add */}
       <button type="button" onClick={() => setQuickAdd({})} title="New task (Ctrl+K)"
-        className="group mt-4 h-11 rounded-full bg-ink text-page inline-flex items-center justify-center lg:justify-start gap-2.5 pl-1.5 lg:pr-3 transition duration-300 hover:-translate-y-px active:scale-[0.97] shadow-[inset_0_1px_0_rgb(255_255_255/0.18),0_8px_20px_-8px_rgb(var(--shadow)/0.5)]">
-        <span className="h-8 w-8 rounded-full bg-page/15 inline-flex items-center justify-center transition duration-500 group-hover:rotate-90 group-hover:scale-105">
+        className="group mt-4 h-11 rounded-full bg-brand text-white inline-flex items-center justify-center wide:justify-start gap-2.5 pl-1.5 wide:pr-3 transition duration-300 hover:-translate-y-px active:scale-[0.97] shadow-[inset_0_1px_0_rgb(255_255_255/0.18),0_8px_20px_-8px_rgb(var(--shadow)/0.5)]">
+        <span className="h-8 w-8 rounded-full bg-white/20 inline-flex items-center justify-center transition duration-500 group-hover:rotate-90 group-hover:scale-105">
           <Plus size={16} />
         </span>
-        <span className="hidden lg:inline text-[13px] font-semibold">New task</span>
-        <span className="hidden lg:inline-flex ml-auto text-[10px] font-semibold text-page/50 tracking-wide">CTRL K</span>
+        <span className="hidden wide:inline text-[13px] font-semibold">New task</span>
+        <span className="hidden wide:inline-flex ml-auto text-[10px] font-semibold text-white/70 tracking-wide">CTRL K</span>
       </button>
       <InterruptButton />
       <PlanGoalButton />
@@ -64,11 +66,11 @@ export default function Sidebar() {
           return (
             <React.Fragment key={item.id}>
               {first && (
-                <p className={cx('hidden lg:block px-3 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-faint', i > 0 && 'pt-4')}>
+                <p className={cx('hidden wide:block px-3 pb-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-faint', i > 0 && 'pt-4')}>
                   {item.group === 'plan' ? 'Plan' : 'Workspace'}
                 </p>
               )}
-              {first && i > 0 && <div className="lg:hidden my-2 mx-3 h-px bg-line" />}
+              {first && i > 0 && <div className="wide:hidden my-2 mx-3 h-px bg-line" />}
               <NavItem item={item} active={view === item.id} onClick={() => setView(item.id)}
                 badge={item.id === 'dashboard' && today.total - today.done > 0 ? today.total - today.done : null} />
             </React.Fragment>
@@ -79,7 +81,7 @@ export default function Sidebar() {
       <div className="flex-1" />
 
       {/* Today progress, double-bezel */}
-      <div className="hidden lg:block bezel !rounded-[22px] !p-1">
+      <div className="hidden wide:block bezel !rounded-[22px] !p-1">
         <div className="core !rounded-[18px] p-3.5">
           <div className="flex items-baseline justify-between">
             <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-faint">Today</span>
@@ -94,21 +96,21 @@ export default function Sidebar() {
           </div>
         </div>
       </div>
-      <div className="lg:hidden flex justify-center" title={`${today.done} of ${today.total} done`}>
+      <div className="wide:hidden flex justify-center" title={`${today.done} of ${today.total} done`}>
         <ProgressRing value={today.progress} label={today.done} />
       </div>
 
-      <div className="mt-2 hidden lg:flex"><CloudStatusPill /></div>
-      <div className="mt-2 flex lg:hidden justify-center"><CloudStatusPill iconOnly /></div>
+      <div className="mt-2 hidden wide:flex"><CloudStatusPill /></div>
+      <div className="mt-2 flex wide:hidden justify-center"><CloudStatusPill iconOnly /></div>
 
       {/* Profile + theme */}
-      <div className="mt-3 flex flex-col lg:flex-row items-center gap-2 lg:gap-2.5 px-0.5 lg:px-1">
+      <div className="mt-3 flex flex-col wide:flex-row items-center gap-2 wide:gap-2.5 px-0.5 wide:px-1">
         <button type="button" onClick={() => setView('settings')} title="Profile and settings"
-          className="flex items-center gap-2.5 min-w-0 lg:flex-1 rounded-full lg:pr-2 transition hover:opacity-80">
+          className="flex items-center gap-2.5 min-w-0 wide:flex-1 rounded-full wide:pr-2 transition hover:opacity-80">
           <span className={cx('h-9 w-9 rounded-full flex items-center justify-center text-[12px] font-bold shrink-0 ring-2 ring-card', avatar.bg, avatar.text)}>
             {initials(profile?.name || '')}
           </span>
-          <span className="hidden lg:block text-[13px] font-semibold truncate">{profile?.name}</span>
+          <span className="hidden wide:block text-[13px] font-semibold truncate">{profile?.name}</span>
         </button>
         <button type="button" onClick={() => updateSettings({ theme: dark ? 'light' : 'dark' })} title="Toggle dark mode"
           className="h-9 w-9 shrink-0 rounded-full inline-flex items-center justify-center text-muted bg-subtle ring-hair hover:text-ink transition duration-500 hover:rotate-12">
@@ -122,12 +124,12 @@ export default function Sidebar() {
 function NavItem({ item: { label, icon: Icon }, active, onClick, badge }) {
   return (
     <button type="button" onClick={onClick} title={label}
-      className={cx('group relative flex items-center gap-3 h-10 px-3 rounded-full text-[13px] font-semibold transition duration-300 justify-center lg:justify-start',
-        active ? 'bg-ink text-page shadow-[inset_0_1px_0_rgb(255_255_255/0.15),0_6px_14px_-6px_rgb(var(--shadow)/0.45)]' : 'text-muted hover:bg-subtle hover:text-ink')}>
+      className={cx('group relative flex items-center gap-3 h-10 px-3 rounded-full text-[13px] font-semibold transition duration-300 justify-center wide:justify-start',
+        active ? 'bg-brand text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.15),0_6px_14px_-6px_rgb(var(--shadow)/0.45)]' : 'text-muted hover:bg-subtle hover:text-ink')}>
       <Icon size={17} className={cx('shrink-0 transition duration-300', !active && 'group-hover:scale-110')} />
-      <span className="hidden lg:inline">{label}</span>
+      <span className="hidden wide:inline">{label}</span>
       {badge != null && (
-        <span className={cx('hidden lg:inline-flex ml-auto min-w-[22px] h-5 px-1.5 items-center justify-center rounded-full text-[10px] font-bold tnum',
+        <span className={cx('hidden wide:inline-flex ml-auto min-w-[22px] h-5 px-1.5 items-center justify-center rounded-full text-[10px] font-bold tnum',
           active ? 'bg-accent text-white' : 'bg-accent-soft text-accent')}>{badge}</span>
       )}
     </button>

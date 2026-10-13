@@ -44,9 +44,9 @@ export function PlanGoalButton() {
   const { setGoalPlannerOpen } = usePlanner()
   return (
     <button type="button" onClick={() => setGoalPlannerOpen(true)} title="Plan an exam, project or trip over the days before its deadline"
-      className="group mt-2 h-10 w-full inline-flex items-center justify-center lg:justify-start gap-2.5 rounded-full pl-1.5 lg:pr-3 bg-card shadow-soft text-ink transition duration-300 hover:-translate-y-px active:scale-[0.97]">
+      className="group mt-2 h-10 w-full inline-flex items-center justify-center wide:justify-start gap-2.5 rounded-full pl-1.5 wide:pr-3 bg-card shadow-soft text-ink transition duration-300 hover:-translate-y-px active:scale-[0.97]">
       <span className="h-7 w-7 rounded-full inline-flex items-center justify-center bg-lav text-lav-fg transition duration-500 group-hover:scale-110"><Target size={14} /></span>
-      <span className="hidden lg:inline text-[13px] font-semibold">Plan a goal</span>
+      <span className="hidden wide:inline text-[13px] font-semibold">Plan a goal</span>
     </button>
   )
 }
@@ -164,7 +164,7 @@ export default function GoalPlanner() {
             <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Time per day">
               {MINUTES.map((m) => (
                 <button key={m} type="button" role="radio" aria-checked={form.minutes === m} onClick={() => set({ minutes: m })}
-                  className={cx('pill h-8 px-3 text-[12px] border transition', form.minutes === m ? 'bg-ink text-page border-ink' : 'bg-card text-muted border-line hover:text-ink')}>
+                  className={cx('pill h-8 px-3 text-[12px] border transition', form.minutes === m ? 'bg-brand text-white border-transparent' : 'bg-card text-muted border-line hover:text-ink')}>
                   {fmtMinutes(m)}
                 </button>
               ))}
@@ -177,7 +177,7 @@ export default function GoalPlanner() {
               <div className="flex gap-1.5">
                 {DAYS.map(([l, d, full]) => (
                   <button key={d} type="button" onClick={() => toggleDay(d)} aria-pressed={form.days.includes(d)} aria-label={full} title={full}
-                    className={cx('h-9 w-9 rounded-full text-[12px] font-bold transition', form.days.includes(d) ? 'bg-ink text-page' : 'bg-page text-faint hover:text-ink')}>{l}</button>
+                    className={cx('h-9 w-9 rounded-full text-[12px] font-bold transition', form.days.includes(d) ? 'bg-brand text-white' : 'bg-page text-faint hover:text-ink')}>{l}</button>
                 ))}
               </div>
             </div>

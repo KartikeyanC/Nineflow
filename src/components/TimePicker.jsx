@@ -29,10 +29,10 @@ export function TimeList({ value, onChange, allowClear = true, onClose }) {
           return (
             <button key={t} type="button" onClick={() => pick(t)} style={{ height: ROW_H }}
               className={cx('w-full flex items-center justify-between rounded-lg px-2.5 text-xs transition',
-                sel ? 'bg-ink text-page font-bold' : 'hover:bg-lav hover:text-lav-fg',
+                sel ? 'bg-brand text-white font-bold' : 'hover:bg-lav hover:text-lav-fg',
                 !sel && (onHour ? 'font-bold text-ink' : 'font-medium text-muted'))}>
               <span>{t}</span>
-              <span className={cx('text-[10px]', sel ? 'text-page/70' : 'text-faint')}>{fmtTime(t)}</span>
+              <span className={cx('text-[10px]', sel ? 'text-white/80' : 'text-faint')}>{fmtTime(t)}</span>
             </button>
           )
         })}

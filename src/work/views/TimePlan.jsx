@@ -29,7 +29,7 @@ export default function TimePlan() {
           <div><span className="block text-xs font-semibold text-muted mb-1">Working hours (no lunch) ƒ</span><p className="h-display text-xl">{h1(work_ / 60)} h</p></div>
           <div><span className="block text-xs font-semibold text-muted mb-1">Working days ✎</span>
             <div className="flex gap-1">{[1, 2, 3, 4, 5, 6, 0].map((d) => (
-              <button key={d} type="button" onClick={() => toggleDay(d)} className={cx('h-8 w-9 rounded-full text-xs font-bold transition', s.workingDays.includes(d) ? 'bg-ink text-page' : 'bg-page text-faint hover:text-ink')}>{DAY_NAMES[d].slice(0, 2)}</button>
+              <button key={d} type="button" onClick={() => toggleDay(d)} className={cx('h-8 w-9 rounded-full text-xs font-bold transition', s.workingDays.includes(d) ? 'bg-brand text-white' : 'bg-page text-faint hover:text-ink')}>{DAY_NAMES[d].slice(0, 2)}</button>
             ))}</div>
           </div>
           {s.workingDays.includes(6) && (

@@ -43,7 +43,7 @@ export function Calendar({ value, onChange, allowClear = true, onClose }) {
           return (
             <button key={dateKey(d)} type="button" onClick={() => pick(d)}
               className={cx('mx-auto h-8 w-8 rounded-full text-xs font-semibold transition',
-                isSel ? 'bg-ink text-page shadow-soft' : 'hover:bg-lav hover:text-lav-fg',
+                isSel ? 'bg-brand text-white shadow-soft' : 'hover:bg-lav hover:text-lav-fg',
                 !isSel && isToday && 'text-lav-fg ring-1 ring-inset ring-lav-fg/50',
                 !isSel && !isToday && (inMonth ? 'text-ink' : 'text-faint/70'))}>
               {format(d, 'd')}

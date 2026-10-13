@@ -68,7 +68,7 @@ function Shell() {
         type="button"
         onClick={() => setQuickAdd({})}
         title="New task (Ctrl+K)"
-        className="fixed bottom-20 sm:bottom-6 right-4 sm:right-6 z-30 h-14 w-14 rounded-full bg-ink text-page shadow-lift flex items-center justify-center transition hover:scale-105 active:scale-95"
+        className="fixed bottom-20 sm:bottom-6 right-4 sm:right-6 z-30 h-14 w-14 rounded-full bg-brand text-white shadow-lift flex items-center justify-center transition hover:scale-105 active:scale-95"
       >
         <Plus size={24} />
       </button>

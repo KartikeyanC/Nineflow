@@ -15,7 +15,7 @@ import { DateField } from './DatePicker'
 import { TimeField } from './TimePicker'
 
 const ESTIMATES = [15, 30, 45, 60, 90, 120, 180, 240]
-const STATUS_PILL = { todo: 'bg-lav text-lav-fg', working: 'bg-sky text-sky-fg', completed: 'bg-mint text-mint-fg' }
+const STATUS_PILL = { todo: 'bg-todo-soft text-todo', working: 'bg-sky text-sky-fg', review: 'bg-violet text-violet-fg', completed: 'bg-mint text-mint-fg' }
 
 // Floating side panel that edits the selected task in place.
 export default function TaskPanel() {
@@ -54,7 +54,7 @@ export default function TaskPanel() {
     <div className="fixed inset-0 z-40">
       <div className="absolute inset-0 bg-ink/25 animate-fade-in" onClick={close} />
       <aside ref={panelRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label={`Task: ${task.title || 'Untitled'}`}
-        className="absolute top-4 right-4 bottom-4 w-[min(460px,calc(100vw-2rem))] card shadow-modal animate-panel-in flex flex-col overflow-hidden outline-none">
+        className="absolute top-4 right-4 bottom-4 w-[min(540px,calc(100vw-2rem))] card shadow-modal animate-panel-in flex flex-col overflow-hidden outline-none">
         <header className="flex items-center justify-between px-6 pt-5 pb-3">
           <div className="flex items-center gap-2">
             <span className={cx('pill', STATUS_PILL[task.status])}>{cols.find((c) => c.id === columnOf(task, cols))?.name || STATUS_LABEL[task.status]}</span>
@@ -68,7 +68,7 @@ export default function TaskPanel() {
           {task.status !== 'completed' && (
             <button type="button" onClick={() => { startFocus(task.id); close() }}
               className={cx('mb-3 inline-flex items-center gap-1.5 rounded-full px-3 h-8 text-xs font-semibold transition',
-                focus?.taskId === task.id ? 'bg-lav text-lav-fg' : 'bg-ink text-page hover:opacity-90')}>
+                focus?.taskId === task.id ? 'bg-lav text-lav-fg' : 'bg-brand text-white hover:opacity-90')}>
               <Timer size={13} /> {focus?.taskId === task.id ? 'Focusing on this' : `Focus · ${settings.pomodoro.focus} min`}
             </button>
           )}
@@ -90,7 +90,7 @@ export default function TaskPanel() {
           <Checklist task={task} />
 
           <div className="mt-3 divide-y divide-line">
-            <Row icon={Activity} label="Status">
+            <Row icon={Activity} label="Status" stack>
               <Segmented size="sm" value={task.status} onChange={(s) => setStatus(task.id, s)}
                 options={STATUSES.map((s) => ({ value: s, label: STATUS_LABEL[s] }))} />
             </Row>
@@ -225,13 +225,21 @@ export default function TaskPanel() {
   )
 }
 
-function Row({ icon: Icon, label, children, top }) {
+function Row({ icon: Icon, label, children, top, stack }) {
   return (
-    <div className={cx('flex gap-3 py-3', top ? 'items-start' : 'items-center')}>
+    <div className={cx(
+      'flex py-3',
+      // `stack`: on a narrow panel the control drops under its label rather than
+      // being cut off by the panel's edge. The fixed label column is what costs
+      // the room, so giving it its own line is enough.
+      stack
+        ? 'flex-col items-start gap-1.5 sm:flex-row sm:items-center sm:gap-3'
+        : cx('gap-3', top ? 'items-start' : 'items-center'),
+    )}>
       <span className={cx('w-28 shrink-0 inline-flex items-center gap-2 text-xs font-semibold text-muted', top && 'pt-1')}>
         <Icon size={14} className="text-faint" /> {label}
       </span>
-      <div className="flex-1 min-w-0">{children}</div>
+      <div className="flex-1 min-w-0 max-w-full">{children}</div>
     </div>
   )
 }

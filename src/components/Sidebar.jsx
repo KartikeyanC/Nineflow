@@ -10,6 +10,7 @@ import { WorkspaceMenu } from '../features/Workspaces'
 import { PlanGoalButton } from './GoalPlanner'
 import { PromptListButton } from './PromptToList'
 import { AskPlannerButton } from './AskPlanner'
+import SidebarToggle from './SidebarToggle'
 
 const NAV = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -26,11 +27,12 @@ export default function Sidebar() {
   const dark = settings.theme === 'dark'
 
   return (
-    <aside className="card sticky z-20 top-4 h-[calc(100vh-2rem)] w-[72px] lg:w-[232px] shrink-0 hidden sm:flex flex-col p-3 lg:p-4 transition-[width] duration-200">
+    <aside className="card sticky z-20 top-4 h-[calc(100vh-2rem)] w-[72px] wide:w-[232px] shrink-0 hidden sm:flex flex-col p-3 wide:p-4 transition-[width] duration-200">
+      <SidebarToggle />
       {/* Brand */}
-      <div className="flex items-center gap-2.5 px-1 lg:px-2 h-10 mb-4">
+      <div className="flex items-center gap-2.5 px-1 wide:px-2 h-10 mb-4">
         <BrandMark size={32} />
-        <Wordmark className="text-[17px] hidden lg:block" />
+        <Wordmark className="text-[17px] hidden wide:block" />
       </div>
       <WorkspaceMenu compact className="mb-4" />
 
@@ -45,12 +47,12 @@ export default function Sidebar() {
               onClick={() => setView(id)}
               title={label}
               className={cx(
-                'flex items-center gap-3 rounded-full h-10 px-3 lg:px-3.5 text-sm font-semibold transition justify-center lg:justify-start',
+                'flex items-center gap-3 rounded-full h-10 px-3 wide:px-3.5 text-sm font-semibold transition justify-center wide:justify-start',
                 active ? 'bg-lav text-lav-fg' : 'text-muted hover:bg-page hover:text-ink',
               )}
             >
               <Icon size={18} className="shrink-0" />
-              <span className="hidden lg:inline">{label}</span>
+              <span className="hidden wide:inline">{label}</span>
             </button>
           )
         })}
@@ -59,14 +61,14 @@ export default function Sidebar() {
       <div className="flex-1" />
 
       {/* Today mini card */}
-      <div className="rounded-2xl bg-page border border-line p-3 hidden lg:block">
+      <div className="rounded-2xl bg-page border border-line p-3 hidden wide:block">
         <p className="text-xs font-semibold text-muted">Today</p>
         <p className="text-sm font-bold mt-0.5">
           {today.done} of {today.total} tasks done
         </p>
         <ProgressBar value={today.progress} className="mt-2.5" />
       </div>
-      <div className="lg:hidden flex justify-center" title={`${today.done} of ${today.total} done`}>
+      <div className="wide:hidden flex justify-center" title={`${today.done} of ${today.total} done`}>
         <div className="relative h-9 w-9">
           <svg viewBox="0 0 36 36" className="h-9 w-9 -rotate-90">
             <circle cx="18" cy="18" r="15" fill="none" stroke="rgb(var(--line))" strokeWidth="3" />
@@ -82,16 +84,16 @@ export default function Sidebar() {
         </div>
       </div>
 
-      <div className="mt-2 hidden lg:flex"><CloudStatusPill /></div>
-      <div className="mt-2 flex lg:hidden justify-center"><CloudStatusPill iconOnly /></div>
+      <div className="mt-2 hidden wide:flex"><CloudStatusPill /></div>
+      <div className="mt-2 flex wide:hidden justify-center"><CloudStatusPill iconOnly /></div>
       <button
         type="button"
         onClick={() => setQuickAdd({})}
-        className="btn-black mt-3 w-full h-10 lg:px-4 px-0"
+        className="btn-black mt-3 w-full h-10 wide:px-4 px-0"
         title="New task (Ctrl+K)"
       >
         <Plus size={16} />
-        <span className="hidden lg:inline">New task</span>
+        <span className="hidden wide:inline">New task</span>
       </button>
       <InterruptButton />
       <PlanGoalButton />
@@ -101,11 +103,11 @@ export default function Sidebar() {
       <button
         type="button"
         onClick={() => updateSettings({ theme: dark ? 'light' : 'dark' })}
-        className="mt-2 h-9 rounded-full flex items-center justify-center lg:justify-start gap-2.5 px-3 text-xs font-semibold text-muted hover:bg-page hover:text-ink transition"
+        className="mt-2 h-9 rounded-full flex items-center justify-center wide:justify-start gap-2.5 px-3 text-xs font-semibold text-muted hover:bg-page hover:text-ink transition"
         title="Toggle dark mode"
       >
         {dark ? <Sun size={16} /> : <Moon size={16} />}
-        <span className="hidden lg:inline">{dark ? 'Light mode' : 'Dark mode'}</span>
+        <span className="hidden wide:inline">{dark ? 'Light mode' : 'Dark mode'}</span>
       </button>
     </aside>
   )

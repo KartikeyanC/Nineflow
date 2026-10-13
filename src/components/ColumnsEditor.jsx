@@ -7,8 +7,8 @@ import {
 import { cx } from './ui'
 
 // Add, rename, recolour and reorder the Board's columns. Every column counts as
-// To do, Working or Completed, which is what timers, reports and your daily
-// capacity use. The three originals stay; the ones you add can be deleted.
+// To do, Working, In review or Completed, which is what timers, reports and your
+// daily capacity use. The four originals stay; the ones you add can be deleted.
 export default function ColumnsEditor() {
   const { settings, updateSettings, tasks } = usePlanner()
   const cols = cleanColumns(settings.columns)
@@ -41,7 +41,7 @@ export default function ColumnsEditor() {
   return (
     <div>
       <p className="text-sm text-muted -mt-1 mb-3">
-        Add stages like “In review” or “Waiting”. Each one counts as To do, Working or Completed, so your timers and reports keep working.
+        Add stages like “Blocked” or “Waiting”. Each one counts as To do, Working, In review or Completed, so your timers and reports keep working.
       </p>
       <ul className="space-y-1.5">
         {cols.map((c, i) => {
@@ -51,13 +51,13 @@ export default function ColumnsEditor() {
               <span className={cx('h-3 w-3 rounded-full shrink-0 ml-1', st.dot)} />
               <input value={c.name} maxLength={COLUMN_NAME_MAX} aria-label={`Name of column ${c.name}`}
                 onChange={(e) => patch(c.id, { name: e.target.value })}
-                onBlur={(e) => { if (!e.target.value.trim()) patch(c.id, { name: isOriginal(c) ? { todo: 'To Do', working: 'Working', completed: 'Completed' }[c.id] : 'Column' }) }}
+                onBlur={(e) => { if (!e.target.value.trim()) patch(c.id, { name: isOriginal(c) ? { todo: 'To Do', working: 'Working', review: 'In review', completed: 'Completed' }[c.id] : 'Column' }) }}
                 className="flex-1 min-w-0 bg-transparent outline-none text-sm font-semibold" />
               <select value={c.color} aria-label={`Colour of ${c.name}`} onChange={(e) => patch(c.id, { color: e.target.value })}
                 className="bg-transparent text-[12px] font-semibold text-muted outline-none cursor-pointer">
                 {COLUMN_COLORS.map((k) => <option key={k} value={k}>{COLUMN_STYLE[k].label}</option>)}
               </select>
-              <span className="hidden sm:inline text-[11px] text-faint w-[4.5rem] text-right">counts as {BASE_LABEL[c.base]}</span>
+              <span className="hidden sm:inline text-[11px] text-faint w-[5.5rem] text-right">counts as {BASE_LABEL[c.base]}</span>
               <button type="button" aria-label={`Move ${c.name} up`} disabled={i === 0} onClick={() => move(i, -1)} className="h-7 w-7 rounded-full inline-flex items-center justify-center text-faint hover:bg-card hover:text-ink disabled:opacity-30"><ArrowUp size={13} /></button>
               <button type="button" aria-label={`Move ${c.name} down`} disabled={i === cols.length - 1} onClick={() => move(i, 1)} className="h-7 w-7 rounded-full inline-flex items-center justify-center text-faint hover:bg-card hover:text-ink disabled:opacity-30"><ArrowDown size={13} /></button>
               {isOriginal(c)
@@ -71,7 +71,7 @@ export default function ColumnsEditor() {
 
       {cols.length < MAX_COLUMNS ? (
         <form onSubmit={(e) => { e.preventDefault(); add() }} className="mt-3 flex flex-wrap items-center gap-2">
-          <input value={name} maxLength={COLUMN_NAME_MAX} placeholder="New column, e.g. In review" aria-label="New column name"
+          <input value={name} maxLength={COLUMN_NAME_MAX} placeholder="New column, e.g. Blocked" aria-label="New column name"
             onChange={(e) => setName(e.target.value)} className="input h-9 py-0 flex-1 min-w-[10rem]" />
           <select value={base} aria-label="The new column counts as" onChange={(e) => setBase(e.target.value)} className="input h-9 py-0 w-auto">
             {BASES.map((b) => <option key={b} value={b}>Counts as {BASE_LABEL[b]}</option>)}

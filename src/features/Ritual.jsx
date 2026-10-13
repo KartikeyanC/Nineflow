@@ -135,7 +135,7 @@ function PlanFlow({ step, setStep, close }) {
           <div className="flex flex-wrap gap-2 mb-3">
             {open.map((t) => (
               <button key={t.id} type="button" onClick={() => setTarget(t.title)}
-                className={cx('pill h-8 px-3.5 text-[12px] transition', target === t.title ? 'bg-ink text-page' : 'bg-card text-ink shadow-soft hover:-translate-y-px')}>
+                className={cx('pill h-8 px-3.5 text-[12px] transition', target === t.title ? 'bg-brand text-white' : 'bg-card text-ink shadow-soft hover:-translate-y-px')}>
                 <Target size={12} /> {t.title}
               </button>
             ))}

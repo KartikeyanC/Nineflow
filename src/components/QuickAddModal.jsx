@@ -1,13 +1,14 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { Timer, Repeat, CornerDownLeft, Sparkles, CalendarDays, Clock, Flag, Tag, Target, Lock, X, Loader2, WandSparkles, Hash, BookmarkPlus } from 'lucide-react'
+import { Timer, Repeat, CornerDownLeft, Sparkles, CalendarDays, Clock, Flag, Tag, Target, ListChecks, X, Loader2, WandSparkles, Hash, BookmarkPlus } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
-import { fmtMinutes, newSubtask, todayKey, PRIORITY_LABEL } from '../lib/tasks'
+import { fmtMinutes, newSubtask, todayKey, PRIORITY_LABEL, STATUS_LABEL } from '../lib/tasks'
 import { FREQS, FREQ_LABEL, describe } from '../lib/recurrence'
 import { parseQuickAdd, fmtDateToken } from '../lib/nlp'
 import { learnedDuration } from '../lib/capacity'
 import { autofillTask } from '../lib/aiTasks'
 import { cleanTemplates, taskFieldsFromTemplate } from '../lib/views'
 import { CategoryPills, Modal, PriorityPills, cx } from './ui'
+import { StepsEditor } from './Checklist'
 import { DateField } from './DatePicker'
 import { TimeField } from './TimePicker'
 
@@ -191,21 +192,20 @@ export default function QuickAddModal() {
           </div>
         )}
 
-        {draft.subtasks.length > 0 && (
-          <ul className="mt-2 flex flex-wrap gap-1.5" aria-label="Steps">
-            {draft.subtasks.map((s) => (
-              <li key={s.id} className={cx('pill border pr-1', s.required ? 'bg-accent-soft text-accent border-accent/30' : 'bg-page text-muted border-line')}>
-                {s.title}
-                <button type="button" aria-pressed={!!s.required} aria-label={s.required ? `Step ${s.title} is required to finish. Press to make it optional` : `Make step ${s.title} required to finish`}
-                  title={s.required ? 'Required to finish' : 'Make required to finish'}
-                  onClick={() => set({ subtasks: draft.subtasks.map((x) => (x.id === s.id ? { ...x, required: !x.required } : x)) })}
-                  className="h-4 w-4 rounded-full inline-flex items-center justify-center hover:bg-line transition"><Lock size={10} /></button>
-                <button type="button" aria-label={`Remove step ${s.title}`} onClick={() => set({ subtasks: draft.subtasks.filter((x) => x.id !== s.id) })}
-                  className="h-4 w-4 rounded-full inline-flex items-center justify-center hover:bg-line transition"><X size={10} /></button>
-              </li>
-            ))}
-          </ul>
-        )}
+        {/* Checklist: steps typed here are created together with the task. */}
+        <section className="mt-3" aria-label="Checklist">
+          <div className="flex items-center gap-2 mb-1">
+            <ListChecks size={14} className="text-faint" />
+            <h3 className="text-xs font-semibold text-muted">Checklist</h3>
+            {draft.subtasks.length > 0 && (
+              <span className="text-[11px] font-semibold text-faint tnum">
+                {draft.subtasks.length} {draft.subtasks.length === 1 ? 'step' : 'steps'}
+                {draft.subtasks.some((s) => s.required) && ` · ${draft.subtasks.filter((s) => s.required).length} required to finish`}
+              </span>
+            )}
+          </div>
+          <StepsEditor steps={draft.subtasks} onChange={(subtasks) => set({ subtasks })} ticks={false} commitOnBlur />
+        </section>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4">
           <DateField value={draft.date} onChange={(date) => set({ date })} placeholder="No date" />
@@ -240,7 +240,7 @@ export default function QuickAddModal() {
 
         <div className="flex items-center justify-between mt-3">
           <span className="text-xs text-faint">
-            {draft.status !== 'todo' && <span className="pill bg-page text-muted mr-2">adds to {draft.status === 'working' ? 'Working' : 'Completed'}</span>}
+            {draft.status !== 'todo' && <span className="pill bg-page text-muted mr-2">adds to {STATUS_LABEL[draft.status]}</span>}
             Esc to close
           </span>
           <button type="submit" className={cx('btn-black', !cleanTitle && 'opacity-40')} disabled={!cleanTitle}>

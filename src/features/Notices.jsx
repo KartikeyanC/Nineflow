@@ -50,7 +50,7 @@ function UndoToast() {
   if (!undo) return null
   return (
     <div role="status" aria-live="polite"
-      className="fixed z-40 top-16 inset-x-3 sm:inset-x-auto sm:top-auto sm:bottom-6 sm:left-[108px] lg:left-[284px] animate-modal-in">
+      className="fixed z-40 top-16 inset-x-3 sm:inset-x-auto sm:top-auto sm:bottom-6 sm:left-[108px] wide:left-[284px] animate-modal-in">
       <div className="flex items-center gap-3 rounded-full bg-ink text-page pl-4 pr-1.5 h-12 shadow-lift max-w-full sm:max-w-md">
         <p className="text-[13px] font-semibold truncate min-w-0 flex-1">{undo.label}</p>
         <button type="button" onClick={undoLast}

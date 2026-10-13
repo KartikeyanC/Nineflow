@@ -48,7 +48,7 @@ export function CapacityBar({ dayKey, i = 0 }) {
               <p className="text-[13px] text-muted"><b className="text-ink">Work day is over.</b> {fmtMinutes(load.left)} still open</p>
               {load.isToday && (
                 <button type="button" onClick={() => openRitual('shutdown')}
-                  className="inline-flex items-center gap-2 h-9 rounded-full bg-ink text-page px-3.5 text-[12px] font-semibold transition hover:-translate-y-px active:scale-[0.97]">
+                  className="inline-flex items-center gap-2 h-9 rounded-full bg-brand text-white px-3.5 text-[12px] font-semibold transition hover:-translate-y-px active:scale-[0.97]">
                   <Moon size={13} /> Shut down
                 </button>
               )}
@@ -66,9 +66,9 @@ export function CapacityBar({ dayKey, i = 0 }) {
               </p>
               {trim.length > 0 && (
                 <button type="button" onClick={() => moveTasksTo(trim.map((t) => t.id), tomorrow, `Moved ${trim.length} to tomorrow to make room`)}
-                  className="group inline-flex items-center gap-2 h-9 rounded-full bg-ink text-page pl-3.5 pr-1 text-[12px] font-semibold transition hover:-translate-y-px active:scale-[0.97]">
+                  className="group inline-flex items-center gap-2 h-9 rounded-full bg-brand text-white pl-3.5 pr-1 text-[12px] font-semibold transition hover:-translate-y-px active:scale-[0.97]">
                   Move {trim.length} lower-priority to tomorrow
-                  <span className="h-7 w-7 rounded-full bg-page/15 inline-flex items-center justify-center transition duration-500 group-hover:translate-x-0.5"><ArrowRight size={13} /></span>
+                  <span className="h-7 w-7 rounded-full bg-white/20 inline-flex items-center justify-center transition duration-500 group-hover:translate-x-0.5"><ArrowRight size={13} /></span>
                 </button>
               )}
             </>
@@ -78,12 +78,13 @@ export function CapacityBar({ dayKey, i = 0 }) {
 
       <div className="min-w-0">
         <div className="relative h-2.5 rounded-full bg-subtle ring-hair overflow-hidden flex" role="img"
-          aria-label={`${load.isToday ? `${fmtMinutes(elapsed)} of the work day gone, ` : `${fmtMinutes(load.done)} done, `}${fmtMinutes(load.working)} in progress and ${fmtMinutes(load.todo)} to do, against ${fmtMinutes(load.capacity)} of working time`}>
+          aria-label={`${load.isToday ? `${fmtMinutes(elapsed)} of the work day gone, ` : `${fmtMinutes(load.done)} done, `}${fmtMinutes(load.working)} in progress and ${fmtMinutes(load.todo)} to do${load.review ? `, ${fmtMinutes(load.review)} in review` : ''}, against ${fmtMinutes(load.capacity)} of working time`}>
           {load.isToday
             ? <i className="h-full bg-ink/10 transition-all duration-700 ease-spring" style={{ width: pct(elapsed) }} />
             : <i className="h-full bg-mint-fg transition-all duration-700 ease-spring" style={{ width: pct(load.done) }} />}
           <i className="h-full bg-sky-fg transition-all duration-700 ease-spring" style={{ width: pct(load.working) }} />
           <i className="h-full bg-ink/25 transition-all duration-700 ease-spring" style={{ width: pct(load.todo) }} />
+          <i className="h-full bg-violet-fg/45 transition-all duration-700 ease-spring" style={{ width: pct(load.review) }} />
           {overBy > 0 && (
             <i className="absolute inset-y-0 bg-[repeating-linear-gradient(135deg,rgb(var(--peach-fg)/0.55)_0_4px,transparent_4px_8px)]"
               style={{ left: pct(load.capacity), width: pct(overBy) }} />
@@ -95,6 +96,7 @@ export function CapacityBar({ dayKey, i = 0 }) {
           <span className="inline-flex items-center gap-1.5"><i className="h-1.5 w-1.5 rounded-full bg-mint-fg" />Done {fmtMinutes(load.done)}</span>
           <span className="inline-flex items-center gap-1.5"><i className="h-1.5 w-1.5 rounded-full bg-sky-fg" />Working {fmtMinutes(load.working)}</span>
           <span className="inline-flex items-center gap-1.5"><i className="h-1.5 w-1.5 rounded-full bg-ink/25" />To do {fmtMinutes(load.todo)}</span>
+          {load.review > 0 && <span className="inline-flex items-center gap-1.5" title="With someone else, so it isn't counted against your day"><i className="h-1.5 w-1.5 rounded-full bg-violet-fg/60" />In review {fmtMinutes(load.review)}</span>}
           <button type="button" onClick={() => setView('settings')} className="inline-flex items-center gap-1 text-faint hover:text-ink transition">
             <Clock3 size={11} /> Working hours {settings.workHours.start}–{settings.workHours.end}
           </button>
@@ -133,9 +135,9 @@ export function CarriedOver({ i = 0 }) {
           <button type="button"
             onClick={() => moveTasksTo(fit.picked.map((t) => t.id), target.key, `Fitted ${fit.picked.length} into ${target.name}`)}
             title={`${fmtMinutes(fit.used)} of work that fits in the free time ${target.name}`}
-            className="group inline-flex items-center gap-2.5 h-9 rounded-full bg-ink text-page pl-4 pr-1 text-[12px] font-semibold transition hover:-translate-y-px active:scale-[0.97]">
+            className="group inline-flex items-center gap-2.5 h-9 rounded-full bg-brand text-white pl-4 pr-1 text-[12px] font-semibold transition hover:-translate-y-px active:scale-[0.97]">
             Fit {fit.picked.length === items.length ? 'all' : fit.picked.length} into {target.name}
-            <span className="h-7 w-7 rounded-full bg-page/15 inline-flex items-center justify-center transition duration-500 group-hover:translate-x-0.5"><CornerDownRight size={13} /></span>
+            <span className="h-7 w-7 rounded-full bg-white/20 inline-flex items-center justify-center transition duration-500 group-hover:translate-x-0.5"><CornerDownRight size={13} /></span>
           </button>
         ) : (
           <span className="text-[12px] font-semibold text-muted">{load.afterHours ? 'Tomorrow is already full.' : 'Today is full. Try tomorrow.'}</span>

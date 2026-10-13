@@ -38,11 +38,11 @@ export default function DateView() {
       <div className="grid grid-cols-7 gap-2">
         {strip.map((w) => (
           <button key={w.key} type="button" onClick={() => setK(w.key)}
-            className={cx('rounded-2xl p-2 text-left border transition', w.key === k ? 'bg-ink text-page border-ink' : w.working ? 'card hover:-translate-y-0.5' : 'bg-page border-dashed border-line text-faint')}>
+            className={cx('rounded-2xl p-2 text-left border transition', w.key === k ? 'bg-brand text-white border-transparent' : w.working ? 'card hover:-translate-y-0.5' : 'bg-page border-dashed border-line text-faint')}>
             <p className="text-[10px] font-bold uppercase">{format(w.date, 'EEE')}</p>
             {/* .h-display sets text-ink, which is the tile's own colour when selected. */}
-            <p className={cx('h-display text-lg leading-tight', w.key === k && 'text-page')}>{format(w.date, 'd')}</p>
-            <p className={cx('text-[10px] mt-1', w.key === k ? 'text-page/70' : 'text-muted')}>{w.due ? `${w.due} due · ` : ''}{w.worked ? `${h1(w.hours)} h` : w.working ? '—' : 'off'}{w.posts ? ` · ${w.posts} post${w.posts > 1 ? 's' : ''}` : ''}</p>
+            <p className={cx('h-display text-lg leading-tight', w.key === k && 'text-white')}>{format(w.date, 'd')}</p>
+            <p className={cx('text-[10px] mt-1', w.key === k ? 'text-white/80' : 'text-muted')}>{w.due ? `${w.due} due · ` : ''}{w.worked ? `${h1(w.hours)} h` : w.working ? '—' : 'off'}{w.posts ? ` · ${w.posts} post${w.posts > 1 ? 's' : ''}` : ''}</p>
           </button>
         ))}
       </div>

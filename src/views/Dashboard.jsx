@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react'
 import { addDays, format, isSameDay, parseISO, subDays } from 'date-fns'
 import { Bar, BarChart, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis } from 'recharts'
 import {
-  ChevronLeft, ChevronRight, ArrowRight, Plus, X, Flame, ListChecks, CheckCircle2, Activity, Circle,
+  ChevronLeft, ChevronRight, ArrowRight, Plus, X, Flame, ListChecks, CheckCircle2, Activity, Circle, Eye,
   Sparkles, AlertTriangle, TrendingUp, Clock3, Flag, PieChart as PieIcon, Repeat, Wand2, Zap, Moon, CalendarDays,
 } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
@@ -34,6 +34,7 @@ export default function Dashboard() {
     total: list.length,
     done: list.filter((t) => t.status === 'completed').length,
     working: list.filter((t) => t.status === 'working').length,
+    review: list.filter((t) => t.status === 'review').length,
     todo: list.filter((t) => t.status === 'todo').length,
   }
   const hour = now.getHours()
@@ -60,7 +61,7 @@ export default function Dashboard() {
             <DateField value={dashboardDate} onChange={(v) => v && setDashboardDate(v)} allowClear={false} align="right"
               trigger={({ toggle, open }) => (
                 <button type="button" onClick={toggle}
-                  className={cx('px-3 h-8 rounded-full text-sm font-bold transition min-w-[96px]', open ? 'bg-ink text-page' : 'hover:bg-page')}>
+                  className={cx('px-3 h-8 rounded-full text-sm font-bold transition min-w-[96px]', open ? 'bg-brand text-white' : 'hover:bg-page')}>
                   {isToday ? 'Today' : format(day, 'EEE, MMM d, yyyy')}
                 </button>
               )} />
@@ -74,11 +75,12 @@ export default function Dashboard() {
       {isToday && <CarriedOver />}
 
       {/* Stat cards */}
-      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-4">
+      <div className="grid grid-cols-2 xl:grid-cols-5 gap-4 mb-4">
         <Stat label="My tasks" value={counts.total} sub={isToday ? 'Planned for today' : 'Planned that day'} icon={ListChecks} tone="lav" />
         <Stat label="Completed" value={counts.done} sub={`${counts.total ? Math.round((counts.done / counts.total) * 100) : 0}% of tasks done`} icon={CheckCircle2} tone="mint" />
         <Stat label="Working" value={counts.working} sub="In progress" icon={Activity} tone="sky" />
-        <Stat label="To do" value={counts.todo} sub="Not started yet" icon={Circle} tone="butter" />
+        <Stat label="In review" value={counts.review} sub="With someone else" icon={Eye} tone="lav" />
+        <Stat label="To do" value={counts.todo} sub="Not started yet" icon={Circle} tone={TODO_TONE} />
       </div>
 
       {/* Main grid */}
@@ -96,8 +98,11 @@ export default function Dashboard() {
   )
 }
 
+// To do has its own colour (the logo orange), which is not one of the category colours in colors.js.
+const TODO_TONE = { bg: 'bg-todo-soft', text: 'text-todo' }
+
 function Stat({ label, value, sub, icon: Icon, tone }) {
-  const c = colorOf(tone)
+  const c = typeof tone === 'string' ? colorOf(tone) : tone
   return (
     <div className="card p-4 flex items-center justify-between gap-3 transition hover:-translate-y-0.5 hover:shadow-lift">
       <div className="min-w-0">
@@ -299,9 +304,11 @@ function TaskList({ day, dayKey, isToday }) {
 // 3. Donut.
 function Productivity({ counts }) {
   const data = [
-    { name: 'Done', value: counts.done, fill: cssVar('--lav-fg') },
+    // The same colours as the Board and the stat cards: Done is green, To do is the logo orange.
+    { name: 'Done', value: counts.done, fill: cssVar('--mint-fg') },
     { name: 'Working', value: counts.working, fill: cssVar('--sky-fg') },
-    { name: 'To do', value: counts.todo, fill: cssVar('--lav') },
+    { name: 'In review', value: counts.review, fill: cssVar('--violet-fg', 0.45) },
+    { name: 'To do', value: counts.todo, fill: cssVar('--todo') },
   ]
   const pct = counts.total ? Math.round((counts.done / counts.total) * 100) : 0
   const empty = counts.total === 0

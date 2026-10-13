@@ -20,14 +20,14 @@ const MAX_MINUTES = 12 * 60 // a custom length can be anything up to 12 hours
 export function InterruptButton({ compact = false }) {
   return (
     <button type="button" onClick={openInterrupt} title="Something came up (Ctrl+I)"
-      className={cx('group inline-flex items-center justify-center lg:justify-start gap-2.5 rounded-full transition duration-300 hover:-translate-y-px active:scale-[0.97]',
-        compact ? 'h-9 w-9 bg-card shadow-soft text-peach-fg' : 'mt-2 h-10 pl-1.5 lg:pr-3 bg-card shadow-soft text-ink')}>
+      className={cx('group inline-flex items-center justify-center wide:justify-start gap-2.5 rounded-full transition duration-300 hover:-translate-y-px active:scale-[0.97]',
+        compact ? 'h-9 w-9 bg-card shadow-soft text-peach-fg' : 'mt-2 h-10 pl-1.5 wide:pr-3 bg-card shadow-soft text-ink')}>
       <span className={cx('rounded-full inline-flex items-center justify-center bg-peach text-peach-fg transition duration-500 group-hover:scale-110', compact ? 'h-9 w-9' : 'h-7 w-7')}>
         <Zap size={compact ? 16 : 14} />
       </span>
       {!compact && <>
-        <span className="hidden lg:inline text-[13px] font-semibold">Interruption</span>
-        <span className="hidden lg:inline-flex ml-auto text-[10px] font-semibold text-faint tracking-wide">CTRL I</span>
+        <span className="hidden wide:inline text-[13px] font-semibold">Interruption</span>
+        <span className="hidden wide:inline-flex ml-auto text-[10px] font-semibold text-faint tracking-wide">CTRL I</span>
       </>}
     </button>
   )
@@ -174,12 +174,12 @@ export default function Interrupt() {
           <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Estimated length">
             {LENGTHS.map((m) => (
               <button key={m} type="button" role="radio" aria-checked={!custom && preset === m} onClick={() => { setPreset(m); setCustom(false) }}
-                className={cx('pill h-8 px-3 text-[12px] transition', !custom && preset === m ? 'bg-ink text-page' : 'bg-subtle text-ink ring-hair hover:-translate-y-px')}>
+                className={cx('pill h-8 px-3 text-[12px] transition', !custom && preset === m ? 'bg-brand text-white' : 'bg-subtle text-ink ring-hair hover:-translate-y-px')}>
                 {fmtMinutes(m)}
               </button>
             ))}
             <button type="button" role="radio" aria-checked={custom} onClick={openCustom}
-              className={cx('pill h-8 px-3 text-[12px] transition', custom ? 'bg-ink text-page' : 'bg-subtle text-ink ring-hair hover:-translate-y-px')}>
+              className={cx('pill h-8 px-3 text-[12px] transition', custom ? 'bg-brand text-white' : 'bg-subtle text-ink ring-hair hover:-translate-y-px')}>
               {custom && typed > 0 && !customError ? `Custom · ${fmtMinutes(minutes)}` : 'Custom'}
             </button>
           </div>
@@ -240,7 +240,7 @@ function Toggle({ checked, onChange, label, hint }) {
   return (
     <div className="flex items-start gap-3">
       <button type="button" role="switch" aria-checked={checked} aria-label={label} onClick={() => onChange(!checked)}
-        className={cx('mt-0.5 h-6 w-11 shrink-0 rounded-full p-0.5 transition', checked ? 'bg-ink' : 'bg-line')}>
+        className={cx('mt-0.5 h-6 w-11 shrink-0 rounded-full p-0.5 transition', checked ? 'bg-brand' : 'bg-line')}>
         <span className={cx('block h-5 w-5 rounded-full bg-card transition', checked && 'translate-x-5')} />
       </button>
       <div className="min-w-0">
@@ -261,13 +261,13 @@ export function ResumePrompt() {
   const took = totalMinutes(it, now)
   return (
     <div role="status" aria-live="polite"
-      className="fixed z-40 top-16 inset-x-3 sm:inset-x-auto sm:top-auto sm:bottom-20 sm:left-[108px] lg:left-[284px] animate-modal-in">
+      className="fixed z-40 top-16 inset-x-3 sm:inset-x-auto sm:top-auto sm:bottom-20 sm:left-[108px] wide:left-[284px] animate-modal-in">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-[22px] bg-card shadow-lift ring-hair pl-4 pr-1.5 py-1.5 sm:max-w-lg">
         <p className="text-[13px] min-w-0 flex-1 py-1.5">
           <b>Interruption done</b>{took >= 1 ? <span className="text-muted tnum"> · took {fmtMinutes(took)}</span> : null}. Back to <b>“{back.title}”</b>?
         </p>
         <button type="button" onClick={() => resumeAfter(it.id)}
-          className="inline-flex items-center gap-2 h-9 rounded-full bg-ink text-page px-3.5 text-[12px] font-semibold transition hover:-translate-y-px active:scale-[0.97]">
+          className="inline-flex items-center gap-2 h-9 rounded-full bg-brand text-white px-3.5 text-[12px] font-semibold transition hover:-translate-y-px active:scale-[0.97]">
           <CornerUpLeft size={13} /> Resume
         </button>
         <button type="button" onClick={() => dismissResume(it.id)} className="h-9 rounded-full px-3 text-[12px] font-semibold text-muted hover:text-ink hover:bg-subtle transition">Not now</button>

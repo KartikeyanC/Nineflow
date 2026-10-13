@@ -226,7 +226,7 @@ export default function Board() {
           </select>
           <button type="button" onClick={() => setShowFilters((v) => !v)} aria-expanded={showFilters} aria-controls="board-filters"
             className={cx('h-9 px-3.5 rounded-full border text-[13px] font-semibold inline-flex items-center gap-1.5 transition',
-              showFilters || activeFilters ? 'bg-ink text-page border-ink' : 'bg-card border-line text-muted hover:text-ink')}>
+              showFilters || activeFilters ? 'bg-brand text-white border-transparent' : 'bg-card border-line text-muted hover:text-ink')}>
             <SlidersHorizontal size={14} /> Filters{activeFilters > 0 && <span className="h-5 min-w-5 px-1 rounded-full bg-page text-ink text-[11px] font-bold inline-flex items-center justify-center">{activeFilters}</span>}
           </button>
           {mode === 'board' && (
@@ -239,7 +239,7 @@ export default function Board() {
             <button type="button" onClick={() => (selecting ? stopSelecting() : setSelecting(true))} aria-pressed={selecting}
               title="Choose several tasks to move to another workspace"
               className={cx('h-9 px-3.5 rounded-full border text-[13px] font-semibold inline-flex items-center gap-1.5 transition',
-                selecting ? 'bg-ink text-page border-ink' : 'bg-card border-line text-muted hover:text-ink')}>
+                selecting ? 'bg-brand text-white border-transparent' : 'bg-card border-line text-muted hover:text-ink')}>
               <CheckSquare size={14} /> Select
             </button>
           )}
@@ -247,7 +247,7 @@ export default function Board() {
             {[{ id: 'list', icon: List, label: 'List view' }, { id: 'board', icon: LayoutGrid, label: 'Board view' }].map((m) => (
               <button key={m.id} type="button" title={m.label} onClick={() => setMode(m.id)}
                 className={cx('h-7 w-7 rounded-full inline-flex items-center justify-center transition',
-                  mode === m.id ? 'bg-ink text-page' : 'text-muted hover:text-ink')}>
+                  mode === m.id ? 'bg-brand text-white' : 'text-muted hover:text-ink')}>
                 <m.icon size={15} />
               </button>
             ))}

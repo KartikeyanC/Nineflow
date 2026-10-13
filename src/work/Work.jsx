@@ -39,7 +39,7 @@ export default function Work() {
         <nav className="flex gap-1.5 overflow-x-auto pb-2 -mx-1 px-1 mb-4">
           {shown.map(([id, label]) => (
             <button key={id} type="button" onClick={() => pick(id)}
-              className={cx('shrink-0 rounded-full px-3.5 py-1.5 text-sm font-semibold transition', tab === id ? 'bg-ink text-page' : 'bg-card border border-line text-muted hover:text-ink')}>{label}</button>
+              className={cx('shrink-0 rounded-full px-3.5 py-1.5 text-sm font-semibold transition', tab === id ? 'bg-brand text-white' : 'bg-card border border-line text-muted hover:text-ink')}>{label}</button>
           ))}
           <button type="button" onClick={() => setMore((m) => !m)} aria-expanded={more}
             className="shrink-0 rounded-full px-3.5 py-1.5 text-sm font-semibold text-muted hover:text-ink transition">

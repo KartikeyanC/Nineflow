@@ -58,7 +58,7 @@ export default function TaskLog() {
         <div className="flex flex-wrap items-center gap-2">
           <div className="inline-flex rounded-full bg-page p-0.5 gap-0.5">
             {[['open', 'Open'], ['done', 'Done'], ['all', 'All']].map(([v, l]) => (
-              <button key={v} type="button" onClick={() => setFilter(v)} className={cx('rounded-full px-3 py-1 text-xs font-semibold transition', filter === v ? 'bg-ink text-page' : 'text-muted hover:text-ink')}>{l}</button>
+              <button key={v} type="button" onClick={() => setFilter(v)} className={cx('rounded-full px-3 py-1 text-xs font-semibold transition', filter === v ? 'bg-brand text-white' : 'text-muted hover:text-ink')}>{l}</button>
             ))}
           </div>
           <button type="button" className="btn-ghost h-9 py-0" onClick={() => download('task-log.csv', toCsv(work.tasks.filter((t) => !t.example), cols))}><Download size={14} /> CSV</button>

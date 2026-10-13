@@ -42,6 +42,8 @@
   --shell: 240 235 226;
   --accent: 201 66 11;
   --accent-soft: 255 236 224;
+  --todo: 255 106 19;  /* To do = the logo orange (#FF6A13), the same in light and dark */
+  --todo-soft: 255 236 224;
   --hair: rgb(60 50 30 / 0.08);
 }
 
@@ -77,6 +79,8 @@
   --shell: 28 27 24;
   --accent: 255 154 92;
   --accent-soft: 74 40 20;
+  --todo: 255 106 19;
+  --todo-soft: 74 40 20;
   --hair: rgb(255 255 255 / 0.07);
 }
 
@@ -118,7 +122,7 @@
     @apply font-bold tracking-tight text-ink;
   }
   .btn-black {
-    @apply inline-flex items-center justify-center gap-2 rounded-full bg-ink text-page
+    @apply inline-flex items-center justify-center gap-2 rounded-full bg-brand text-white
       px-4 py-2 text-sm font-semibold transition
       hover:opacity-90 active:scale-[0.98] disabled:opacity-40 disabled:pointer-events-none;
   }

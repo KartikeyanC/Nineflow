@@ -8,7 +8,7 @@ import { cx } from './ui'
 
 // The "Reminders" and "Tags" rows of the task panel.
 
-const pill = (on) => cx('pill h-7 px-3 text-[12px] border transition', on ? 'bg-ink text-page border-ink' : 'bg-card text-muted border-line hover:text-ink')
+const pill = (on) => cx('pill h-7 px-3 text-[12px] border transition', on ? 'bg-brand text-white border-transparent' : 'bg-card text-muted border-line hover:text-ink')
 
 export function RemindersField({ task }) {
   const { updateTask, settings } = usePlanner()

@@ -158,10 +158,10 @@ export default function Week() {
       {/* Top bar */}
       <header className="flex flex-wrap items-center justify-between gap-3 mb-5">
         <div className="flex items-center gap-2">
-          <div className="inline-flex items-center rounded-full bg-ink text-page p-1">
-            <button type="button" onClick={() => shift(-1)} className="h-8 w-8 rounded-full inline-flex items-center justify-center hover:bg-page/15 transition" aria-label="Previous"><ChevronLeft size={16} /></button>
+          <div className="inline-flex items-center rounded-full bg-brand text-white p-1">
+            <button type="button" onClick={() => shift(-1)} className="h-8 w-8 rounded-full inline-flex items-center justify-center hover:bg-white/20 transition" aria-label="Previous"><ChevronLeft size={16} /></button>
             <span className="px-3 text-sm font-bold tracking-tight min-w-[140px] text-center">{rangeLabel(days, now)}</span>
-            <button type="button" onClick={() => shift(1)} className="h-8 w-8 rounded-full inline-flex items-center justify-center hover:bg-page/15 transition" aria-label="Next"><ChevronRight size={16} /></button>
+            <button type="button" onClick={() => shift(1)} className="h-8 w-8 rounded-full inline-flex items-center justify-center hover:bg-white/20 transition" aria-label="Next"><ChevronRight size={16} /></button>
           </div>
           {!todayInRange && (
             <button type="button" className="btn-ghost h-9 py-0" onClick={() => setAnchor(new Date())}>Jump to today</button>
@@ -198,10 +198,10 @@ export default function Week() {
                 <button key={dateKey(day)} type="button"
                   onClick={() => { setAnchor(day); setMode('day') }}
                   className={cx('rounded-2xl py-2 flex flex-col items-center transition hover:-translate-y-0.5',
-                    today ? 'bg-ink text-page' : 'bg-page text-ink hover:bg-lav/60')}>
-                  <span className={cx('text-[10px] font-bold uppercase tracking-wider', today ? 'text-page/70' : 'text-faint')}>{format(day, 'EEE')}</span>
+                    today ? 'bg-brand text-white' : 'bg-page text-ink hover:bg-lav/60')}>
+                  <span className={cx('text-[10px] font-bold uppercase tracking-wider', today ? 'text-white/80' : 'text-faint')}>{format(day, 'EEE')}</span>
                   {/* .h-display sets text-ink, so today's date needs its colour set here or it vanishes on the ink tile. */}
-                  <span className={cx('h-display text-2xl leading-tight', today && 'text-page')}>{format(day, 'd')}</span>
+                  <span className={cx('h-display text-2xl leading-tight', today && 'text-white')}>{format(day, 'd')}</span>
                 </button>
               )
             })}

@@ -61,7 +61,7 @@ export function PasswordReconnect({ className, onDone }) {
       <input type="email" autoComplete="username" value={email} readOnly hidden />
       <input type="password" autoComplete="current-password" aria-label={`Password for ${email}`} placeholder="Password" value={password}
         onChange={(e) => setPassword(e.target.value)} className="input h-8 py-0 w-44 bg-card text-[13px]" required />
-      <button type="submit" disabled={busy || !password} className="inline-flex items-center gap-1.5 h-8 rounded-full bg-ink text-page px-3 text-[12px] font-semibold disabled:opacity-60">
+      <button type="submit" disabled={busy || !password} className="inline-flex items-center gap-1.5 h-8 rounded-full bg-brand text-white px-3 text-[12px] font-semibold disabled:opacity-60">
         <RefreshCw size={13} className={cx(busy && 'animate-spin')} /> {busy ? 'Logging in…' : 'Log in'}
       </button>
       {error && <p role="alert" className="w-full text-[12px]">{error}</p>}

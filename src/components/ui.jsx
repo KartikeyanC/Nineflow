@@ -27,10 +27,13 @@ export function CategoryTag({ category, className }) {
 }
 
 // Black segmented-control pill. `options` = [{value, label}]
+// A light gray track with the brand gradient as the active button. The track and idle
+// labels read the theme variables, so they follow light / dark on their own; the gradient
+// (bg-brand, see the Tailwind config) is the logo's and is the same in both themes.
 export function Segmented({ value, onChange, options, size = 'md', className }) {
   const pad = size === 'sm' ? 'px-2.5 py-1 text-xs' : 'px-3.5 py-1.5 text-sm'
   return (
-    <div className={cx('inline-flex rounded-full bg-ink p-1 gap-0.5', className)}>
+    <div className={cx('inline-flex rounded-full p-1 gap-0.5 bg-ink/5 dark:bg-ink/10', className)}>
       {options.map((o) => {
         const active = o.value === value
         return (
@@ -41,7 +44,7 @@ export function Segmented({ value, onChange, options, size = 'md', className }) 
             className={cx(
               'rounded-full font-semibold transition-all',
               pad,
-              active ? 'bg-page text-ink shadow-sm' : 'text-page/60 hover:text-page',
+              active ? 'bg-brand text-white shadow-sm' : 'text-ink/70 hover:text-ink',
             )}
           >
             {o.label}
@@ -162,7 +165,7 @@ export function IconButton({ children, onClick, label, className, active }) {
       onClick={onClick}
       className={cx(
         'h-8 w-8 inline-flex items-center justify-center rounded-full transition',
-        active ? 'bg-ink text-page' : 'text-muted hover:bg-page hover:text-ink',
+        active ? 'bg-brand text-white' : 'text-muted hover:bg-page hover:text-ink',
         className,
       )}
     >

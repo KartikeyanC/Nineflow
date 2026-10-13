@@ -16,8 +16,11 @@ import {
 } from 'date-fns'
 import { uid } from './storage'
 
-export const STATUSES = ['todo', 'working', 'completed']
-export const STATUS_LABEL = { todo: 'To do', working: 'Working', completed: 'Completed' }
+// In review: handed over and waiting on someone else. Its timer is stopped (see
+// withStatus, which only opens a session for Working) and the planner never
+// schedules it, but it is still open work: not done, and not yours to pick up.
+export const STATUSES = ['todo', 'working', 'review', 'completed']
+export const STATUS_LABEL = { todo: 'To do', working: 'Working', review: 'In review', completed: 'Completed' }
 export const PRIORITIES = ['high', 'medium', 'low']
 export const PRIORITY_LABEL = { high: 'High', medium: 'Medium', low: 'Low' }
 

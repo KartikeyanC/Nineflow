@@ -38,6 +38,7 @@ export default function Today() {
     total: list.length,
     done: list.filter((t) => t.status === 'completed').length,
     working: list.filter((t) => t.status === 'working').length,
+    review: list.filter((t) => t.status === 'review').length,
     todo: list.filter((t) => t.status === 'todo').length,
     minutes: list.reduce((s, t) => s + (t.durationMinutes || 0), 0),
   }
@@ -72,7 +73,7 @@ export default function Today() {
             <DateField value={dashboardDate} onChange={(v) => v && setDashboardDate(v)} allowClear={false} align="right"
               trigger={({ toggle, open }) => (
                 <button type="button" onClick={toggle}
-                  className={cx('px-3.5 h-9 rounded-full text-[13px] font-semibold transition min-w-[104px] tnum', open ? 'bg-ink text-page' : 'hover:bg-subtle')}>
+                  className={cx('px-3.5 h-9 rounded-full text-[13px] font-semibold transition min-w-[104px] tnum', open ? 'bg-brand text-white' : 'hover:bg-subtle')}>
                   {isToday ? 'Today' : format(day, 'EEE, MMM d')}
                 </button>
               )} />
@@ -272,7 +273,8 @@ function DayRing({ counts, day, isToday, className, i }) {
   const legend = [
     { label: 'Done', n: counts.done, color: 'bg-mint-fg' },
     { label: 'Working', n: counts.working, color: 'bg-sky-fg' },
-    { label: 'To do', n: counts.todo, color: 'bg-line' },
+    { label: 'In review', n: counts.review, color: 'bg-violet-fg/50' },
+    { label: 'To do', n: counts.todo, color: 'bg-todo' },
   ]
   return (
     <div className={cx('bezel', r.className, className)} style={r.style}>
@@ -284,7 +286,10 @@ function DayRing({ counts, day, isToday, className, i }) {
         <div className="flex-1 flex items-center gap-5 sm:gap-6 mt-3">
           <div className="relative h-[132px] w-[132px] shrink-0">
             <svg viewBox="0 0 132 132" className="h-full w-full -rotate-90">
-              <circle cx="66" cy="66" r={R} fill="none" stroke="rgb(var(--line))" strokeWidth="12" />
+              {/* The track is what is still To do, so it takes that colour (neutral only when the day is empty). */}
+              <circle cx="66" cy="66" r={R} fill="none" stroke={counts.total > 0 ? 'rgb(var(--todo))' : 'rgb(var(--line))'} strokeWidth="12" />
+              <circle cx="66" cy="66" r={R} fill="none" stroke="rgb(var(--violet-fg) / 0.45)" strokeWidth="12" strokeLinecap="round"
+                strokeDasharray={`${seg(counts.done + counts.working + counts.review)} ${C}`} className="transition-all duration-700 ease-spring" />
               <circle cx="66" cy="66" r={R} fill="none" stroke="rgb(var(--sky-fg))" strokeWidth="12" strokeLinecap="round"
                 strokeDasharray={`${seg(counts.done + counts.working)} ${C}`} className="transition-all duration-700 ease-spring" />
               <circle cx="66" cy="66" r={R} fill="none" stroke="rgb(var(--mint-fg))" strokeWidth="12" strokeLinecap="round"
@@ -396,6 +401,7 @@ function TaskList({ day, dayKey, className, i }) {
                   <div className="flex items-center gap-2 text-[11px] font-medium">
                     {t.interruption && <span className="inline-flex items-center gap-1 text-peach-fg"><Zap size={10} />Interruption{t.interruption.by ? ` · ${t.interruption.by}` : ''}</span>}
                     {t.status === 'working' && <span className="inline-flex items-center gap-1 text-sky-fg"><i className="h-1.5 w-1.5 rounded-full bg-sky-fg animate-pulse" />Working</span>}
+                    {t.status === 'review' && <span className="inline-flex items-center gap-1 text-violet-fg"><i className="h-1.5 w-1.5 rounded-full bg-violet-fg" />In review</span>}
                     {od && <span className="text-muted">{carriedLabel(t.date, now)}</span>}
                     {tab !== 'today' && t.date && t.date !== dayKey && <span className="text-faint">{format(parseISO(t.date), 'EEE d')}</span>}
                     {t.recurrence && <span className="inline-flex items-center gap-1 text-faint"><Repeat size={10} />Repeats</span>}

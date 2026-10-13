@@ -102,6 +102,7 @@ export default function Widget() {
                     <span className={cx(isOverdue(t, now) && 'text-coral-fg font-semibold')}>{isOverdue(t, now) ? carriedLabel(t.date, now) : dueLabel(t, now)}</span>
                     {' · '}{fmtMinutes(t.durationMinutes)}
                     {t.status === 'working' && <span className="text-sky-fg font-semibold"> · working</span>}
+                    {t.status === 'review' && <span className="text-violet-fg font-semibold"> · in review</span>}
                   </>} />
               ))}
             </ul>

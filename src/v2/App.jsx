@@ -87,7 +87,7 @@ function Shell() {
 
       {/* Quick add on phones; the sidebar command pill covers larger screens */}
       <button type="button" onClick={() => setQuickAdd({})} title="New task"
-        className="sm:hidden fixed bottom-20 right-4 z-30 h-14 w-14 rounded-full bg-ink text-page shadow-lift flex items-center justify-center active:scale-95 transition">
+        className="sm:hidden fixed bottom-20 right-4 z-30 h-14 w-14 rounded-full bg-brand text-white shadow-lift flex items-center justify-center active:scale-95 transition">
         <Plus size={22} />
       </button>
 

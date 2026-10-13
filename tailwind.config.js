@@ -1,3 +1,4 @@
+import plugin from 'tailwindcss/plugin'
 /** @type {import('tailwindcss').Config} */
 
 // Every colour is an RGB triple CSS variable on :root (overridden in .dark),
@@ -43,9 +44,15 @@ export default {
         shell: v('shell'),
         accent: v('accent'),
         'accent-soft': v('accent-soft'),
+        todo: v('todo'),
+        'todo-soft': v('todo-soft'),
       },
       borderRadius: {
         card: '20px',
+      },
+      // The NineFlow logo's orange, as used on every filled button (bg-brand).
+      backgroundImage: {
+        brand: 'linear-gradient(to right, #FF9F1C, #F2420E)',
       },
       boxShadow: {
         soft: '0 1px 2px rgb(var(--shadow) / 0.04), 0 4px 16px rgb(var(--shadow) / 0.05)',
@@ -109,5 +116,9 @@ export default {
       },
     },
   },
-  plugins: [],
+  plugins: [
+    // `wide:` = the sidebar is showing its labels: a window at least 1024px wide, unless
+    // the user minimized the sidebar (the app puts data-rail on <html>; see lib/sidebarRail.js).
+    plugin(({ addVariant }) => addVariant('wide', '@media (min-width: 1024px) { :root:not([data-rail]) & }')),
+  ],
 }

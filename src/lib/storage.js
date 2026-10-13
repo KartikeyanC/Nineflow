@@ -3,7 +3,7 @@
 
 import { storageKey } from './profiles'
 import { cleanTags } from './taskMeta'
-import { COLUMNS_VERSION, DEFAULT_COLUMNS, cleanColumns, seedReview } from './columns'
+import { COLUMNS_VERSION, DEFAULT_COLUMNS, LEGACY_REVIEW_ID, cleanColumns, migrateColumns } from './columns'
 
 // Keys live inside the signed-in profile's namespace (see profiles.js).
 const TASKS_KEY = () => storageKey('tasks')
@@ -31,6 +31,7 @@ export const DEFAULT_SETTINGS = {
   modules: { work: true }, // which optional sections show in the navigation
   workHours: { start: '09:00', end: '18:00', breakMinutes: 60 }, // capacity and "Plan my day" use these
   reminders: { enabled: false, minutes: 5 }, // browser notification before a timed task starts
+  sidebarMin: false, // keep the sidebar an icon rail even where its labels would fit (see lib/sidebarRail.js)
 }
 
 const FOCUS_KEY = () => storageKey('focus')
@@ -116,7 +117,7 @@ export function loadSettings() {
     modules: { ...DEFAULT_SETTINGS.modules, ...(stored.modules || {}) },
     workHours: { ...DEFAULT_SETTINGS.workHours, ...(stored.workHours || {}) },
     reminders: { ...DEFAULT_SETTINGS.reminders, ...(stored.reminders || {}) },
-    columns: stored.columnsV === COLUMNS_VERSION ? cleanColumns(stored.columns) : seedReview(cleanColumns(stored.columns)),
+    columns: stored.columnsV === COLUMNS_VERSION ? cleanColumns(stored.columns) : migrateColumns(cleanColumns(stored.columns)),
     columnsV: COLUMNS_VERSION,
     views: Array.isArray(stored.views) ? stored.views : [],
     templates: Array.isArray(stored.templates) ? stored.templates : [],
@@ -139,6 +140,9 @@ function cleanSkipped(v) {
 }
 
 function normalizeTask(t) {
+  // A card left in the old "In review" column moves to the review status, which
+  // is what that column meant. Idempotent: nothing keeps that column id after.
+  const wasInReview = t.column === LEGACY_REVIEW_ID
   return {
     id: t.id,
     title: t.title ?? '',
@@ -148,7 +152,7 @@ function normalizeTask(t) {
     durationMinutes: Number.isFinite(t.durationMinutes) ? t.durationMinutes : 30,
     category: t.category ?? DEFAULT_CATEGORIES[0].id,
     priority: t.priority ?? 'medium',
-    status: t.status ?? 'todo',
+    status: wasInReview ? 'review' : t.status ?? 'todo',
     startedAt: t.startedAt ?? null,
     completedAt: t.completedAt ?? null,
     createdAt: t.createdAt ?? new Date().toISOString(),
@@ -158,7 +162,7 @@ function normalizeTask(t) {
     skippedChecks: cleanSkipped(t.skippedChecks),
     reminders: Array.isArray(t.reminders) ? t.reminders.filter((m) => Number.isFinite(m) && m >= 0).slice(0, 6) : null,
     tags: cleanTags(t.tags),
-    column: typeof t.column === 'string' ? t.column : null,
+    column: !wasInReview && typeof t.column === 'string' ? t.column : null,
     seriesId: t.seriesId ?? null,
     recurrence: t.recurrence && t.recurrence.freq ? { freq: t.recurrence.freq, until: t.recurrence.until ?? null, skip: t.recurrence.skip ?? [] } : null,
     // Work that interrupted the plan: { by, at, resume, resumeMode, resolved }

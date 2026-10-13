@@ -87,7 +87,7 @@ export default function QuickList({ layout = 'column', onCollapse, collapseIcon 
           {showPositions && POSITIONS.map(({ id, icon: Icon, label }) => (
             <button key={id} type="button" title={label} onClick={() => setQL({ position: id, collapsed: false })}
               className={cx('h-7 w-7 rounded-full inline-flex items-center justify-center transition',
-                ql.position === id ? 'bg-ink text-page' : 'text-faint hover:bg-page hover:text-ink')}>
+                ql.position === id ? 'bg-brand text-white' : 'text-faint hover:bg-page hover:text-ink')}>
               <Icon size={14} />
             </button>
           ))}
@@ -106,7 +106,7 @@ export default function QuickList({ layout = 'column', onCollapse, collapseIcon 
         {FILTERS.map((f) => (
           <button key={f.id} type="button" onClick={() => setQL({ filter: f.id })}
             className={cx('rounded-full px-2.5 py-0.5 text-[11px] font-semibold transition',
-              filter === f.id ? 'bg-ink text-page' : 'bg-page text-muted hover:text-ink')}>
+              filter === f.id ? 'bg-brand text-white' : 'bg-page text-muted hover:text-ink')}>
             {f.label}
           </button>
         ))}

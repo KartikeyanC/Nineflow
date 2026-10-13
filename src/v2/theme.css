@@ -24,6 +24,8 @@
 
   --accent: 240 94 45;        /* #F05E2D ember */
   --accent-soft: 253 232 222;
+  --todo: 255 106 19;  /* To do = the logo orange (#FF6A13), the same in light and dark */
+  --todo-soft: 253 232 222;
 
   --lav: 233 227 252;
   --lav-fg: 107 78 230;
@@ -63,6 +65,8 @@
 
   --accent: 255 122 80;
   --accent-soft: 66 32 22;
+  --todo: 255 106 19;
+  --todo-soft: 66 32 22;
 
   --lav: 44 38 76;
   --lav-fg: 180 164 255;
@@ -172,7 +176,7 @@
     box-shadow: 0 0 0 1px var(--hair);
   }
   .btn-black {
-    @apply inline-flex items-center justify-center gap-2 rounded-full bg-ink text-page
+    @apply inline-flex items-center justify-center gap-2 rounded-full bg-brand text-white
       px-4 py-2 text-[13px] font-semibold transition duration-300
       hover:-translate-y-px active:scale-[0.97] active:translate-y-0 disabled:opacity-40 disabled:pointer-events-none;
     box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.18), 0 6px 16px -6px rgb(var(--shadow) / 0.45);
