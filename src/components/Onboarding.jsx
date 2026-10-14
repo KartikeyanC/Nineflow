@@ -16,7 +16,7 @@ import { mockEnabled as supaMockEnabled, mockCodeFor } from '../lib/supabaseMock
 import { apply, fetchRemote, hasLocalData, markSynced } from '../lib/cloud'
 import { colorOf, cssVar } from '../lib/colors'
 import { cx } from './ui'
-import { Wordmark } from './Brand'
+import { BrandMark, Wordmark } from './Brand'
 import { TimeField } from './TimePicker'
 
 const NEED_STYLE = {
@@ -75,10 +75,11 @@ export default function Onboarding({ initial }) {
   const [screen, setScreen] = useState(initial || (signedIn ? (importable().length ? 'import' : 'setup') : 'signin'))
   return (
     // Sign-in and setup are always dark, to sit with the black and orange poster
-    // (the app itself follows the theme chosen in Settings). The page and card
+    // (the app itself follows the theme chosen in Settings; the colour theme's accent still applies here). The page and card
     // colours are the poster's black (#111214), so everything reads as one
     // surface; the card and inputs keep their thin borders as outlines.
     <div className="dark [color-scheme:dark] min-h-screen bg-page text-ink lg:grid lg:grid-cols-[minmax(440px,46%)_1fr]"
+      data-theme={document.documentElement.getAttribute('data-theme') || undefined}
       style={{ '--page': '17 18 20', '--card': '17 18 20' }}>
       <Poster />
       <main className="flex items-center justify-center p-4 sm:p-8 lg:min-h-screen">
@@ -97,7 +98,7 @@ function Poster() {
   const driveOnly = GOOGLE_ON && !EMAIL_ON
   const logo = (
     <div className="inline-flex items-center gap-2.5">
-      <span className="h-10 w-10 flex items-center justify-center"><img src="/brand/nineflow-tile.png" alt="" className="h-full w-full object-contain" /></span>
+      <BrandMark size={40} />
       <Wordmark className="text-lg" />
     </div>
   )
@@ -114,7 +115,7 @@ function Poster() {
           <ul className="mt-9 space-y-3.5">
             {[[ListChecks, 'Board, week and month views'], [Timer, 'Pomodoro that logs real focus time'], [BarChart3, 'Daily insights, habits and reports']].map(([Icon, t]) => (
               <li key={t} className="flex items-center gap-3 text-[15px] font-semibold text-white/90">
-                <span className="h-10 w-10 rounded-xl bg-[#FF6A13]/15 ring-1 ring-[#FF6A13]/30 text-[#FF6A13] flex items-center justify-center"><Icon size={18} /></span>{t}
+                <span className="h-10 w-10 rounded-xl bg-accent/15 ring-1 ring-accent/30 text-accent flex items-center justify-center"><Icon size={18} /></span>{t}
               </li>
             ))}
           </ul>
@@ -136,8 +137,8 @@ function Poster() {
   )
 }
 
-// Orange light pooling in the corners of the dark poster.
-const POSTER_GLOW = 'radial-gradient(70% 55% at 100% 100%, rgb(242 66 14 / 0.55) 0%, rgb(242 66 14 / 0.12) 55%, transparent 75%), radial-gradient(60% 45% at 0% 0%, rgb(255 159 28 / 0.22) 0%, transparent 70%)'
+// Brand-coloured light (orange, or the colour theme's) pooling in the corners of the dark poster.
+const POSTER_GLOW = 'radial-gradient(70% 55% at 100% 100%, rgb(var(--brand-b) / 0.55) 0%, rgb(var(--brand-b) / 0.12) 55%, transparent 75%), radial-gradient(60% 45% at 0% 0%, rgb(var(--brand-a) / 0.22) 0%, transparent 70%)'
 
 // Two broad orange ribbons sweeping across the poster, echoing the logo's swoosh.
 // The short phone header only gets the dot: the ribbons would sit behind its text.
@@ -149,13 +150,13 @@ function PosterFlow({ compact = false }) {
     <svg aria-hidden="true" className="pointer-events-none absolute inset-0 h-full w-full" viewBox="0 0 600 900" preserveAspectRatio="xMidYMid slice">
       <defs>
         <linearGradient id={`${uid}a`} x1="0" y1="1" x2="1" y2="0">
-          <stop offset="0" stopColor="#F2420E" />
-          <stop offset="0.55" stopColor="#FF6A13" />
-          <stop offset="1" stopColor="#FF9F1C" />
+          <stop offset="0" style={{ stopColor: 'rgb(var(--brand-b))' }} />
+          <stop offset="0.55" style={{ stopColor: 'rgb(var(--accent))' }} />
+          <stop offset="1" style={{ stopColor: 'rgb(var(--brand-a))' }} />
         </linearGradient>
         <linearGradient id={`${uid}b`} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#FF9F1C" stopOpacity="0" />
-          <stop offset="1" stopColor="#F2420E" stopOpacity="0.9" />
+          <stop offset="0" style={{ stopColor: 'rgb(var(--brand-a))', stopOpacity: 0 }} />
+          <stop offset="1" style={{ stopColor: 'rgb(var(--brand-b))', stopOpacity: 0.9 }} />
         </linearGradient>
       </defs>
       {!compact && (
@@ -768,7 +769,7 @@ function Setup() {
                   className={cx('relative flex items-start gap-3 rounded-2xl border-2 p-3.5 text-left transition-all', on ? cx('border-transparent', c.bg) : 'border-line bg-card hover:border-faint hover:-translate-y-0.5')}>
                   <span className={cx('h-10 w-10 rounded-xl flex items-center justify-center shrink-0 transition', on ? 'bg-card ' + c.text : cx(c.bg, c.text))}><Icon size={18} /></span>
                   <span className="min-w-0"><span className={cx('block font-bold text-sm', on && c.text)}>{n.label}</span><span className={cx('block text-xs mt-0.5', on ? c.text + ' opacity-80' : 'text-muted')}>{n.hint}</span></span>
-                  {on && <span className="absolute top-2.5 right-2.5 h-5 w-5 rounded-full bg-[#FF6A13] text-white flex items-center justify-center animate-pop"><Check size={12} strokeWidth={3} /></span>}
+                  {on && <span className="absolute top-2.5 right-2.5 h-5 w-5 rounded-full bg-accent text-white flex items-center justify-center animate-pop"><Check size={12} strokeWidth={3} /></span>}
                 </button>
               ) })}
             </div>
