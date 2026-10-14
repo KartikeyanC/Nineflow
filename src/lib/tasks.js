@@ -45,7 +45,7 @@ export const todayKey = () => format(new Date(), 'yyyy-MM-dd')
 export const dateKey = (d) => format(d, 'yyyy-MM-dd')
 
 export function createTask(fields = {}) {
-  return {
+  const task = {
     id: uid(),
     title: '',
     description: '',
@@ -70,12 +70,43 @@ export function createTask(fields = {}) {
     interruption: null, // { by, at, resume, resumeMode, resolved } | null
     ...fields,
   }
+  // The day it started: the day it was first planned for. Fixed here, and read-only everywhere.
+  // Carrying a task forward or finishing it changes its `date`, never this.
+  return { ...task, startDate: task.startDate ?? task.date ?? null }
+}
+
+// ---- Start day and end day ---------------------------------------------------------
+// A task has one planned day (`date`), which moves as unfinished work is carried forward, and a start
+// day that never moves. Both days are worked out for you and shown read-only in the task panel.
+export const startDayOf = (task) => task.startDate ?? task.date ?? null
+// The day it was finished (the local day of completedAt); null while it is still open.
+export const endDayOf = (task) => (task.status === 'completed' && task.completedAt ? dateKey(parseISO(task.completedAt)) : null)
+// Calendar days from the start to the end (or to today while it is open), counting both ends:
+// started and finished on the same day is 1. Null before it has started.
+export function daysOnPlan(task, now = new Date()) {
+  const start = startDayOf(task)
+  if (!start) return null
+  const span = differenceInCalendarDays(parseISO(endDayOf(task) || dateKey(now)), parseISO(start)) + 1
+  return span >= 1 ? span : null
+}
+
+// Editing a task's planned day. A task you have not touched yet and that has not arrived (its start day is
+// today or later) takes its new start day with it; once it has been worked on, or carried over from an
+// earlier day, its start day stays where it was.
+export function withDate(task, date, now = new Date()) {
+  if (task.date === date) return task
+  const start = task.startDate ?? task.date
+  const untouched = task.status === 'todo' && !task.startedAt && task.sessions.length === 0
+  const notArrived = start == null || start >= dateKey(now)
+  const atStart = task.startDate == null || task.startDate === task.date
+  return { ...task, date, startDate: untouched && notArrived && atStart ? date : start }
 }
 
 // The only place status changes. Keeps sessions / startedAt / completedAt consistent.
 //  - entering Working opens a session and sets startedAt (first time only)
 //  - leaving Working closes the open session
 //  - entering Completed sets completedAt; leaving it clears completedAt
+//  - entering Completed also makes today the task's day (its end day), so it is not shown on any other day
 export function withStatus(task, status, now = new Date()) {
   if (task.status === status) return task
   const iso = now.toISOString()
@@ -96,7 +127,11 @@ export function withStatus(task, status, now = new Date()) {
   else if (task.status === 'completed') completedAt = null
 
   // A new status puts the task in that status's own column; moveTask picks a custom one afterwards.
-  return { ...task, status, column: null, sessions, startedAt, completedAt }
+  // Finishing a task makes today its last day: it stops showing on every other day. A repeating task's
+  // occurrence belongs to its own day, so it stays where it is.
+  const finishedElsewhere = status === 'completed' && task.date !== dateKey(now) && !(task.seriesId && task.recurrence)
+  const day = finishedElsewhere ? { date: dateKey(now), startDate: task.startDate ?? task.date ?? dateKey(now) } : null
+  return { ...task, status, column: null, sessions, startedAt, completedAt, ...day }
 }
 
 // An open session counts up to `now`, capped at 8h so a forgotten timer
@@ -248,6 +283,22 @@ export const isOverdue = (task, now = new Date()) =>
   !!task.date && task.status !== 'completed' && task.date < dateKey(now) && !(task.seriesId && task.recurrence)
 
 export const isDueToday = (task, now = new Date()) => task.date === dateKey(now)
+
+// Unfinished work continues by itself. A task left open (To do, Working or In review) on an earlier day moves
+// to today, and its start day stays. Only the last few days are carried this way, enough for a weekend: after
+// a longer absence the older ones wait in "Carried over" and the Welcome back prompt instead of all piling
+// into today. Repeating tasks are not carried (each occurrence belongs to its own day).
+export const CARRY_FORWARD_DAYS = 3
+export function carryForward(tasks, now = new Date()) {
+  const today = dateKey(now)
+  let moved = 0
+  const next = tasks.map((t) => {
+    if (!isOverdue(t, now) || differenceInCalendarDays(parseISO(today), parseISO(t.date)) > CARRY_FORWARD_DAYS) return t
+    moved++
+    return { ...t, date: today, startDate: t.startDate ?? t.date }
+  })
+  return { tasks: moved ? next : tasks, moved }
+}
 
 // "Today 11:00", "Tomorrow 16:00", a weekday within the next week, else "Sep 12".
 export function dueLabel(task, now = new Date()) {

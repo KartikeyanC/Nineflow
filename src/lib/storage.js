@@ -148,6 +148,7 @@ function normalizeTask(t) {
     title: t.title ?? '',
     description: t.description ?? '',
     date: t.date ?? null,
+    startDate: typeof t.startDate === 'string' ? t.startDate : (t.date ?? null), // the day it started; old tasks start on their planned day
     startTime: t.startTime ?? null,
     durationMinutes: Number.isFinite(t.durationMinutes) ? t.durationMinutes : 30,
     category: t.category ?? DEFAULT_CATEGORIES[0].id,

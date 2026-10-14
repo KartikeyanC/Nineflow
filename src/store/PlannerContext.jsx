@@ -4,7 +4,7 @@ import {
   onSaveStatus, saveFocus, saveHabits, saveSettings, saveTasks, syncedKeys, uid,
 } from '../lib/storage'
 import { emptyWork, saveWork, workKey } from '../work/workStore'
-import { checkGate, createTask, dateKey, todayKey, withSessionPaused, withSessionResumed, withStatus } from '../lib/tasks'
+import { carryForward, checkGate, createTask, dateKey, todayKey, withDate, withSessionPaused, withSessionResumed, withStatus } from '../lib/tasks'
 import { generateSample } from '../lib/sample'
 import { dueReminders } from '../lib/taskMeta'
 import { busyFor } from '../lib/gcalEvents'
@@ -102,6 +102,9 @@ export function PlannerProvider({ children }) {
     return () => clearInterval(id)
   }, [])
 
+  // Bumped when another window or the cloud hands over fresh tasks, so the carry-over below runs on them too.
+  const [syncTick, setSyncTick] = useState(0)
+
   const [onboarded, setOnboardedState] = useState(isOnboarded)
   const setOnboarded = useCallback(() => { markOnboarded(); setOnboardedState(true) }, [])
 
@@ -113,7 +116,8 @@ export function PlannerProvider({ children }) {
     const { status, ...rest } = fields || {}
     let task = createTask(rest)
     if (task.recurrence) task.seriesId = task.id
-    if (status && status !== 'todo') task = { ...withStatus(task, status), column: rest.column ?? null }
+    // (the day picked in the dialog stays: only finishing an existing task makes today its day)
+    if (status && status !== 'todo') task = { ...withStatus(task, status), column: rest.column ?? null, date: task.date, startDate: task.startDate }
     setTasks((ts) => [...ts, task])
     if (task.date) setLastAdded({ id: task.id, at: Date.now() })
     return task
@@ -239,7 +243,7 @@ export function PlannerProvider({ children }) {
     if (!ids.length) return
     const set = new Set(ids)
     offerUndo(label || `Moved ${ids.length} task${ids.length === 1 ? '' : 's'}`)
-    setTasks((ts) => ts.map((t) => (set.has(t.id) ? { ...t, date, ...(date ? {} : { startTime: null }) } : t)))
+    setTasks((ts) => ts.map((t) => (set.has(t.id) ? { ...withDate(t, date), ...(date ? {} : { startTime: null }) } : t)))
   }, [offerUndo])
 
   // Copy an occurrence's editable details onto the series' future open occurrences.
@@ -295,7 +299,7 @@ export function PlannerProvider({ children }) {
   }, [offerUndo])
 
   const updateTask = useCallback((id, patch) => {
-    setTasks((ts) => ts.map((t) => (t.id === id ? { ...t, ...patch } : t)))
+    setTasks((ts) => ts.map((t) => (t.id === id ? { ...('date' in patch ? withDate(t, patch.date) : t), ...patch } : t)))
   }, [])
 
   // ---- "Before you finish" ----
@@ -406,7 +410,7 @@ export function PlannerProvider({ children }) {
       })
     }
     offerUndo(`Moved ${move.size} to today${drop.size ? ` · cleared ${drop.size} missed repeat${drop.size === 1 ? '' : 's'}` : ''}`)
-    setTasks((prev) => prev.filter((t) => !drop.has(t.id)).map((t) => (move.has(t.id) ? { ...t, date: today } : t)))
+    setTasks((prev) => prev.filter((t) => !drop.has(t.id)).map((t) => (move.has(t.id) ? { ...t, date: today, startDate: t.startDate ?? t.date } : t)))
     return move.size
   }, [offerUndo])
 
@@ -469,13 +473,24 @@ export function PlannerProvider({ children }) {
   const [focus, setFocus] = useState(loadFocus)
   useEffect(() => saveFocus(focus), [focus])
 
+  // Unfinished work continues by itself. On each new day (and when another window or the cloud hands over
+  // fresh tasks), a task left open in the last few days moves to today; its start day stays. One Undo
+  // puts them all back. See carryForward in lib/tasks.js for what is, and is not, carried.
+  const dayNow = dateKey(now)
+  useEffect(() => {
+    const { moved } = carryForward(tasksRef.current, new Date())
+    if (!moved) return
+    offerUndo(`Carried ${moved} unfinished task${moved === 1 ? '' : 's'} to today`)
+    setTasks((ts) => carryForward(ts, new Date()).tasks)
+  }, [dayNow, syncTick, offerUndo])
+
   // Another tab saved: take its copy instead of overwriting it on our next
   // save. Browsers fire 'storage' only in the other tabs, and only when the
   // stored value actually changed, so this can't loop.
   useEffect(() => {
     const onStorage = (e) => {
       const k = syncedKeys()
-      if (e.key === k.tasks) setTasks(loadTasks())
+      if (e.key === k.tasks) { setTasks(loadTasks()); setSyncTick((n) => n + 1) }
       else if (e.key === k.settings) setSettings(loadSettings())
       else if (e.key === k.habits) setHabits(loadHabits())
       else if (e.key === k.focus) setFocus(loadFocus())

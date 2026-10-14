@@ -1,12 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { format, parseISO } from 'date-fns'
-import { Activity, CalendarDays, Clock, Timer, Tag, Flag, Trash2, X, Repeat, ArrowRight, CalendarPlus, Layers, Bell, Hash, Columns3 } from 'lucide-react'
+import { Activity, CalendarCheck, CalendarDays, Clock, Timer, Tag, Flag, Trash2, X, Repeat, ArrowRight, CalendarPlus, Layers, Bell, Hash, Columns3 } from 'lucide-react'
 import { googleCalendarUrl } from '../lib/calendar'
 import { currentProfileId } from '../lib/profiles'
 import { cleanColumns, columnOf } from '../lib/columns'
 import { currentWorkspaceId, listWorkspaces } from '../lib/workspaces'
 import { usePlanner } from '../store/PlannerContext'
-import { STATUSES, STATUS_LABEL, carriedLabel, fmtMinutes, isOverdue, todayKey, totalMinutes } from '../lib/tasks'
+import { STATUSES, STATUS_LABEL, carriedLabel, daysOnPlan, endDayOf, fmtMinutes, isOverdue, startDayOf, todayKey, totalMinutes } from '../lib/tasks'
 import { FREQS, FREQ_LABEL, describe } from '../lib/recurrence'
 import { CategoryPills, IconButton, PriorityPills, Segmented, cx, useDialogFocus } from './ui'
 import Checklist from './Checklist'
@@ -93,6 +93,15 @@ export default function TaskPanel() {
             <Row icon={Activity} label="Status" stack>
               <Segmented size="sm" value={task.status} onChange={(s) => setStatus(task.id, s)}
                 options={STATUSES.map((s) => ({ value: s, label: STATUS_LABEL[s] }))} />
+            </Row>
+            {/* Worked out for you, so plain text rather than fields: it cannot be edited here. */}
+            <Row icon={CalendarDays} label="Start day">
+              <AutoDay day={startDayOf(task)} empty="Not planned yet" title="Set automatically: the day this task was first planned for" />
+            </Row>
+            <Row icon={CalendarCheck} label="End day">
+              {endDayOf(task)
+                ? <AutoDay day={endDayOf(task)} note={daysOnPlan(task, now) > 1 ? `${daysOnPlan(task, now)} days` : 'same day'} title="Set automatically: the day this task was completed" />
+                : <AutoDay empty="Not finished yet" note={daysOnPlan(task, now) ? `day ${daysOnPlan(task, now)}` : ''} title="Set automatically when the task is completed" />}
             </Row>
             {cols.length > STATUSES.length && (
               <Row icon={Columns3} label="Column">
@@ -295,6 +304,16 @@ function SessionLog({ task, now }) {
         })}
       </ul>
     </section>
+  )
+}
+
+// A day that is worked out for you: plain text, not a field.
+function AutoDay({ day, empty, note, title }) {
+  return (
+    <p className="text-sm font-semibold" title={title}>
+      {day ? format(parseISO(day), 'EEE, d MMM yyyy') : <span className="font-medium text-faint">{empty}</span>}
+      {note && <>{" "}<span className="text-xs font-medium text-faint">· {note}</span></>}
+    </p>
   )
 }
 
