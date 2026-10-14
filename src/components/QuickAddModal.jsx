@@ -42,7 +42,8 @@ export default function QuickAddModal() {
 
   useEffect(() => {
     if (open) {
-      manual.current = new Set(Object.keys(quickAdd || {}))
+      // (a day passed in, like the Board's, is only the starting point: a day typed in the title still wins)
+      manual.current = new Set(Object.keys(quickAdd || {}).filter((k) => k !== 'date'))
       fromParse.current = new Set()
       base.current = blank({ category: settings.categories[0]?.id, ...quickAdd })
       setIgnored([])

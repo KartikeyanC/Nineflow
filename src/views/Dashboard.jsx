@@ -2,12 +2,12 @@ import React, { useMemo, useState } from 'react'
 import { addDays, format, isSameDay, parseISO, subDays } from 'date-fns'
 import { Bar, BarChart, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis } from 'recharts'
 import {
-  ChevronLeft, ChevronRight, ArrowRight, Plus, X, Flame, ListChecks, CheckCircle2, Activity, Circle, Eye,
+  ArrowRight, Plus, X, Flame, ListChecks, CheckCircle2, Activity, Circle, Eye,
   Sparkles, AlertTriangle, TrendingUp, Clock3, Flag, PieChart as PieIcon, Repeat, Wand2, Zap, Moon, CalendarDays,
 } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
 import {
-  PRIORITIES, PRIORITY_LABEL, carriedLabel, dateKey, fmtMinutes, focusByHour, isOverdue, sortByTime, tasksOn, todayKey, totalMinutes,
+  PRIORITIES, PRIORITY_LABEL, carriedLabel, dateKey, fmtMinutes, focusByHour, isOverdue, sortByTime, tasksOn, totalMinutes,
 } from '../lib/tasks'
 import { buildInsights } from '../lib/insights'
 import { describePlan } from '../lib/schedule'
@@ -16,7 +16,7 @@ import { currentProfile, firstName } from '../lib/profiles'
 import { colorOf, cssVar, PRIORITY_STYLE } from '../lib/colors'
 import { CategoryTag, CheckCircle, Segmented, cx } from '../components/ui'
 import RequiredBadge from '../components/RequiredBadge'
-import { DateField } from '../components/DatePicker'
+import DayNav from '../components/DayNav'
 import { CapacityBar, CarriedOver } from '../features/Planning'
 import { RitualPrompt } from '../features/Ritual'
 import { openInterrupt } from '../features/Interrupt'
@@ -55,18 +55,7 @@ export default function Dashboard() {
               <Zap size={14} className="text-peach-fg" /> Interruption
             </button>
           )}
-          {!isToday && <button type="button" className="btn-ghost h-9 py-0" onClick={() => setDashboardDate(todayKey())}>Back to today</button>}
-          <div className="inline-flex items-center rounded-full bg-card border border-line p-1 shadow-soft">
-            <button type="button" aria-label="Previous day" onClick={() => setDashboardDate(dateKey(subDays(day, 1)))} className="h-8 w-8 rounded-full inline-flex items-center justify-center text-muted hover:bg-page hover:text-ink transition"><ChevronLeft size={16} /></button>
-            <DateField value={dashboardDate} onChange={(v) => v && setDashboardDate(v)} allowClear={false} align="right"
-              trigger={({ toggle, open }) => (
-                <button type="button" onClick={toggle}
-                  className={cx('px-3 h-8 rounded-full text-sm font-bold transition min-w-[96px]', open ? 'bg-brand text-white' : 'hover:bg-page')}>
-                  {isToday ? 'Today' : format(day, 'EEE, MMM d, yyyy')}
-                </button>
-              )} />
-            <button type="button" aria-label="Next day" onClick={() => setDashboardDate(dateKey(addDays(day, 1)))} className="h-8 w-8 rounded-full inline-flex items-center justify-center text-muted hover:bg-page hover:text-ink transition"><ChevronRight size={16} /></button>
-          </div>
+          <DayNav value={dashboardDate} onChange={setDashboardDate} />
         </div>
       </header>
 

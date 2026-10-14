@@ -7,7 +7,7 @@ import {
 import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { addDays, parseISO } from 'date-fns'
-import { Plus, MoreHorizontal, Search, LayoutGrid, List, ArrowUpDown, CalendarClock, CalendarCheck, Trash2, CheckSquare, X, Layers, SlidersHorizontal, Bookmark, Columns3 } from 'lucide-react'
+import { Plus, MoreHorizontal, Search, LayoutGrid, List, ArrowUpDown, CalendarClock, CalendarCheck, CalendarDays, Trash2, CheckSquare, X, Layers, SlidersHorizontal, Bookmark, Columns3 } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
 import { currentProfileId } from '../lib/profiles'
 import { allTags } from '../lib/taskMeta'
@@ -20,8 +20,12 @@ import ColumnsEditor from '../components/ColumnsEditor'
 import { CategoryTag, CheckCircle, ConfirmDialog, Menu, Modal, PriorityPill, cx } from '../components/ui'
 import TaskCard from '../components/TaskCard'
 import RequiredBadge from '../components/RequiredBadge'
+import DayNav, { NARROW_HIDE } from '../components/DayNav'
 
 const RECENT_COMPLETED = 8
+// Button labels hide (the icon and a tooltip stay) once the header is narrower than 1200px, so the title
+// and every control keep to one row. Needs the header to be a size container (see the <header> below).
+const LABEL = NARROW_HIDE
 
 // Cards change columns while dragging, so re-measure every frame of a drag.
 const MEASURING = { droppable: { strategy: MeasuringStrategy.Always } }
@@ -47,7 +51,7 @@ function collisionDetection(args) {
 }
 
 export default function Board() {
-  const { tasks, now, settings, updateSettings, moveToWorkspace, moveTask, sortStatus, moveOverdueToToday, clearCompleted, setQuickAdd } = usePlanner()
+  const { tasks, now, settings, updateSettings, moveToWorkspace, moveTask, sortStatus, moveOverdueToToday, clearCompleted, setQuickAdd, dashboardDate, setDashboardDate } = usePlanner()
   const [query, setQuery] = useState('')
   // Filters: a search plus When / Category / Priority / Tag, which can be saved as a named view.
   const [crit, setCrit] = useState(blankCrit)
@@ -56,6 +60,8 @@ export default function Board() {
   const [naming, setNaming] = useState(false)
   const [viewName, setViewName] = useState('')
   const [mode, setMode] = useState('board')
+  // The Board shows one day at a time (the same selected day as the Dashboard), or every task at once.
+  const [scope, setScope] = useState('day') // 'day' | 'all'
   const [showAllDone, setShowAllDone] = useState(false)
   const [confirmClear, setConfirmClear] = useState(false)
 
@@ -76,15 +82,28 @@ export default function Board() {
   // ---- filtering ----
   const tagList = useMemo(() => allTags(tasks), [tasks])
   const views = useMemo(() => cleanViews(settings.views), [settings.views])
-  const visible = useMemo(() => tasks.filter((t) => matches(t, crit, query, now)), [tasks, crit, query, now])
-  const activeFilters = critCount(crit, query)
-  const setC = (patch) => { setCrit((c) => ({ ...c, ...patch })); setViewId('') }
+  // "When" looks across days, so it only applies to "All days"; on a single day the day itself is the filter.
+  const critNow = useMemo(() => (scope === 'day' ? { ...crit, when: 'all' } : crit), [scope, crit])
+  const visible = useMemo(
+    () => tasks.filter((t) => (scope === 'all' || t.date === dashboardDate) && matches(t, critNow, query, now)),
+    [tasks, scope, dashboardDate, critNow, query, now],
+  )
+  const activeFilters = critCount(critNow, query)
+  const setC = (patch) => {
+    setCrit((c) => ({ ...c, ...patch })); setViewId('')
+    if (patch.when && patch.when !== 'all') setScope('all') // choosing a When filter means looking across days
+  }
+  // Pick a day (arrows, the date picker, Back to today): back to the single-day view.
+  const goDay = (key) => { setDashboardDate(key); setScope('day'); if (crit.when !== 'all') setC({ when: 'all' }) }
+  // A new task starts on the day you are looking at, so tomorrow's to-dos can be made from tomorrow's board.
+  const quickAddFor = (col) => setQuickAdd({ status: col.base, column: isOriginal(col) ? null : col.id, ...(scope === 'day' ? { date: dashboardDate } : {}) })
   const applyView = (id) => {
     const v = views.find((x) => x.id === id)
     setViewId(v ? v.id : '')
     setCrit(v ? { ...blankCrit(), ...v.crit } : blankCrit())
     setQuery(v ? v.text : '')
     if (v && critCount(v.crit) > 0) setShowFilters(true)
+    if (v && v.crit.when && v.crit.when !== 'all') setScope('all') // a saved view that filters by When looks across days
   }
   const clearFilters = () => { setCrit(blankCrit()); setQuery(''); setViewId('') }
   const saveView = () => {
@@ -206,17 +225,23 @@ export default function Board() {
 
   return (
     <div className="animate-view-in h-full flex flex-col">
-      <header className="flex flex-wrap items-end justify-between gap-4 mb-6">
-        <div>
-          <h1 className="h-display text-3xl">Board</h1>
-          <p className="text-sm text-muted mt-1">Drag cards between columns. Moving a card to Working starts tracking its time.</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <label className="relative flex-1 min-w-[140px] sm:flex-none">
+      <header className="[container-type:inline-size] flex flex-wrap items-center gap-x-4 gap-y-3 mb-6">
+        <h1 className="h-display text-3xl shrink-0">Board</h1>
+        {/* Everything else shares the title's row; it only wraps (right-aligned) when there truly is no room. */}
+        <div className="flex flex-wrap items-center justify-end gap-2 basis-full sm:basis-0 sm:flex-1 min-w-0">
+          <DayNav value={dashboardDate} onChange={goDay} backLabel="Today" compact />
+          <button type="button" onClick={() => setScope((s) => (s === 'all' ? 'day' : 'all'))} aria-pressed={scope === 'all'}
+            title={scope === 'all' ? 'Showing every task. Pick a day to go back to one day.' : 'Show every task, whatever its day (including undated ones)'}
+            aria-label="All days"
+            className={cx('h-9 px-3 rounded-full border text-[13px] font-semibold inline-flex items-center gap-1.5 transition',
+              scope === 'all' ? 'bg-brand text-white border-transparent' : 'bg-card border-line text-muted hover:text-ink')}>
+            <CalendarDays size={14} /><span className={LABEL}>All days</span>
+          </button>
+          <label className="relative min-w-[8rem] flex-1 sm:basis-32 sm:min-w-[6rem] sm:max-w-[11rem]">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-faint" />
-            <input className="input pl-8 w-full sm:w-48 bg-card" placeholder="Search tasks" value={query} onChange={(e) => setQuery(e.target.value)} />
+            <input className="input pl-8 w-full bg-card" placeholder="Search tasks" value={query} onChange={(e) => setQuery(e.target.value)} />
           </label>
-          <select className="input w-auto min-w-[9rem] bg-card" value={viewId} aria-label="Saved views" onChange={(e) => applyView(e.target.value)}>
+          <select className="input w-auto min-w-[6.5rem] max-w-[9.5rem] shrink bg-card" value={viewId} aria-label="Saved views" onChange={(e) => applyView(e.target.value)}>
             <option value="">All tasks</option>
             {views.length > 0 && (
               <optgroup label="Saved views">
@@ -225,22 +250,23 @@ export default function Board() {
             )}
           </select>
           <button type="button" onClick={() => setShowFilters((v) => !v)} aria-expanded={showFilters} aria-controls="board-filters"
-            className={cx('h-9 px-3.5 rounded-full border text-[13px] font-semibold inline-flex items-center gap-1.5 transition',
+            aria-label="Filters" title="Filter the tasks by when, category, priority or tag"
+            className={cx('h-9 px-3 rounded-full border text-[13px] font-semibold inline-flex items-center gap-1.5 transition',
               showFilters || activeFilters ? 'bg-brand text-white border-transparent' : 'bg-card border-line text-muted hover:text-ink')}>
-            <SlidersHorizontal size={14} /> Filters{activeFilters > 0 && <span className="h-5 min-w-5 px-1 rounded-full bg-page text-ink text-[11px] font-bold inline-flex items-center justify-center">{activeFilters}</span>}
+            <SlidersHorizontal size={14} /><span className={LABEL}>Filters</span>{activeFilters > 0 && <span className="h-5 min-w-5 px-1 rounded-full bg-page text-ink text-[11px] font-bold inline-flex items-center justify-center">{activeFilters}</span>}
           </button>
           {mode === 'board' && (
-            <button type="button" onClick={() => setEditingColumns(true)} title="Add, rename and reorder the Board's columns"
-              className="h-9 px-3.5 rounded-full border border-line bg-card text-[13px] font-semibold text-muted hover:text-ink inline-flex items-center gap-1.5 transition">
-              <Columns3 size={14} /> Columns
+            <button type="button" onClick={() => setEditingColumns(true)} title="Add, rename and reorder the Board's columns" aria-label="Columns"
+              className="h-9 px-3 rounded-full border border-line bg-card text-[13px] font-semibold text-muted hover:text-ink inline-flex items-center gap-1.5 transition">
+              <Columns3 size={14} /><span className={LABEL}>Columns</span>
             </button>
           )}
           {otherWorkspaces.length > 0 && mode === 'board' && (
             <button type="button" onClick={() => (selecting ? stopSelecting() : setSelecting(true))} aria-pressed={selecting}
-              title="Choose several tasks to move to another workspace"
-              className={cx('h-9 px-3.5 rounded-full border text-[13px] font-semibold inline-flex items-center gap-1.5 transition',
+              title="Choose several tasks to move to another workspace" aria-label="Select"
+              className={cx('h-9 px-3 rounded-full border text-[13px] font-semibold inline-flex items-center gap-1.5 transition',
                 selecting ? 'bg-brand text-white border-transparent' : 'bg-card border-line text-muted hover:text-ink')}>
-              <CheckSquare size={14} /> Select
+              <CheckSquare size={14} /><span className={LABEL}>Select</span>
             </button>
           )}
           <div className="inline-flex rounded-full border border-line bg-card p-1 gap-0.5">
@@ -253,6 +279,8 @@ export default function Board() {
             ))}
           </div>
         </div>
+        {/* The hint is too long to sit beside the controls, so it gets the line under them. */}
+        <p className="basis-full -mt-1 text-sm text-muted">Drag cards between columns. Moving a card to Working starts tracking its time.</p>
       </header>
 
       {showFilters && (
@@ -328,9 +356,9 @@ export default function Board() {
                   picked={picked}
                   onPick={togglePick}
                   highlighted={activeId != null && overColumn === s}
-                  onAdd={() => setQuickAdd({ status: col.base, column: isOriginal(col) ? null : col.id })}
+                  onAdd={() => quickAddFor(col)}
                   menu={[
-                    { label: 'Add task', icon: Plus, onSelect: () => setQuickAdd({ status: col.base, column: isOriginal(col) ? null : col.id }) },
+                    { label: 'Add task', icon: Plus, onSelect: () => quickAddFor(col) },
                     { label: 'Sort by priority', icon: ArrowUpDown, onSelect: () => sortStatus(s, 'priority') },
                     { label: 'Sort by due date', icon: CalendarClock, onSelect: () => sortStatus(s, 'date') },
                     'divider',
