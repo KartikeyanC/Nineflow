@@ -160,7 +160,7 @@ function Tile({ cell, onOpen }) {
 function Poster({ month }) {
   return (
     <aside className="hidden xl:flex w-[150px] shrink-0 rounded-card overflow-hidden relative flex-col justify-between"
-      style={{ background: 'linear-gradient(180deg, #FF9F1C 0%, #F2420E 100%)', minHeight: 640 }}>
+      style={{ background: 'linear-gradient(180deg, rgb(var(--brand-a)) 0%, rgb(var(--brand-b)) 100%)', minHeight: 640 }}>
       <span className="absolute left-1/2 top-8 -translate-x-1/2 text-white font-black tracking-tight leading-none select-none"
         style={{ writingMode: 'vertical-rl', transform: 'translateX(-50%) rotate(180deg)', fontSize: 64 }}>
         {month}

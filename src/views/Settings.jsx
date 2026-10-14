@@ -105,7 +105,7 @@ function CalendarConnect() {
         <div role="alert" className="mt-3 rounded-xl bg-card border border-line p-3">
           <p className="text-[13px] font-semibold">Disconnect Google Calendar?</p>
           <label className="mt-2 flex items-start gap-2.5 text-[13px] cursor-pointer">
-            <input type="checkbox" className="mt-0.5 h-4 w-4 accent-[#FF6A13]" checked={removeEvents} onChange={(e) => setRemoveEvents(e.target.checked)} />
+            <input type="checkbox" className="mt-0.5 h-4 w-4 accent-[rgb(var(--accent))]" checked={removeEvents} onChange={(e) => setRemoveEvents(e.target.checked)} />
             Also remove the events NineFlow added to my calendar
           </label>
           <div className="mt-3 flex gap-2">

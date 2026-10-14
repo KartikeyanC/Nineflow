@@ -50,9 +50,9 @@ export default {
       borderRadius: {
         card: '20px',
       },
-      // The NineFlow logo's orange, as used on every filled button (bg-brand).
+      // The NineFlow logo's colours, as used on every filled button (bg-brand). Orange by default; the colour themes swap --brand-a / --brand-b (index.css).
       backgroundImage: {
-        brand: 'linear-gradient(to right, #FF9F1C, #F2420E)',
+        brand: 'linear-gradient(to right, rgb(var(--brand-a)), rgb(var(--brand-b)))',
       },
       boxShadow: {
         soft: '0 1px 2px rgb(var(--shadow) / 0.04), 0 4px 16px rgb(var(--shadow) / 0.05)',

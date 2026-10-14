@@ -250,7 +250,7 @@ export default function GoalPlanner() {
 function Check({ checked, onChange, title, hint }) {
   return (
     <label className="flex items-start gap-3 rounded-xl px-2 py-1.5 cursor-pointer hover:bg-page transition">
-      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="mt-1 h-4 w-4 shrink-0 accent-[#FF6A13]" />
+      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="mt-1 h-4 w-4 shrink-0 accent-[rgb(var(--accent))]" />
       <span><span className="block text-[13px] font-semibold">{title}</span><span className="block text-[11px] text-faint">{hint}</span></span>
     </label>
   )

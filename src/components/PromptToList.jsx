@@ -137,7 +137,7 @@ export default function PromptToList() {
                 </>
               )}
               <label className="mt-3 flex items-center gap-2.5 text-[13px] cursor-pointer">
-                <input type="checkbox" className="h-4 w-4 accent-[#FF6A13]" checked={saveNote} onChange={(e) => setSaveNote(e.target.checked)} />
+                <input type="checkbox" className="h-4 w-4 accent-[rgb(var(--accent))]" checked={saveNote} onChange={(e) => setSaveNote(e.target.checked)} />
                 Also save this summary as a finished task
               </label>
             </div>

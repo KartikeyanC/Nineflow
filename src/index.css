@@ -47,6 +47,11 @@
   --todo: 255 106 19;  /* To do = the logo orange (#FF6A13), the same in light and dark */
   --todo-soft: 255 236 224;
   --hair: rgb(60 50 30 / 0.08);
+
+  /* The logo and every filled button (bg-brand): themes swap these */
+  --brand-a: 255 159 28;    /* #FF9F1C */
+  --brand-b: 242 66 14;     /* #F2420E */
+  --brand-filter: none;     /* recolours the logo tile */
 }
 
 .dark {
@@ -101,6 +106,13 @@
   --lav-fg: 37 99 235;
   --accent: 37 99 235;
   --accent-soft: 222 234 255;
+  --peach: 222 234 255;
+  --peach-fg: 37 99 235;
+  --todo: 37 99 235;
+  --todo-soft: 222 234 255;
+  --brand-a: 56 189 248;
+  --brand-b: 37 99 235;
+  --brand-filter: hue-rotate(190deg);
 }
 .dark[data-theme='ocean'] {
   --page: 15 20 28;
@@ -116,6 +128,10 @@
   --lav-fg: 96 165 250;
   --accent: 59 130 246;
   --accent-soft: 28 48 92;
+  --peach: 28 48 92;
+  --peach-fg: 96 165 250;
+  --todo: 59 130 246;
+  --todo-soft: 28 48 92;
 }
 [data-theme='forest'] {
   --page: 244 248 243;
@@ -131,6 +147,13 @@
   --lav-fg: 22 128 90;
   --accent: 22 128 90;
   --accent-soft: 218 242 228;
+  --peach: 218 242 228;
+  --peach-fg: 22 128 90;
+  --todo: 22 128 90;
+  --todo-soft: 218 242 228;
+  --brand-a: 52 211 153;
+  --brand-b: 22 128 90;
+  --brand-filter: hue-rotate(130deg);
 }
 .dark[data-theme='forest'] {
   --page: 17 22 18;
@@ -146,6 +169,10 @@
   --lav-fg: 86 212 150;
   --accent: 34 160 107;
   --accent-soft: 26 62 44;
+  --peach: 26 62 44;
+  --peach-fg: 86 212 150;
+  --todo: 34 160 107;
+  --todo-soft: 26 62 44;
 }
 [data-theme='berry'] {
   --page: 252 245 248;
@@ -161,6 +188,13 @@
   --lav-fg: 190 36 105;
   --accent: 190 36 105;
   --accent-soft: 252 224 238;
+  --peach: 252 224 238;
+  --peach-fg: 190 36 105;
+  --todo: 190 36 105;
+  --todo-soft: 252 224 238;
+  --brand-a: 244 114 182;
+  --brand-b: 190 36 105;
+  --brand-filter: hue-rotate(310deg);
 }
 .dark[data-theme='berry'] {
   --page: 25 18 22;
@@ -176,6 +210,10 @@
   --lav-fg: 255 128 170;
   --accent: 214 51 108;
   --accent-soft: 84 30 56;
+  --peach: 84 30 56;
+  --peach-fg: 255 128 170;
+  --todo: 214 51 108;
+  --todo-soft: 84 30 56;
 }
 [data-theme='graphite'] {
   --page: 244 244 245;
@@ -191,6 +229,13 @@
   --lav-fg: 99 72 220;
   --accent: 99 72 220;
   --accent-soft: 232 228 252;
+  --peach: 232 228 252;
+  --peach-fg: 99 72 220;
+  --todo: 99 72 220;
+  --todo-soft: 232 228 252;
+  --brand-a: 167 139 250;
+  --brand-b: 99 72 220;
+  --brand-filter: hue-rotate(230deg);
 }
 .dark[data-theme='graphite'] {
   --page: 18 18 20;
@@ -206,6 +251,10 @@
   --lav-fg: 176 158 255;
   --accent: 124 98 240;
   --accent-soft: 52 44 96;
+  --peach: 52 44 96;
+  --peach-fg: 176 158 255;
+  --todo: 124 98 240;
+  --todo-soft: 52 44 96;
 }
 
 @layer base {
