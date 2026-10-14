@@ -110,7 +110,7 @@ function Poster() {
         <PosterFlow />
         <div className="relative">{logo}</div>
         <div className="relative max-w-md">
-          <h1 className="text-[56px] xl:text-[64px] leading-[0.98] font-black tracking-tight">Plan better.<br /><span className="bg-brand bg-clip-text text-transparent">Flow forward.</span></h1>
+          <h1 className="text-[56px] xl:text-[64px] leading-[0.98] font-black tracking-tight">Plan better.<br /><span className="bg-gradient-to-r from-[#FF9F1C] to-[#F2420E] bg-clip-text text-transparent">Flow forward.</span></h1>
           <p className="mt-5 text-lg text-white/75">A planner, a focus timer and a work log in one place, {driveOnly ? 'saved in your own Google Drive' : 'saved to your account'}.</p>
           <ul className="mt-9 space-y-3.5">
             {[[ListChecks, 'Board, week and month views'], [Timer, 'Pomodoro that logs real focus time'], [BarChart3, 'Daily insights, habits and reports']].map(([Icon, t]) => (
@@ -131,14 +131,14 @@ function Poster() {
         style={{ background: `${POSTER_GLOW}, #111214` }}>
         <PosterFlow compact />
         <div className="relative">{logo}</div>
-        <p className="relative mt-5 text-[32px] sm:text-[40px] leading-[1.02] font-black tracking-tight">Plan better.<br /><span className="bg-brand bg-clip-text text-transparent">Flow forward.</span></p>
+        <p className="relative mt-5 text-[32px] sm:text-[40px] leading-[1.02] font-black tracking-tight">Plan better.<br /><span className="bg-gradient-to-r from-[#FF9F1C] to-[#F2420E] bg-clip-text text-transparent">Flow forward.</span></p>
       </header>
     </>
   )
 }
 
-// Brand-coloured light (orange, or the colour theme's) pooling in the corners of the dark poster.
-const POSTER_GLOW = 'radial-gradient(70% 55% at 100% 100%, rgb(var(--brand-b) / 0.55) 0%, rgb(var(--brand-b) / 0.12) 55%, transparent 75%), radial-gradient(60% 45% at 0% 0%, rgb(var(--brand-a) / 0.22) 0%, transparent 70%)'
+// Orange light pooling in the corners of the dark poster.
+const POSTER_GLOW = 'radial-gradient(70% 55% at 100% 100%, rgb(242 66 14 / 0.55) 0%, rgb(242 66 14 / 0.12) 55%, transparent 75%), radial-gradient(60% 45% at 0% 0%, rgb(255 159 28 / 0.22) 0%, transparent 70%)'
 
 // Two broad orange ribbons sweeping across the poster, echoing the logo's swoosh.
 // The short phone header only gets the dot: the ribbons would sit behind its text.
@@ -150,13 +150,13 @@ function PosterFlow({ compact = false }) {
     <svg aria-hidden="true" className="pointer-events-none absolute inset-0 h-full w-full" viewBox="0 0 600 900" preserveAspectRatio="xMidYMid slice">
       <defs>
         <linearGradient id={`${uid}a`} x1="0" y1="1" x2="1" y2="0">
-          <stop offset="0" style={{ stopColor: 'rgb(var(--brand-b))' }} />
-          <stop offset="0.55" style={{ stopColor: 'rgb(var(--accent))' }} />
-          <stop offset="1" style={{ stopColor: 'rgb(var(--brand-a))' }} />
+          <stop offset="0" stopColor="#F2420E" />
+          <stop offset="0.55" stopColor="#FF6A13" />
+          <stop offset="1" stopColor="#FF9F1C" />
         </linearGradient>
         <linearGradient id={`${uid}b`} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" style={{ stopColor: 'rgb(var(--brand-a))', stopOpacity: 0 }} />
-          <stop offset="1" style={{ stopColor: 'rgb(var(--brand-b))', stopOpacity: 0.9 }} />
+          <stop offset="0" stopColor="#FF9F1C" stopOpacity="0" />
+          <stop offset="1" stopColor="#F2420E" stopOpacity="0.9" />
         </linearGradient>
       </defs>
       {!compact && (

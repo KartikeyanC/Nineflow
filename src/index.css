@@ -48,10 +48,9 @@
   --todo-soft: 255 236 224;
   --hair: rgb(60 50 30 / 0.08);
 
-  /* The logo and every filled button (bg-brand): themes swap these */
+  /* Every filled button (bg-brand): themes swap these. The logo itself stays orange. */
   --brand-a: 255 159 28;    /* #FF9F1C */
   --brand-b: 242 66 14;     /* #F2420E */
-  --brand-filter: none;     /* recolours the logo tile */
 }
 
 .dark {
@@ -112,7 +111,6 @@
   --todo-soft: 222 234 255;
   --brand-a: 56 189 248;
   --brand-b: 37 99 235;
-  --brand-filter: hue-rotate(190deg);
 }
 .dark[data-theme='ocean'] {
   --page: 15 20 28;
@@ -153,7 +151,6 @@
   --todo-soft: 218 242 228;
   --brand-a: 52 211 153;
   --brand-b: 22 128 90;
-  --brand-filter: hue-rotate(130deg);
 }
 .dark[data-theme='forest'] {
   --page: 17 22 18;
@@ -194,7 +191,6 @@
   --todo-soft: 252 224 238;
   --brand-a: 244 114 182;
   --brand-b: 190 36 105;
-  --brand-filter: hue-rotate(310deg);
 }
 .dark[data-theme='berry'] {
   --page: 25 18 22;
@@ -235,7 +231,6 @@
   --todo-soft: 232 228 252;
   --brand-a: 167 139 250;
   --brand-b: 99 72 220;
-  --brand-filter: hue-rotate(230deg);
 }
 .dark[data-theme='graphite'] {
   --page: 18 18 20;
