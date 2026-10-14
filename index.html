@@ -21,6 +21,7 @@
         var key = id ? 'daily-planner:' + id + ':' + (ws && ws !== 'main' && /^[a-z0-9]+$/.test(ws) ? 'ws_' + ws + '.' : '') + 'settings' : 'daily-planner:settings';
         var s = JSON.parse(localStorage.getItem(key) || '{}');
         if ((s.theme || 'light') === 'dark') document.documentElement.classList.add('dark');
+        if (/^[a-z]+$/.test(s.palette || '') && s.palette !== 'default') document.documentElement.setAttribute('data-theme', s.palette);
       } catch (e) {}
     </script>
   </head>

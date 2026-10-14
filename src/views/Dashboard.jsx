@@ -1,11 +1,12 @@
 import React, { useMemo, useState } from 'react'
-import { addDays, format, isSameDay, parseISO, subDays } from 'date-fns'
+import { addDays, differenceInCalendarDays, format, isSameDay, parseISO, subDays } from 'date-fns'
 import { Bar, BarChart, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis } from 'recharts'
 import {
   ArrowRight, Plus, X, Flame, ListChecks, CheckCircle2, Activity, Circle, Eye,
-  Sparkles, AlertTriangle, TrendingUp, Clock3, Flag, PieChart as PieIcon, Repeat, Wand2, Zap, Moon, CalendarDays,
+  Sparkles, AlertTriangle, TrendingUp, Clock3, Flag, PieChart as PieIcon, Repeat, Wand2, Zap, Moon, CalendarDays, Hourglass,
 } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
+import { uid } from '../lib/storage'
 import {
   PRIORITIES, PRIORITY_LABEL, carriedLabel, dateKey, fmtMinutes, focusByHour, isOverdue, sortByTime, tasksOn, totalMinutes,
 } from '../lib/tasks'
@@ -82,6 +83,7 @@ export default function Dashboard() {
         <PrioritySplit list={list} />
         <Insights day={day} />
         <Habits dayKey={dashboardDate} day={day} />
+        <Countdowns />
       </div>
     </div>
   )
@@ -215,8 +217,10 @@ function Schedule({ list, isToday, now }) {
 
 // 2. Checklist with All / Today / Upcoming tabs.
 function TaskList({ day, dayKey, isToday }) {
-  const { tasks, now, categoryById, toggleComplete, setSelectedId, setQuickAdd } = usePlanner()
+  const { tasks, now, categoryById, toggleComplete, setSelectedId, setQuickAdd, settings } = usePlanner()
   const [tab, setTab] = useState('today')
+  // Timed tasks that start after the working day ends are listed apart, as the evening.
+  const eveningFrom = settings.workHours?.end || '18:00'
   const rows = useMemo(() => {
     const open = (t) => t.status !== 'completed'
     const weekEnd = dateKey(addDays(day, 7))
@@ -224,8 +228,13 @@ function TaskList({ day, dayKey, isToday }) {
     if (tab === 'today') r = tasksOn(tasks, dayKey)
     else if (tab === 'upcoming') r = tasks.filter((t) => open(t) && t.date && t.date > dayKey && t.date <= weekEnd)
     else r = tasks.filter((t) => open(t) || t.date === dayKey)
-    return sortByTime(r).sort((a, b) => (a.date || '9').localeCompare(b.date || '9'))
-  }, [tasks, tab, day, dayKey])
+    const sorted = sortByTime(r).sort((a, b) => (a.date || '9').localeCompare(b.date || '9'))
+    if (tab !== 'today') return sorted
+    const isEve = (t) => !!t.startTime && t.startTime >= eveningFrom
+    return [...sorted.filter((t) => !isEve(t)), ...sorted.filter(isEve)]
+  }, [tasks, tab, day, dayKey, eveningFrom])
+  const firstEvening = tab === 'today' ? rows.findIndex((t) => t.startTime && t.startTime >= eveningFrom) : -1
+  const showEvening = firstEvening > 0
 
   // Keyboard: ↑↓ or J/K move between rows, Enter opens, X completes, F focuses.
   const { startFocus } = usePlanner()
@@ -258,11 +267,15 @@ function TaskList({ day, dayKey, isToday }) {
         <p className="text-sm text-faint">Nothing here yet.</p>
       ) : (
         <ul className="divide-y divide-line -mx-2 overflow-y-auto max-h-80">
-          {rows.map((t) => {
+          {rows.map((t, idx) => {
             const done = t.status === 'completed'
             const od = isOverdue(t, now)
             return (
-              <li key={t.id} data-row tabIndex={0} onKeyDown={(e) => onRowKey(e, t)} onClick={() => setSelectedId(t.id)} aria-label={`${t.title}${done ? ', done' : ''}`}
+              <React.Fragment key={t.id}>
+              {showEvening && idx === firstEvening && (
+                <li role="presentation" className="flex items-center gap-1.5 px-2 pt-3 pb-1 text-[10px] font-bold uppercase tracking-wide text-faint"><Moon size={11} /> Evening · from {eveningFrom}</li>
+              )}
+              <li data-row tabIndex={0} onKeyDown={(e) => onRowKey(e, t)} onClick={() => setSelectedId(t.id)} aria-label={`${t.title}${done ? ', done' : ''}`}
                 className="flex items-center gap-3 px-2 py-2 rounded-xl cursor-pointer hover:bg-page focus-visible:bg-page focus-visible:ring-2 focus-visible:ring-lav-fg/30 outline-none transition">
                 <CheckCircle checked={done} onToggle={() => toggleComplete(t.id)} size="sm" />
                 <div className="min-w-0 flex-1">
@@ -282,6 +295,7 @@ function TaskList({ day, dayKey, isToday }) {
                   {done && totalMinutes(t, now) >= 1 && <span className="block text-[10px] text-faint">took {fmtMinutes(totalMinutes(t, now))}</span>}
                 </span>
               </li>
+              </React.Fragment>
             )
           })}
         </ul>
@@ -513,6 +527,57 @@ function Habits({ dayKey, day }) {
         <form onSubmit={submit} className="mt-3 flex gap-2">
           <input autoFocus className="input" placeholder="e.g. Read 20 minutes" value={name} onChange={(e) => setName(e.target.value)}
             onKeyDown={(e) => e.key === 'Escape' && setAdding(false)} />
+          <button type="submit" className="btn-black h-9 py-0 px-3">Add</button>
+        </form>
+      )}
+    </Card>
+  )
+}
+
+// 9. Countdowns: days left to a deadline or an event.
+function Countdowns() {
+  const { settings, updateSettings, now } = usePlanner()
+  const [adding, setAdding] = useState(false)
+  const [name, setName] = useState('')
+  const [date, setDate] = useState('')
+  const list = useMemo(
+    () => [...(settings.countdowns || [])].sort((a, b) => a.date.localeCompare(b.date)),
+    [settings.countdowns],
+  )
+  const daysLeft = (d) => differenceInCalendarDays(parseISO(d), now)
+  const label = (n) => (n === 0 ? 'Today' : n === 1 ? '1 day' : n > 0 ? `${n} days` : n === -1 ? '1 day ago' : `${-n} days ago`)
+  const save = (next) => updateSettings({ countdowns: next })
+  const submit = (e) => {
+    e.preventDefault()
+    if (name.trim() && date) save([...(settings.countdowns || []), { id: uid(), name: name.trim().slice(0, 60), date }])
+    setName(''); setDate(''); setAdding(false)
+  }
+  return (
+    <Card title="Countdowns" span="xl:col-span-4"
+      right={<button type="button" aria-label="Add countdown" onClick={() => setAdding(true)} className="h-7 w-7 rounded-full bg-lav text-lav-fg inline-flex items-center justify-center hover:opacity-90 transition"><Plus size={15} /></button>}>
+      {list.length === 0 && !adding && <p className="text-sm text-faint">Count down to a deadline, launch or birthday.</p>}
+      <ul className="space-y-2">
+        {list.map((c) => {
+          const n = daysLeft(c.date)
+          return (
+            <li key={c.id} className="group flex items-center gap-3">
+              <span className={cx('h-9 w-9 rounded-full flex items-center justify-center shrink-0', n < 0 ? 'bg-page text-faint' : n <= 3 ? 'bg-coral text-coral-fg' : 'bg-lav text-lav-fg')}><Hourglass size={15} /></span>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold truncate">{c.name}</p>
+                <p className="text-[11px] text-faint">{format(parseISO(c.date), 'EEE, MMM d, yyyy')}</p>
+              </div>
+              <span className={cx('text-sm font-bold tnum', n < 0 && 'text-faint')}>{label(n)}</span>
+              <button type="button" aria-label={`Remove ${c.name}`} onClick={() => save(list.filter((x) => x.id !== c.id))}
+                className="h-6 w-6 rounded-full inline-flex items-center justify-center text-faint opacity-0 group-hover:opacity-100 hover:bg-coral hover:text-coral-fg transition"><X size={13} /></button>
+            </li>
+          )
+        })}
+      </ul>
+      {adding && (
+        <form onSubmit={submit} className="mt-3 flex flex-wrap gap-2">
+          <input autoFocus className="input flex-1 min-w-[8rem]" placeholder="e.g. Product launch" value={name} onChange={(e) => setName(e.target.value)}
+            onKeyDown={(e) => e.key === 'Escape' && setAdding(false)} />
+          <input type="date" className="input w-auto" aria-label="Date" value={date} onChange={(e) => setDate(e.target.value)} />
           <button type="submit" className="btn-black h-9 py-0 px-3">Add</button>
         </form>
       )}

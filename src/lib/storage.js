@@ -3,6 +3,7 @@
 
 import { storageKey } from './profiles'
 import { cleanTags } from './taskMeta'
+import { THEMES } from './themes'
 import { COLUMNS_VERSION, DEFAULT_COLUMNS, LEGACY_REVIEW_ID, cleanColumns, migrateColumns } from './columns'
 
 // Keys live inside the signed-in profile's namespace (see profiles.js).
@@ -22,6 +23,7 @@ export const DEFAULT_SETTINGS = {
   weekStart: 1, // 0 Sun | 1 Mon
   heatmapMeasure: 'hours', // 'hours' | 'count'
   theme: 'light', // 'light' | 'dark'
+  palette: 'default', // colour theme: see lib/themes.js
   pomodoro: { focus: 25, short: 5, long: 15, every: 4 }, // minutes; long break every N focus blocks
   quickList: { position: 'right', collapsed: false, filter: 'today' }, // position: 'right' | 'top' | 'bottom' | 'off'
   calendar: { promptOnAdd: true }, // offer an "Add to Google Calendar" link after adding a task
@@ -30,7 +32,9 @@ export const DEFAULT_SETTINGS = {
   templates: [], // reusable tasks: [{ id, name, title, steps, ... }]
   modules: { work: true }, // which optional sections show in the navigation
   workHours: { start: '09:00', end: '18:00', breakMinutes: 60 }, // capacity and "Plan my day" use these
-  reminders: { enabled: false, minutes: 5 }, // browser notification before a timed task starts
+  reminders: { enabled: false, minutes: 5, repeat: 0 }, // browser notification before a timed task starts
+  notes: [], // sticky notes: [{ id, text, color, pinned, createdAt, updatedAt }]
+  countdowns: [], // days-left cards on the Dashboard: [{ id, name, date: 'yyyy-MM-dd' }]
   sidebarMin: false, // keep the sidebar an icon rail even where its labels would fit (see lib/sidebarRail.js)
 }
 
@@ -119,6 +123,14 @@ export function loadSettings() {
     reminders: { ...DEFAULT_SETTINGS.reminders, ...(stored.reminders || {}) },
     columns: stored.columnsV === COLUMNS_VERSION ? cleanColumns(stored.columns) : migrateColumns(cleanColumns(stored.columns)),
     columnsV: COLUMNS_VERSION,
+    palette: THEMES.some((t) => t.id === stored.palette) ? stored.palette : 'default',
+    notes: Array.isArray(stored.notes)
+      ? stored.notes.filter((n) => n && typeof n.id === 'string' && typeof n.text === 'string').slice(0, 60)
+          .map((n) => ({ id: n.id, text: n.text.slice(0, 2000), color: typeof n.color === 'string' ? n.color : 'butter', pinned: n.pinned === true, createdAt: n.createdAt || null, updatedAt: n.updatedAt || null }))
+      : [],
+    countdowns: Array.isArray(stored.countdowns)
+      ? stored.countdowns.filter((c) => c && typeof c.name === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(c.date || '')).slice(0, 12)
+      : [],
     views: Array.isArray(stored.views) ? stored.views : [],
     templates: Array.isArray(stored.templates) ? stored.templates : [],
   }
@@ -162,6 +174,7 @@ function normalizeTask(t) {
     requireRule: t.requireRule === 'any' ? 'any' : 'all',
     skippedChecks: cleanSkipped(t.skippedChecks),
     reminders: Array.isArray(t.reminders) ? t.reminders.filter((m) => Number.isFinite(m) && m >= 0).slice(0, 6) : null,
+    nagEvery: Number.isFinite(t.nagEvery) && t.nagEvery >= 0 ? Math.min(240, t.nagEvery) : null,
     tags: cleanTags(t.tags),
     column: !wasInReview && typeof t.column === 'string' ? t.column : null,
     seriesId: t.seriesId ?? null,

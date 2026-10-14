@@ -60,6 +60,27 @@ export function dueReminders(tasks, settings, now = new Date()) {
   return out.map((d) => ({ ...d, silent: d.offset !== nearest.get(d.task.id) }))
 }
 
+// Constant reminder: timed tasks for today that have started, are still to do and
+// have a reminder. They are announced again every `repeat` minutes (Settings), for
+// up to NAG_WINDOW minutes after the start, until they are begun or finished.
+export const NAG_CHOICES = [5, 10, 15, 30]
+export const NAG_WINDOW = 180
+export function nagDue(tasks, settings, now = new Date()) {
+  const fallback = settings?.reminders?.repeat
+  if (!fallback && !tasks.some((t) => t.nagEvery > 0)) return []
+  const today = format(now, 'yyyy-MM-dd')
+  const out = []
+  for (const t of tasks) {
+    if (t.status !== 'todo' || t.date !== today || !t.startTime) continue
+    const every = t.nagEvery ?? fallback
+    if (!every || !effectiveReminders(t, settings).length) continue
+    const start = reminderAnchor(t, settings?.reminders?.dayTime || ANCHOR_DEFAULT)
+    const late = start ? Math.floor((now - start) / 60_000) : -1
+    if (late >= every && late <= NAG_WINDOW) out.push({ task: t, late, round: Math.floor(late / every) })
+  }
+  return out
+}
+
 // ---- tags --------------------------------------------------------------------------
 export const MAX_TAGS = 6
 export const TAG_MAX = 24

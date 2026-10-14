@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react'
 import { Plus, Trash2, Download, Upload, Sparkles, AlertTriangle, CalendarPlus, CalendarCheck, Loader2, RefreshCw } from 'lucide-react'
 import { downloadIcs } from '../lib/calendar'
+import { THEMES, themeId } from '../lib/themes'
 import { connectCalendar, disconnectCalendar, syncNow, syncedEvents, useCalendarOn, useCalendarStatus } from '../features/CalendarSync'
 import { isConfigured } from '../lib/google'
 import ColumnsEditor from '../components/ColumnsEditor'
@@ -251,7 +252,7 @@ export default function Settings() {
               </label>
             </div>
           </Row>
-          <Row label="Reminders" hint="A browser notification before a timed task starts. Works while the planner is open in a tab.">
+          <Row label="Reminders" hint="A browser notification before a timed task starts, and optionally again until you start it. Works while the planner is open in a tab.">
             <div className="flex flex-col items-end gap-1.5">
               <div className="flex items-center gap-2">
                 {settings.reminders.enabled && (
@@ -263,6 +264,13 @@ export default function Settings() {
                 <Segmented size="sm" value={settings.reminders.enabled ? 'on' : 'off'} onChange={(v) => setReminders(v === 'on')}
                   options={[{ value: 'off', label: 'Off' }, { value: 'on', label: 'On' }]} />
               </div>
+              {settings.reminders.enabled && (
+                <select className="input w-auto min-w-[10rem] py-1.5" value={settings.reminders.repeat || 0} aria-label="Keep reminding"
+                  onChange={(e) => updateSettings({ reminders: { ...settings.reminders, repeat: Number(e.target.value) } })}>
+                  <option value={0}>Remind once</option>
+                  {[5, 10, 15, 30].map((m) => <option key={m} value={m}>{`Keep reminding every ${m} min`}</option>)}
+                </select>
+              )}
               {notifyNote && <p className="text-xs text-coral-fg font-medium max-w-xs text-right">{notifyNote}</p>}
             </div>
           </Row>
@@ -291,7 +299,18 @@ export default function Settings() {
             <Segmented size="sm" value={settings.modules?.work ? 'on' : 'off'} onChange={(v) => updateSettings({ modules: { ...settings.modules, work: v === 'on' } })}
               options={[{ value: 'on', label: 'Shown' }, { value: 'off', label: 'Hidden' }]} />
           </Row>
-          <Row label="Appearance" hint="Dark mode is one class toggle away.">
+          <Row label="Colour theme" hint="Works in light and dark. Changes the page, cards and accent colour.">
+            <div className="flex flex-wrap justify-end gap-2" role="radiogroup" aria-label="Colour theme">
+              {THEMES.map((t) => (
+                <button key={t.id} type="button" role="radio" aria-checked={themeId(settings) === t.id} onClick={() => updateSettings({ palette: t.id })}
+                  className={cx('flex items-center gap-2 h-9 rounded-full border pl-1.5 pr-3 text-xs font-semibold transition', themeId(settings) === t.id ? 'border-ink text-ink' : 'border-line text-muted hover:text-ink')}>
+                  <span className="h-6 w-6 rounded-full border border-line relative overflow-hidden" style={{ background: t.swatch[0] }}><i className="absolute inset-y-0 right-0 w-1/2" style={{ background: t.swatch[1] }} /></span>
+                  {t.label}
+                </button>
+              ))}
+            </div>
+          </Row>
+          <Row label="Appearance" hint="Light or dark, in any colour theme.">
             <Segmented size="sm" value={settings.theme} onChange={(v) => updateSettings({ theme: v })}
               options={[{ value: 'light', label: 'Light' }, { value: 'dark', label: 'Dark' }]} />
           </Row>

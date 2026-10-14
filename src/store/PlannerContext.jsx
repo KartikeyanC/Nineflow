@@ -6,10 +6,11 @@ import {
 import { emptyWork, saveWork, workKey } from '../work/workStore'
 import { carryForward, checkGate, createTask, dateKey, todayKey, withDate, withSessionPaused, withSessionResumed, withStatus } from '../lib/tasks'
 import { generateSample } from '../lib/sample'
-import { dueReminders } from '../lib/taskMeta'
+import { dueReminders, nagDue } from '../lib/taskMeta'
 import { busyFor } from '../lib/gcalEvents'
 import { baseOfColumn, cleanColumns, columnOf, isOriginal } from '../lib/columns'
 import { currentProfileId } from '../lib/profiles'
+import { applyTheme } from '../lib/themes'
 import { removeTasksFromWorkspace, sendTasksToWorkspace } from '../lib/workspaces'
 import { ensureRecurrences } from '../lib/recurrence'
 import { planDay as planDayPure } from '../lib/schedule'
@@ -66,7 +67,7 @@ export function PlannerProvider({ children }) {
   useEffect(() => saveTasks(tasks), [tasks])
   useEffect(() => {
     saveSettings(settings)
-    document.documentElement.classList.toggle('dark', settings.theme === 'dark')
+    applyTheme(document.documentElement, settings)
   }, [settings])
 
   // Latest tasks for callbacks that need them without re-creating themselves.
@@ -192,8 +193,8 @@ export function PlannerProvider({ children }) {
   const closePip = useCallback(() => { try { pipWin?.close() } catch { /* already gone */ } setPipWin(null) }, [pipWin])
   // Keep the pop-out's theme in step with the app.
   useEffect(() => {
-    if (pipWin && !pipWin.closed) pipWin.document.documentElement.classList.toggle('dark', settings.theme === 'dark')
-  }, [pipWin, settings.theme])
+    if (pipWin && !pipWin.closed) applyTheme(pipWin.document.documentElement, settings)
+  }, [pipWin, settings.theme, settings.palette])
 
   // Keep every series materialized for the rolling horizon. Adding instances
   // re-runs this once more, which then finds nothing to add.
@@ -699,8 +700,19 @@ export function PlannerProvider({ children }) {
         } catch { /* some browsers only allow notifications from a service worker */ }
       }
     }
-    check()
-    const timer = setInterval(check, 20_000)
+    // Constant reminder: one nudge per round, per task, while it is still to do.
+    const nag = () => {
+      if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return
+      for (const d of nagDue(tasksRef.current, settingsRef.current, new Date())) {
+        const id = `nag@${d.task.id}@${d.task.date}@${d.round}`
+        if (remindedRef.current.has(id)) continue
+        remindedRef.current.add(id)
+        try { new Notification(`Still to do: ${d.task.title}`, { body: `Started ${d.late} min ago`, tag: id }) } catch { /* see above */ }
+      }
+    }
+    const tick = () => { check(); nag() }
+    tick()
+    const timer = setInterval(tick, 20_000)
     return () => clearInterval(timer)
   }, [])
 

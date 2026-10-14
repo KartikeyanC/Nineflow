@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Plus } from 'lucide-react'
 import { PlannerProvider, usePlanner } from './store/PlannerContext'
 import Sidebar from './components/Sidebar'
@@ -23,26 +23,32 @@ import Dashboard from './views/Dashboard'
 import Board from './views/Board'
 import Week from './views/Week'
 import Month from './views/Month'
+import Matrix from './views/Matrix'
+import Someday from './views/Someday'
+import Agenda from './views/Agenda'
+import Notes from './views/Notes'
+import CommandPalette from './components/CommandPalette'
 import Settings from './views/Settings'
 import Work from './work/Work'
 
-const VIEWS = { dashboard: Dashboard, board: Board, week: Week, month: Month, work: Work, settings: Settings }
+const VIEWS = { dashboard: Dashboard, board: Board, week: Week, month: Month, matrix: Matrix, someday: Someday, agenda: Agenda, notes: Notes, work: Work, settings: Settings }
 
 function Shell() {
   const { view, setQuickAdd } = usePlanner()
   const View = VIEWS[view] || Dashboard
+  const [palette, setPalette] = useState(false)
 
-  // Cmd/Ctrl+K opens quick add anywhere.
+  // Cmd/Ctrl+K opens the command palette anywhere (the + button opens quick add).
   useEffect(() => {
     const onKey = (e) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault()
-        setQuickAdd({})
+        setPalette((o) => !o)
       }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [setQuickAdd])
+  }, [])
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -67,12 +73,13 @@ function Shell() {
       <button
         type="button"
         onClick={() => setQuickAdd({})}
-        title="New task (Ctrl+K)"
+        title="New task"
         className="fixed bottom-20 sm:bottom-6 right-4 sm:right-6 z-30 h-14 w-14 rounded-full bg-brand text-white shadow-lift flex items-center justify-center transition hover:scale-105 active:scale-95"
       >
         <Plus size={24} />
       </button>
 
+      <CommandPalette open={palette} onClose={() => setPalette(false)} />
       <QuickAddModal />
       <GoalPlanner />
       <FinishGate />

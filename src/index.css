@@ -86,6 +86,128 @@
   --hair: rgb(255 255 255 / 0.07);
 }
 
+/* Colour themes (see lib/themes.js): surfaces and the accent change; the logo gradient and the To do orange do not. */
+[data-theme='ocean'] {
+  --page: 243 247 252;
+  --card: 255 255 255;
+  --line: 222 230 241;
+  --muted: 98 112 130;
+  --faint: 150 163 180;
+  --shadow: 20 40 80;
+  --subtle: 236 242 250;
+  --shell: 229 236 246;
+  --hair: rgb(20 40 80 / 0.08);
+  --lav: 222 234 255;
+  --lav-fg: 37 99 235;
+  --accent: 37 99 235;
+  --accent-soft: 222 234 255;
+}
+.dark[data-theme='ocean'] {
+  --page: 15 20 28;
+  --card: 22 29 40;
+  --line: 40 52 70;
+  --muted: 148 163 184;
+  --faint: 100 114 134;
+  --shadow: 0 0 0;
+  --subtle: 28 36 49;
+  --shell: 19 25 35;
+  --hair: rgb(255 255 255 / 0.07);
+  --lav: 28 48 92;
+  --lav-fg: 96 165 250;
+  --accent: 59 130 246;
+  --accent-soft: 28 48 92;
+}
+[data-theme='forest'] {
+  --page: 244 248 243;
+  --card: 255 255 255;
+  --line: 224 233 222;
+  --muted: 106 120 106;
+  --faint: 158 171 156;
+  --shadow: 30 60 30;
+  --subtle: 237 244 235;
+  --shell: 230 239 228;
+  --hair: rgb(30 60 30 / 0.08);
+  --lav: 218 242 228;
+  --lav-fg: 22 128 90;
+  --accent: 22 128 90;
+  --accent-soft: 218 242 228;
+}
+.dark[data-theme='forest'] {
+  --page: 17 22 18;
+  --card: 24 31 26;
+  --line: 44 56 46;
+  --muted: 150 165 150;
+  --faint: 104 118 104;
+  --shadow: 0 0 0;
+  --subtle: 30 39 32;
+  --shell: 21 27 22;
+  --hair: rgb(255 255 255 / 0.07);
+  --lav: 26 62 44;
+  --lav-fg: 86 212 150;
+  --accent: 34 160 107;
+  --accent-soft: 26 62 44;
+}
+[data-theme='berry'] {
+  --page: 252 245 248;
+  --card: 255 255 255;
+  --line: 240 224 233;
+  --muted: 125 106 117;
+  --faint: 176 156 167;
+  --shadow: 80 30 55;
+  --subtle: 248 238 243;
+  --shell: 243 230 238;
+  --hair: rgb(80 30 55 / 0.08);
+  --lav: 252 224 238;
+  --lav-fg: 190 36 105;
+  --accent: 190 36 105;
+  --accent-soft: 252 224 238;
+}
+.dark[data-theme='berry'] {
+  --page: 25 18 22;
+  --card: 35 26 31;
+  --line: 58 44 52;
+  --muted: 168 150 160;
+  --faint: 117 100 110;
+  --shadow: 0 0 0;
+  --subtle: 42 31 37;
+  --shell: 30 22 27;
+  --hair: rgb(255 255 255 / 0.07);
+  --lav: 84 30 56;
+  --lav-fg: 255 128 170;
+  --accent: 214 51 108;
+  --accent-soft: 84 30 56;
+}
+[data-theme='graphite'] {
+  --page: 244 244 245;
+  --card: 255 255 255;
+  --line: 226 226 229;
+  --muted: 110 110 118;
+  --faint: 160 160 168;
+  --shadow: 30 30 40;
+  --subtle: 238 238 240;
+  --shell: 231 231 234;
+  --hair: rgb(30 30 40 / 0.08);
+  --lav: 232 228 252;
+  --lav-fg: 99 72 220;
+  --accent: 99 72 220;
+  --accent-soft: 232 228 252;
+}
+.dark[data-theme='graphite'] {
+  --page: 18 18 20;
+  --card: 27 27 30;
+  --line: 46 46 51;
+  --muted: 152 152 160;
+  --faint: 104 104 112;
+  --shadow: 0 0 0;
+  --subtle: 33 33 37;
+  --shell: 22 22 25;
+  --hair: rgb(255 255 255 / 0.07);
+  --lav: 52 44 96;
+  --lav-fg: 176 158 255;
+  --accent: 124 98 240;
+  --accent-soft: 52 44 96;
+}
+
 @layer base {
   html {
     -webkit-font-smoothing: antialiased;

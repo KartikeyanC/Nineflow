@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { Timer, Repeat, CornerDownLeft, Sparkles, CalendarDays, Clock, Flag, Tag, Target, ListChecks, X, Loader2, WandSparkles, Hash, BookmarkPlus } from 'lucide-react'
+import { Timer, Repeat, CornerDownLeft, Sparkles, CalendarDays, Clock, Flag, Tag, Target, ListChecks, X, Loader2, WandSparkles, Hash, BookmarkPlus, Mic, MicOff } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
 import { fmtMinutes, newSubtask, todayKey, PRIORITY_LABEL, STATUS_LABEL } from '../lib/tasks'
 import { FREQS, FREQ_LABEL, describe } from '../lib/recurrence'
@@ -34,6 +34,27 @@ export default function QuickAddModal() {
   // Token texts the user dismissed with ×: they stay part of the title.
   const [ignored, setIgnored] = useState([])
   // "Auto-fill": Claude suggests category, priority, length and steps from the title.
+  // Voice: dictated words land in the title, so "tomorrow 3pm" is parsed like typed text.
+  const Speech = typeof window !== 'undefined' ? window.SpeechRecognition || window.webkitSpeechRecognition : null
+  const [listening, setListening] = useState(false)
+  const recRef = useRef(null)
+  const stopListening = () => recRef.current?.stop()
+  const startListening = () => {
+    if (!Speech) return
+    const rec = new Speech()
+    rec.lang = navigator.language || 'en-US'
+    rec.interimResults = false
+    rec.onresult = (e) => {
+      const said = Array.from(e.results).map((r) => r[0].transcript).join(' ').trim()
+      if (said) set({ title: draft.title ? `${draft.title} ${said}` : said }, false)
+    }
+    rec.onend = () => setListening(false)
+    rec.onerror = () => setListening(false)
+    recRef.current = rec
+    setListening(true)
+    rec.start()
+  }
+  useEffect(() => () => recRef.current?.abort(), [])
   const [ai, setAi] = useState({ busy: false, note: '', error: '' })
   const set = (p, byHand = true) => {
     if (byHand) Object.keys(p).forEach((k) => manual.current.add(k))
@@ -125,13 +146,24 @@ export default function QuickAddModal() {
   return (
     <Modal open={open} onClose={close} width="max-w-xl">
       <form onSubmit={submit}>
-        <input
-          autoFocus
-          className="w-full bg-transparent outline-none h-display text-2xl placeholder:text-faint placeholder:font-semibold"
-          placeholder="What do you want to get done?"
-          value={draft.title}
-          onChange={(e) => set({ title: e.target.value }, false)}
-        />
+        <div className="flex items-center gap-2">
+          <input
+            autoFocus
+            className="flex-1 min-w-0 bg-transparent outline-none h-display text-2xl placeholder:text-faint placeholder:font-semibold"
+            placeholder="What do you want to get done?"
+            value={draft.title}
+            onChange={(e) => set({ title: e.target.value }, false)}
+          />
+          {Speech && (
+            <button type="button" onClick={listening ? stopListening : startListening}
+              title={listening ? 'Stop listening' : 'Say a task, e.g. "call mom tomorrow 3pm"'}
+              aria-label={listening ? 'Stop voice input' : 'Add by voice'}
+              className={cx('shrink-0 h-9 w-9 rounded-full flex items-center justify-center transition',
+                listening ? 'bg-brand text-white animate-pulse' : 'bg-page text-muted hover:text-ink')}>
+              {listening ? <MicOff size={16} /> : <Mic size={16} />}
+            </button>
+          )}
+        </div>
 
         {templates.length > 0 && (
           <div className="mt-2 flex flex-wrap items-center gap-1.5" role="group" aria-label="Templates">

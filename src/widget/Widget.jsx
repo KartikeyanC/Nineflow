@@ -1,3 +1,4 @@
+import { applyTheme } from '../lib/themes'
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { ExternalLink, Sparkles, X } from 'lucide-react'
 import { format } from 'date-fns'
@@ -38,7 +39,7 @@ export default function Widget() {
   const profile = currentProfile()
   const today = dateKey(now)
 
-  useEffect(() => { document.documentElement.classList.toggle('dark', settings.theme === 'dark') }, [settings.theme])
+  useEffect(() => { applyTheme(document.documentElement, settings) }, [settings.theme, settings.palette])
 
   const { open, done } = useMemo(() => {
     const byDate = (a, b) => a.date.localeCompare(b.date)

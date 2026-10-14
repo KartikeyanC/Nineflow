@@ -16,6 +16,14 @@
       "port": 5180
     },
     {
+      "name": "dev-mock-auto",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["vite"],
+      "env": { "VITE_GOOGLE_MOCK": "1", "VITE_GOOGLE_CLIENT_ID": "" },
+      "port": 5181,
+      "autoPort": true
+    },
+    {
       "name": "preview",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "preview", "--", "--port", "4173", "--strictPort"],
