@@ -21,7 +21,7 @@ export function InterruptButton({ compact = false }) {
   return (
     <button type="button" onClick={openInterrupt} title="Something came up (Ctrl+I)"
       className={cx('group inline-flex items-center justify-center wide:justify-start gap-2.5 rounded-full transition duration-300 hover:-translate-y-px active:scale-[0.97]',
-        compact ? 'h-9 w-9 bg-card shadow-soft text-peach-fg' : 'mt-2 h-10 pl-1.5 wide:pr-3 bg-card shadow-soft text-ink')}>
+        compact ? 'h-9 w-9 bg-card shadow-soft text-peach-fg' : 'h-10 pl-1.5 wide:pr-3 bg-card shadow-soft text-ink')}>
       <span className={cx('rounded-full inline-flex items-center justify-center bg-peach text-peach-fg transition duration-500 group-hover:scale-110', compact ? 'h-9 w-9' : 'h-7 w-7')}>
         <Zap size={compact ? 16 : 14} />
       </span>
