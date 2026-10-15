@@ -54,7 +54,8 @@ export default function Sidebar() {
               key={id}
               type="button"
               onClick={() => setView(id)}
-              title={label}
+              data-tip={label}
+              aria-label={label}
               className={cx(
                 'flex items-center gap-3 rounded-full h-10 px-3 wide:px-3.5 text-sm font-semibold transition justify-center wide:justify-start',
                 active ? 'bg-lav text-lav-fg' : 'text-muted hover:bg-page hover:text-ink',
@@ -75,7 +76,7 @@ export default function Sidebar() {
         </p>
         <ProgressBar value={today.progress} className="mt-2.5" />
       </div>
-      <div className="mt-auto wide:hidden flex justify-center" title={`${today.done} of ${today.total} done`}>
+      <div className="mt-auto wide:hidden flex justify-center" role="img" aria-label={`Today: ${today.done} of ${today.total} tasks done`} data-tip="Today" data-tip-hint={`${today.done} of ${today.total} tasks done`}>
         <div className="relative h-9 w-9">
           <svg viewBox="0 0 36 36" className="h-9 w-9 -rotate-90">
             <circle cx="18" cy="18" r="15" fill="none" stroke="rgb(var(--line))" strokeWidth="3" />
@@ -97,7 +98,9 @@ export default function Sidebar() {
         type="button"
         onClick={() => setQuickAdd({})}
         className="btn-black w-full h-10 wide:px-4 px-0"
-        title="New task"
+        data-tip="New task"
+        data-tip-hint="Ctrl+K"
+        aria-label="New task"
       >
         <Plus size={16} />
         <span className="hidden wide:inline">New task</span>
@@ -111,7 +114,8 @@ export default function Sidebar() {
         type="button"
         onClick={() => updateSettings({ theme: dark ? 'light' : 'dark' })}
         className="h-9 rounded-full flex items-center justify-center wide:justify-start gap-2.5 px-3 text-xs font-semibold text-muted hover:bg-page hover:text-ink transition"
-        title="Toggle dark mode"
+        data-tip={dark ? 'Light mode' : 'Dark mode'}
+        aria-label="Toggle dark mode"
       >
         {dark ? <Sun size={16} /> : <Moon size={16} />}
         <span className="hidden wide:inline">{dark ? 'Light mode' : 'Dark mode'}</span>

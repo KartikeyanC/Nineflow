@@ -4,6 +4,7 @@ import { PlannerProvider, usePlanner } from '../store/PlannerContext'
 import MobileNav from '../components/MobileNav'
 import Dock, { MobileDock } from '../components/Dock'
 import QuickAddModal from '../components/QuickAddModal'
+import Tooltips from '../components/Tooltips'
 import GoalPlanner from '../components/GoalPlanner'
 import FinishGate from '../components/FinishGate'
 import PromptToList from '../components/PromptToList'
@@ -101,6 +102,7 @@ function Shell() {
       <PipQuickList />
       <CalendarToast />
       <Notices />
+      <Tooltips />
       <CalendarSync />
       <Ritual />
       <WelcomeBack />

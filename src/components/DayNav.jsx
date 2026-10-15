@@ -25,22 +25,22 @@ export default function DayNav({ value, onChange, backLabel = 'Back to today', c
   return (
     <>
       {value !== today && (
-        <button type="button" className="btn-ghost h-9 py-0" onClick={() => go(today)} aria-label="Back to today" title="Back to today">
+        <button type="button" className="btn-ghost h-9 py-0" onClick={() => go(today)} aria-label="Back to today" data-tip="Back to today">
           {compact && <CalendarCheck size={14} />}
           <span className={compact ? NARROW_HIDE : undefined}>{backLabel}</span>
         </button>
       )}
       <div className="inline-flex items-center rounded-full bg-card border border-line p-1 shadow-soft">
-        <button type="button" aria-label="Previous day" onClick={() => go(dateKey(subDays(day, 1)))}
+        <button type="button" aria-label="Previous day" data-tip="Previous day" onClick={() => go(dateKey(subDays(day, 1)))}
           className="h-8 w-8 rounded-full inline-flex items-center justify-center text-muted hover:bg-page hover:text-ink transition"><ChevronLeft size={16} /></button>
         <DateField value={value} onChange={go} allowClear={false} align="right"
           trigger={({ toggle, open }) => (
-            <button type="button" onClick={toggle} title={format(day, 'EEEE, d MMMM yyyy')}
+            <button type="button" onClick={toggle} data-tip={format(day, 'EEEE, d MMMM yyyy')}
               className={cx('px-3 h-8 rounded-full text-sm font-bold transition min-w-[84px]', open ? 'bg-brand text-white' : 'hover:bg-page')}>
               {label}
             </button>
           )} />
-        <button type="button" aria-label="Next day" onClick={() => go(dateKey(addDays(day, 1)))}
+        <button type="button" aria-label="Next day" data-tip="Next day" onClick={() => go(dateKey(addDays(day, 1)))}
           className="h-8 w-8 rounded-full inline-flex items-center justify-center text-muted hover:bg-page hover:text-ink transition"><ChevronRight size={16} /></button>
       </div>
     </>

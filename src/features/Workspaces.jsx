@@ -162,7 +162,7 @@ export function WorkspaceMenu({ compact = false, className }) {
   if (!current) return null
   return (
     <div ref={root} className={cx('relative', className)}>
-      <button type="button" onClick={() => setOpen(!open)} aria-haspopup="dialog" aria-expanded={open} title={`Workspace: ${current.name}`}
+      <button type="button" onClick={() => setOpen(!open)} aria-haspopup="dialog" aria-expanded={open} data-tip="Workspace" data-tip-hint={current.name} aria-label={`Workspace: ${current.name}`}
         className={cx('flex w-full items-center gap-2.5 rounded-full h-10 px-1.5 border border-line bg-page transition hover:border-faint',
           compact ? 'justify-center wide:justify-start' : 'justify-start')}>
         <Tile ws={current} size={28} />

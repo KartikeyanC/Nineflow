@@ -19,7 +19,7 @@ const MODES = [{ value: 'list', label: 'A to-do note' }, { value: 'meeting', lab
 export function PromptListButton() {
   const { setPromptListOpen } = usePlanner()
   return (
-    <button type="button" onClick={() => setPromptListOpen(true)} title="Turn a note or meeting notes into tasks with AI"
+    <button type="button" onClick={() => setPromptListOpen(true)} data-tip="Prompt to list" data-tip-hint="Turn a note or meeting notes into tasks with AI" aria-label="Prompt to list"
       className="group h-10 w-full inline-flex items-center justify-center wide:justify-start gap-2.5 rounded-full pl-1.5 wide:pr-3 bg-card shadow-soft text-ink transition duration-300 hover:-translate-y-px active:scale-[0.97]">
       <span className="h-7 w-7 rounded-full inline-flex items-center justify-center bg-peach text-peach-fg transition duration-500 group-hover:scale-110"><Sparkles size={14} /></span>
       <span className="hidden wide:inline text-[13px] font-semibold">Prompt to list</span>

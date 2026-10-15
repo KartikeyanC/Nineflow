@@ -82,6 +82,7 @@ export function CloudStatusPill({ iconOnly = false, className }) {
   const d = describe(s)
   const Icon = d.icon
   const title = `${d.text}${s.state === 'saved' && s.savedAt ? ` · last saved ${savedAgo(s.savedAt)}` : ''}${s.error ? ` · ${s.error}` : ''}`
+  const note = title.slice(d.text.length).replace(/^ · /, '') // everything after the headline: when it was last saved, or the error
   const body = (
     <>
       <Icon size={14} className={cx('shrink-0', d.spin && 'animate-spin')} />
@@ -90,8 +91,8 @@ export function CloudStatusPill({ iconOnly = false, className }) {
   )
   const cls = cx('inline-flex items-center gap-2 h-8 rounded-full px-2.5 text-[12px] font-semibold min-w-0', d.tone, className)
   return d.action
-    ? <button type="button" title={title} onClick={() => runAction(d.action)} className={cx(cls, 'hover:bg-page transition')}>{body}</button>
-    : <span role="status" title={title} className={cls}>{body}</span>
+    ? <button type="button" data-tip={d.text} data-tip-hint={note} aria-label={title} onClick={() => runAction(d.action)} className={cx(cls, 'hover:bg-page transition')}>{body}</button>
+    : <span role="status" data-tip={d.text} data-tip-hint={note} aria-label={title} className={cls}>{body}</span>
 }
 
 // Banner when changes can't reach Drive until Google is reconnected, and

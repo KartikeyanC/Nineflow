@@ -47,7 +47,7 @@ export default function Sidebar() {
       <WorkspaceMenu compact className="mt-3" />
 
       {/* Command pill: opens quick add */}
-      <button type="button" onClick={() => setQuickAdd({})} title="New task (Ctrl+K)"
+      <button type="button" onClick={() => setQuickAdd({})} data-tip="New task" data-tip-hint="Ctrl+K" aria-label="New task"
         className="group mt-4 h-11 rounded-full bg-brand text-white inline-flex items-center justify-center wide:justify-start gap-2.5 pl-1.5 wide:pr-3 transition duration-300 hover:-translate-y-px active:scale-[0.97] shadow-[inset_0_1px_0_rgb(255_255_255/0.18),0_8px_20px_-8px_rgb(var(--shadow)/0.5)]">
         <span className="h-8 w-8 rounded-full bg-white/20 inline-flex items-center justify-center transition duration-500 group-hover:rotate-90 group-hover:scale-105">
           <Plus size={16} />
@@ -96,7 +96,7 @@ export default function Sidebar() {
           </div>
         </div>
       </div>
-      <div className="wide:hidden flex justify-center" title={`${today.done} of ${today.total} done`}>
+      <div className="wide:hidden flex justify-center" role="img" aria-label={`Today: ${today.done} of ${today.total} tasks done`} data-tip="Today" data-tip-hint={`${today.done} of ${today.total} tasks done`}>
         <ProgressRing value={today.progress} label={today.done} />
       </div>
 
@@ -105,14 +105,14 @@ export default function Sidebar() {
 
       {/* Profile + theme */}
       <div className="mt-3 flex flex-col wide:flex-row items-center gap-2 wide:gap-2.5 px-0.5 wide:px-1">
-        <button type="button" onClick={() => setView('settings')} title="Profile and settings"
+        <button type="button" onClick={() => setView('settings')} data-tip="Profile and settings" aria-label="Profile and settings"
           className="flex items-center gap-2.5 min-w-0 wide:flex-1 rounded-full wide:pr-2 transition hover:opacity-80">
           <span className={cx('h-9 w-9 rounded-full flex items-center justify-center text-[12px] font-bold shrink-0 ring-2 ring-card', avatar.bg, avatar.text)}>
             {initials(profile?.name || '')}
           </span>
           <span className="hidden wide:block text-[13px] font-semibold truncate">{profile?.name}</span>
         </button>
-        <button type="button" onClick={() => updateSettings({ theme: dark ? 'light' : 'dark' })} title="Toggle dark mode"
+        <button type="button" onClick={() => updateSettings({ theme: dark ? 'light' : 'dark' })} data-tip={dark ? 'Light mode' : 'Dark mode'} aria-label="Toggle dark mode"
           className="h-9 w-9 shrink-0 rounded-full inline-flex items-center justify-center text-muted bg-subtle ring-hair hover:text-ink transition duration-500 hover:rotate-12">
           {dark ? <Sun size={16} /> : <Moon size={16} />}
         </button>
@@ -123,7 +123,7 @@ export default function Sidebar() {
 
 function NavItem({ item: { label, icon: Icon }, active, onClick, badge }) {
   return (
-    <button type="button" onClick={onClick} title={label}
+    <button type="button" onClick={onClick} data-tip={label} aria-label={label}
       className={cx('group relative flex items-center gap-3 h-10 px-3 rounded-full text-[13px] font-semibold transition duration-300 justify-center wide:justify-start',
         active ? 'bg-brand text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.15),0_6px_14px_-6px_rgb(var(--shadow)/0.45)]' : 'text-muted hover:bg-subtle hover:text-ink')}>
       <Icon size={17} className={cx('shrink-0 transition duration-300', !active && 'group-hover:scale-110')} />

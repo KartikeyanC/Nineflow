@@ -19,7 +19,7 @@ const MAX_MINUTES = 12 * 60 // a custom length can be anything up to 12 hours
 
 export function InterruptButton({ compact = false }) {
   return (
-    <button type="button" onClick={openInterrupt} title="Something came up (Ctrl+I)"
+    <button type="button" onClick={openInterrupt} data-tip="Interruption" data-tip-hint="Something came up · Ctrl+I" aria-label="Interruption"
       className={cx('group inline-flex items-center justify-center wide:justify-start gap-2.5 rounded-full transition duration-300 hover:-translate-y-px active:scale-[0.97]',
         compact ? 'h-9 w-9 bg-card shadow-soft text-peach-fg' : 'h-10 pl-1.5 wide:pr-3 bg-card shadow-soft text-ink')}>
       <span className={cx('rounded-full inline-flex items-center justify-center bg-peach text-peach-fg transition duration-500 group-hover:scale-110', compact ? 'h-9 w-9' : 'h-7 w-7')}>

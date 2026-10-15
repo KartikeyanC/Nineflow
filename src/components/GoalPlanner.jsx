@@ -43,7 +43,7 @@ const blank = (categories) => ({
 export function PlanGoalButton() {
   const { setGoalPlannerOpen } = usePlanner()
   return (
-    <button type="button" onClick={() => setGoalPlannerOpen(true)} title="Plan an exam, project or trip over the days before its deadline"
+    <button type="button" onClick={() => setGoalPlannerOpen(true)} data-tip="Plan a goal" data-tip-hint="Plan an exam, project or trip over the days before its deadline" aria-label="Plan a goal"
       className="group h-10 w-full inline-flex items-center justify-center wide:justify-start gap-2.5 rounded-full pl-1.5 wide:pr-3 bg-card shadow-soft text-ink transition duration-300 hover:-translate-y-px active:scale-[0.97]">
       <span className="h-7 w-7 rounded-full inline-flex items-center justify-center bg-lav text-lav-fg transition duration-500 group-hover:scale-110"><Target size={14} /></span>
       <span className="hidden wide:inline text-[13px] font-semibold">Plan a goal</span>

@@ -239,7 +239,7 @@ export default function Board() {
         <div className="flex flex-wrap items-center justify-end gap-2 basis-full sm:basis-0 sm:flex-1 min-w-0">
           <DayNav value={dashboardDate} onChange={goDay} backLabel="Today" compact />
           <button type="button" onClick={() => setScope((s) => (s === 'all' ? 'day' : 'all'))} aria-pressed={scope === 'all'}
-            title={scope === 'all' ? 'Showing every task. Pick a day to go back to one day.' : 'Show every task, whatever its day (including undated ones)'}
+            data-tip="All days" data-tip-hint={scope === 'all' ? 'Showing every task. Pick a day to go back to one day.' : 'Show every task, whatever its day (including undated ones)'}
             aria-label="All days"
             className={cx('h-9 px-3 rounded-full border text-[13px] font-semibold inline-flex items-center gap-1.5 transition',
               scope === 'all' ? 'bg-brand text-white border-transparent' : 'bg-card border-line text-muted hover:text-ink')}>
@@ -258,20 +258,20 @@ export default function Board() {
             )}
           </select>
           <button type="button" onClick={() => setShowFilters((v) => !v)} aria-expanded={showFilters} aria-controls="board-filters"
-            aria-label="Filters" title="Filter the tasks by when, category, priority or tag"
+            aria-label="Filters" data-tip="Filters" data-tip-hint="By when, category, priority or tag"
             className={cx('h-9 px-3 rounded-full border text-[13px] font-semibold inline-flex items-center gap-1.5 transition',
               showFilters || activeFilters ? 'bg-brand text-white border-transparent' : 'bg-card border-line text-muted hover:text-ink')}>
             <SlidersHorizontal size={14} /><span className={LABEL}>Filters</span>{activeFilters > 0 && <span className="h-5 min-w-5 px-1 rounded-full bg-page text-ink text-[11px] font-bold inline-flex items-center justify-center">{activeFilters}</span>}
           </button>
           {mode === 'board' && (
-            <button type="button" onClick={() => setEditingColumns(true)} title="Add, rename and reorder the Board's columns" aria-label="Columns"
+            <button type="button" onClick={() => setEditingColumns(true)} data-tip="Columns" data-tip-hint="Add, rename and reorder the Board's columns" aria-label="Columns"
               className="h-9 px-3 rounded-full border border-line bg-card text-[13px] font-semibold text-muted hover:text-ink inline-flex items-center gap-1.5 transition">
               <Columns3 size={14} /><span className={LABEL}>Columns</span>
             </button>
           )}
           {otherWorkspaces.length > 0 && mode === 'board' && (
             <button type="button" onClick={() => (selecting ? stopSelecting() : setSelecting(true))} aria-pressed={selecting}
-              title="Choose several tasks to move to another workspace" aria-label="Select"
+              data-tip="Select" data-tip-hint="Choose several tasks to move to another workspace" aria-label="Select"
               className={cx('h-9 px-3 rounded-full border text-[13px] font-semibold inline-flex items-center gap-1.5 transition',
                 selecting ? 'bg-brand text-white border-transparent' : 'bg-card border-line text-muted hover:text-ink')}>
               <CheckSquare size={14} /><span className={LABEL}>Select</span>
@@ -279,7 +279,7 @@ export default function Board() {
           )}
           <div className="inline-flex rounded-full border border-line bg-card p-1 gap-0.5">
             {[{ id: 'list', icon: List, label: 'List view' }, { id: 'board', icon: LayoutGrid, label: 'Board view' }].map((m) => (
-              <button key={m.id} type="button" title={m.label} onClick={() => setMode(m.id)}
+              <button key={m.id} type="button" data-tip={m.label} aria-label={m.label} onClick={() => setMode(m.id)}
                 className={cx('h-7 w-7 rounded-full inline-flex items-center justify-center transition',
                   mode === m.id ? 'bg-brand text-white' : 'text-muted hover:text-ink')}>
                 <m.icon size={15} />
@@ -428,11 +428,11 @@ function Column({ col, ids, taskById, activeId, selecting, picked, onPick, highl
         </h2>
         <ParkChips value={show} onChange={onShow} counts={{ paused: parked.paused.length, dropped: parked.dropped.length }} />
         <div className="ml-auto flex items-center gap-0.5">
-          <button type="button" onClick={onAdd} title="Add task" className="h-7 w-7 rounded-full inline-flex items-center justify-center hover:bg-card/70 transition">
+          <button type="button" onClick={onAdd} data-tip="Add task" aria-label="Add task" className="h-7 w-7 rounded-full inline-flex items-center justify-center hover:bg-card/70 transition">
             <Plus size={15} />
           </button>
           <Menu items={menu} trigger={({ toggle, open }) => (
-            <button type="button" onClick={toggle} title="Column menu"
+            <button type="button" onClick={toggle} data-tip="Column menu" aria-label="Column menu"
               className={cx('h-7 w-7 rounded-full inline-flex items-center justify-center transition hover:bg-card/70', open && 'bg-card/70')}>
               <MoreHorizontal size={16} />
             </button>

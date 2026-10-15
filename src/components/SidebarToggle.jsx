@@ -10,7 +10,7 @@ export default function SidebarToggle() {
   const label = min ? 'Expand sidebar' : 'Minimize sidebar'
   const Icon = min ? ChevronRight : ChevronLeft
   return (
-    <button type="button" onClick={toggle} title={label} aria-label={label} aria-expanded={!min}
+    <button type="button" onClick={toggle} data-tip={label} aria-label={label} aria-expanded={!min}
       className="hidden lg:flex absolute top-6 -right-3 z-30 h-6 w-6 items-center justify-center rounded-full border border-line bg-card text-muted shadow-soft transition hover:text-ink hover:scale-110 active:scale-95">
       <Icon size={14} />
     </button>
