@@ -2,6 +2,7 @@
 // Checks QStash's signature, decrypts the reminder and sends it to the device.
 import webpush from 'web-push'
 import { env, open, readRaw, send, verifyQstash } from './_push.js'
+import { securityLog } from './_security.js'
 
 const LATE = 30 * 60_000 // a reminder delivered more than 30 min late (QStash retries) is dropped
 
@@ -12,7 +13,7 @@ export default async function handler(req, res) {
 
   let raw
   try { raw = await readRaw(req, 20000) } catch { return send(res, 413, { error: 'Too large.' }) }
-  if (!verifyQstash(req.headers['upstash-signature'], raw, cfg.signingKeys)) return send(res, 401, { error: 'Bad signature.' })
+  if (!verifyQstash(req.headers['upstash-signature'], raw, cfg.signingKeys)) { securityLog('push_bad_signature', req); return send(res, 401, { error: 'Bad signature.' }) }
 
   let r
   try { r = open(raw.trim(), cfg.secret) } catch { return send(res, 400, { error: 'Bad reminder.' }) }

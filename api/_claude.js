@@ -4,18 +4,11 @@
 // used (per IP, per minute and per day, best effort: it resets when the
 // function cold-starts) and what it sends to Claude.
 
-export const MODEL = process.env.ANTHROPIC_MODEL || 'claude-haiku-5-5'
-const hits = new Map()
+import { clientIp, cors, limit as rateLimit, tooManyBody } from './_security.js'
 
-function tooMany(bucket, ip, limit) {
-  const now = Date.now()
-  const key = `${bucket}|${ip}`
-  const list = (hits.get(key) || []).filter((t) => now - t < 864e5)
-  list.push(now)
-  hits.set(key, list)
-  if (hits.size > 5000) hits.clear()
-  return list.length > limit.perDay || list.filter((t) => now - t < 6e4).length > limit.perMinute
-}
+export const MODEL = process.env.ANTHROPIC_MODEL || 'claude-haiku-5-5'
+// All AI requests together, per day, across every visitor: a cost ceiling (AI_DAILY_LIMIT).
+const AI_DAILY_LIMIT = Math.max(1, Number(process.env.AI_DAILY_LIMIT) || 2000)
 
 export const send = (res, status, body) => {
   res.statusCode = status
@@ -47,19 +40,23 @@ export const weekdayOf = (today) => new Date(`${today}T12:00:00Z`).toLocaleDateS
 // is plain text. `shape` turns the reply into the JSON sent back (may throw).
 export function endpoint({ name, limit, maxBody = 20000, run, shape }) {
   return async function handler(req, res) {
-    res.setHeader('Access-Control-Allow-Origin', '*') // the desktop app calls the deployed site
-    res.setHeader('Access-Control-Allow-Headers', 'content-type')
-    if (req.method === 'OPTIONS') { res.setHeader('Allow', 'POST'); return send(res, 204, {}) }
+    if (!cors(req, res)) return // the site itself and the desktop app (see _security.js)
     if (req.method !== 'POST') return send(res, 405, { error: 'Use POST.' })
 
     const key = process.env.ANTHROPIC_API_KEY
     if (!key) return send(res, 503, { error: "The AI helper isn't set up yet: ANTHROPIC_API_KEY is missing on the server." })
 
-    const ip = String(req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown').split(',')[0].trim()
-    if (tooMany(name, ip, limit)) return send(res, 429, { error: "That's a lot of requests in a short time. Try again in a minute." })
+    const ip = clientIp(req)
+    const over = await rateLimit(req, [
+      { name: `${name}-min`, key: ip, max: limit.perMinute, windowSec: 60 },
+      { name: `${name}-day`, key: ip, max: limit.perDay, windowSec: 86400 },
+      { name: 'ai-all-day', key: 'all', max: AI_DAILY_LIMIT, windowSec: 86400 },
+    ])
+    if (over) return send(res, 429, over.name === 'ai-all-day' ? { error: "The AI helpers have reached today's limit. Try again tomorrow." } : tooManyBody)
 
     let job
-    try { job = run(await readBody(req, maxBody)) } catch (e) { return send(res, e.status || 400, { error: e.message || 'Bad request.' }) }
+    // Only our own Bad errors carry a message for the user; anything else is generic (no internals).
+    try { job = run(await readBody(req, maxBody)) } catch (e) { return send(res, e instanceof Bad ? e.status : 400, { error: e instanceof Bad ? e.message : 'Bad request.' }) }
 
     let r
     try {

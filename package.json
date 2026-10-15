@@ -12,7 +12,8 @@
     "preview": "vite preview",
     "desktop": "vite build && electron .",
     "desktop:win": "vite build && electron-builder --win",
-    "desktop:mac": "vite build && electron-builder --mac"
+    "desktop:mac": "vite build && electron-builder --mac",
+    "postbuild": "node scripts/security-headers.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

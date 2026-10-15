@@ -10,6 +10,7 @@
 // planner again, hides the list, starts NineFlow at sign-in, or quits.
 
 const { app, BrowserWindow, Menu, Notification, Tray, ipcMain, nativeImage, net, protocol, screen, shell, session } = require('electron')
+const crypto = require('node:crypto')
 const fs = require('node:fs')
 const path = require('node:path')
 const { pathToFileURL } = require('node:url')
@@ -45,15 +46,56 @@ const readPrefs = () => {
 }
 const writePrefs = (patch) => { try { fs.writeFileSync(prefsFile(), JSON.stringify({ ...readPrefs(), ...patch })) } catch { /* ignore */ } }
 
-// app://nineflow/<path> → dist/<path>; unknown paths get the app itself.
+// The pages' Content-Security-Policy, as on the website (scripts/security-headers.mjs):
+// only the app's own scripts and the pages' inline theme scripts (by hash). Requests may
+// go to any https address, because the API's address is set per build (VITE_API_BASE).
+function pageCsp() {
+  const hashes = new Set()
+  for (const page of ['index.html', 'widget.html']) {
+    try {
+      const html = fs.readFileSync(path.join(DIST, page), 'utf8')
+      for (const m of html.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g)) hashes.add(`'sha256-${crypto.createHash('sha256').update(m[1].replace(/\r\n?/g, '\n')).digest('base64')}'`) // browsers hash with \n line endings
+    } catch { /* page missing */ }
+  }
+  return [
+    "default-src 'self'", `script-src 'self' ${[...hashes].join(' ')}`, "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: blob: https://*.googleusercontent.com", "font-src 'self' data:", "connect-src 'self' https:",
+    "frame-src 'none'", "object-src 'none'", "base-uri 'self'", "form-action 'self'",
+  ].join('; ')
+}
+let CSP = null
+
+// app://nineflow/<path> → dist/<path>; unknown paths get the app itself. Pages get the CSP.
 function serveApp() {
+  CSP = pageCsp()
+  const withCsp = (res, file) => {
+    if (!res || !/\.html$/.test(file)) return res
+    const headers = new Headers(res.headers)
+    headers.set('Content-Security-Policy', CSP)
+    headers.set('X-Content-Type-Options', 'nosniff')
+    return new Response(res.body, { status: res.status, headers })
+  }
   protocol.handle('app', async (req) => {
     const { pathname } = new URL(req.url)
     let file = path.normalize(path.join(DIST, decodeURIComponent(pathname)))
     if (!file.startsWith(DIST)) return new Response('Not found', { status: 404 })
     if (pathname === '/' || !path.extname(file)) file = path.join(DIST, 'index.html')
     const res = await net.fetch(pathToFileURL(file).toString()).catch(() => null)
-    return res && res.ok ? res : net.fetch(pathToFileURL(path.join(DIST, 'index.html')).toString())
+    if (res && res.ok) return withCsp(res, file)
+    const index = path.join(DIST, 'index.html')
+    return withCsp(await net.fetch(pathToFileURL(index).toString()), index)
+  })
+}
+
+// Electron hardening: pages may ask only for what NineFlow uses (notifications for
+// reminders, the clipboard for Copy buttons); everything else (camera, microphone,
+// location, USB…) is refused. No <webview> can be embedded.
+function lockDownSession() {
+  const allowed = new Set(['notifications', 'clipboard-sanitized-write', 'clipboard-read'])
+  session.defaultSession.setPermissionRequestHandler((wc, permission, done) => done(allowed.has(permission) && wc.getURL().startsWith(`${ORIGIN}/`)))
+  session.defaultSession.setPermissionCheckHandler((wc, permission, origin) => allowed.has(permission) && String(origin || '').startsWith(ORIGIN))
+  app.on('web-contents-created', (_e, contents) => {
+    contents.on('will-attach-webview', (ev) => ev.preventDefault())
   })
 }
 
@@ -265,6 +307,7 @@ app.on('second-instance', (_e, argv) => { if (!argv.includes('--hidden')) showMa
 app.on('before-quit', () => { quitting = true })
 
 app.whenReady().then(async () => {
+  lockDownSession()
   serveApp()
   allowGoogleApis()
   buildMenu()

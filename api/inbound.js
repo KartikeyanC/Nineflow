@@ -3,6 +3,7 @@
 // The part after "+" in the address (MailboxHash) is the planner's inbox key.
 import crypto from 'node:crypto'
 import { MAX_QUEUE, TTL_SECONDS, basicAuthOk, cleanBody, env, queueName, readJson, redis, seal, send, validKey } from './_inbox.js'
+import { securityLog } from './_security.js'
 
 const str = (v, n) => String(v ?? '').replace(/\s+/g, ' ').trim().slice(0, n)
 
@@ -10,7 +11,7 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return send(res, 405, { error: 'Use POST.' })
   const cfg = env()
   if (!cfg.redisUrl || !cfg.redisToken || !cfg.webhookPassword) return send(res, 503, { error: 'Email to NineFlow is not set up on this server.' })
-  if (!basicAuthOk(req.headers.authorization, cfg.webhookUser, cfg.webhookPassword)) return send(res, 401, { error: 'Unauthorized.' })
+  if (!basicAuthOk(req.headers.authorization, cfg.webhookUser, cfg.webhookPassword)) { securityLog('inbound_bad_auth', req); return send(res, 401, { error: 'Unauthorized.' }) }
 
   let mail
   try { mail = await readJson(req, 3_000_000) } catch (e) { return send(res, e.status || 400, { error: 'Bad request.' }) }

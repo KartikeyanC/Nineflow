@@ -4,35 +4,23 @@
 // closed (see _push.js). The browser keeps the message ids and sends them back in
 // `cancel` when a reminder changes or goes away.
 import { cleanSubscription, env, qstashCancel, qstashPublish, readRaw, seal, send } from './_push.js'
+import { clientIp, cors, limit, tooManyBody } from './_security.js'
 
 const MAX_ADD = 60
 const MAX_CANCEL = 120
 const MAX_AHEAD = 7 * 864e5 // QStash's longest delay on the free plan
 const str = (v, n) => String(v ?? '').slice(0, n)
 
-// Per IP, per minute (best effort: resets when the function cold-starts).
-const hits = new Map()
-function tooMany(ip) {
-  const now = Date.now()
-  const list = (hits.get(ip) || []).filter((t) => now - t < 6e4)
-  list.push(now)
-  hits.set(ip, list)
-  if (hits.size > 5000) hits.clear()
-  return list.length > 20
-}
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*')
-  res.setHeader('Access-Control-Allow-Headers', 'content-type')
-  if (req.method === 'OPTIONS') { res.setHeader('Allow', 'POST'); return send(res, 204, {}) }
+  if (!cors(req, res)) return // the site itself and the desktop app (see _security.js)
   if (req.method !== 'POST') return send(res, 405, { error: 'Use POST.' })
 
   const cfg = env()
   if (!cfg.qstashToken || !cfg.secret || !cfg.vapidPublic || !cfg.vapidPrivate || !cfg.appUrl) {
     return send(res, 503, { error: "Reminders while NineFlow is closed aren't set up on this server yet." })
   }
-  const ip = String(req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown').split(',')[0].trim()
-  if (tooMany(ip)) return send(res, 429, { error: 'Too many requests. Try again in a minute.' })
+  if (await limit(req, [{ name: 'reminders-min', key: clientIp(req), max: 20, windowSec: 60 }])) return send(res, 429, tooManyBody)
 
   let body
   try { body = JSON.parse((await readRaw(req, 100000)) || '{}') } catch (e) { return send(res, e.status || 400, { error: 'Bad request.' }) }

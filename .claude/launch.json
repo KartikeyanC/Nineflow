@@ -4,30 +4,61 @@
     {
       "name": "dev",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
       "port": 5173,
       "autoPort": true
     },
     {
       "name": "dev-mock",
       "runtimeExecutable": "npx",
-      "runtimeArgs": ["vite", "--port", "5180", "--strictPort"],
-      "env": { "VITE_GOOGLE_MOCK": "1", "VITE_GOOGLE_CLIENT_ID": "" },
+      "runtimeArgs": [
+        "vite",
+        "--port",
+        "5180",
+        "--strictPort"
+      ],
+      "env": {
+        "VITE_GOOGLE_MOCK": "1",
+        "VITE_GOOGLE_CLIENT_ID": ""
+      },
       "port": 5180
     },
     {
       "name": "dev-mock-auto",
       "runtimeExecutable": "npx",
-      "runtimeArgs": ["vite"],
-      "env": { "VITE_GOOGLE_MOCK": "1", "VITE_GOOGLE_CLIENT_ID": "" },
+      "runtimeArgs": [
+        "vite"
+      ],
+      "env": {
+        "VITE_GOOGLE_MOCK": "1",
+        "VITE_GOOGLE_CLIENT_ID": ""
+      },
       "port": 5181,
       "autoPort": true
     },
     {
       "name": "preview",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "preview", "--", "--port", "4173", "--strictPort"],
+      "runtimeArgs": [
+        "run",
+        "preview",
+        "--",
+        "--port",
+        "4173",
+        "--strictPort"
+      ],
       "port": 4173
+    },
+    {
+      "name": "dist-headers",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "scripts/serve-dist.mjs"
+      ],
+      "port": 4175
     }
   ]
 }

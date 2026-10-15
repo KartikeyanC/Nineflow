@@ -47,6 +47,9 @@ create trigger planner_data_touch before insert or update on public.planner_data
 -- Each person reaches only their own rows.
 alter table public.planner_data enable row level security;
 alter table public.planner_conflicts enable row level security;
+-- Forced too, so even the tables' owner goes through the policies below (fails closed).
+alter table public.planner_data force row level security;
+alter table public.planner_conflicts force row level security;
 
 create policy "Own planner" on public.planner_data for all to authenticated
   using ((select auth.uid()) = user_id) with check ((select auth.uid()) = user_id);
