@@ -3,9 +3,9 @@
 // visit) with the cached copy as the offline fallback; the app's own files
 // (hashed /assets, icons) are cache-first. Google sign-in and Drive requests
 // go to other origins and are never touched here. Bump VERSION to drop old
-// caches.
+// caches. It also shows reminders pushed while NineFlow is closed (src/lib/webPush.js).
 
-const VERSION = 'v3'
+const VERSION = 'v4'
 const CACHE = `daily-planner-${VERSION}`
 const SHELL = ['/', '/index.html', '/manifest.webmanifest', '/icons/icon-192.png']
 
@@ -52,4 +52,33 @@ self.addEventListener('fetch', (event) => {
       })),
     )
   }
+})
+
+// ---- reminders pushed while NineFlow is closed (api/push.js) -------------------------
+self.addEventListener('push', (event) => {
+  let r = {}
+  try { r = event.data ? event.data.json() : {} } catch { r = { title: event.data?.text() } }
+  event.waitUntil(self.registration.showNotification(r.title || 'NineFlow reminder', {
+    body: r.body || '',
+    tag: r.id || undefined, // the same reminder twice replaces itself
+    icon: '/icons/icon-192.png',
+    badge: '/icons/favicon-48.png',
+    data: { taskId: r.taskId || null },
+  }))
+})
+
+// Clicking one opens its task: in a NineFlow tab that is already open, or a new one.
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close()
+  const id = event.notification.data?.taskId
+  event.waitUntil((async () => {
+    const tabs = await self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+    const tab = tabs.find((c) => new URL(c.url).origin === self.location.origin)
+    if (tab) {
+      await tab.focus()
+      if (id) tab.postMessage({ type: 'open-task', id })
+      return
+    }
+    await self.clients.openWindow(id ? `/?task=${encodeURIComponent(id)}` : '/')
+  })())
 })

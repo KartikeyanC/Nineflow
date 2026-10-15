@@ -2,6 +2,8 @@ import React, { useRef, useState } from 'react'
 import { Plus, Trash2, Download, Upload, Sparkles, AlertTriangle, CalendarPlus, CalendarCheck, Loader2, RefreshCw } from 'lucide-react'
 import { downloadIcs } from '../lib/calendar'
 import { THEMES, themeId } from '../lib/themes'
+import { disablePush, enablePush, pushEnabled, pushSupported } from '../lib/webPush'
+import { reminderSchedule } from '../lib/taskMeta'
 import { connectCalendar, disconnectCalendar, syncNow, syncedEvents, useCalendarOn, useCalendarStatus } from '../features/CalendarSync'
 import { isConfigured } from '../lib/google'
 import ColumnsEditor from '../components/ColumnsEditor'
@@ -252,7 +254,7 @@ export default function Settings() {
               </label>
             </div>
           </Row>
-          <Row label="Reminders" hint="A browser notification before a timed task starts, and optionally again until you start it. Works while the planner is open in a tab.">
+          <Row label="Reminders" hint="A notification before a timed task starts, and optionally again until you start it.">
             <div className="flex flex-col items-end gap-1.5">
               <div className="flex items-center gap-2">
                 {settings.reminders.enabled && (
@@ -274,6 +276,7 @@ export default function Settings() {
               {notifyNote && <p className="text-xs text-coral-fg font-medium max-w-xs text-right">{notifyNote}</p>}
             </div>
           </Row>
+          <ClosedReminders />
           <Row label="Heatmap workload" hint="How the Month screen tints each day.">
             <Segmented size="sm" value={settings.heatmapMeasure} onChange={(v) => updateSettings({ heatmapMeasure: v })}
               options={[{ value: 'hours', label: 'Hours' }, { value: 'count', label: 'Task count' }]} />
@@ -418,5 +421,43 @@ function Swatches({ value, onChange }) {
         )
       })}
     </div>
+  )
+}
+
+// "When NineFlow is closed": the desktop app always does this from the tray; the website
+// and the installed web app can turn on push for this device (src/lib/webPush.js).
+function ClosedReminders() {
+  const { tasks, settings } = usePlanner()
+  const [on, setOn] = useState(pushEnabled)
+  const [busy, setBusy] = useState(false)
+  const [note, setNote] = useState(null)
+  if (window.nineflowDesktop) {
+    return (
+      <Row label="When NineFlow is closed" hint="The desktop app keeps running in the tray, so reminders still arrive. Right-click the tray icon to start NineFlow when you sign in.">
+        <span className="text-xs font-semibold text-mint-fg">Always on</span>
+      </Row>
+    )
+  }
+  if (!pushSupported()) return null
+  const toggle = async (next) => {
+    setNote(null); setBusy(true)
+    try {
+      if (next) await enablePush(reminderSchedule(tasks, settings, new Date()))
+      else await disablePush()
+      setOn(next)
+    } catch (e) {
+      setNote(e.message || 'Could not turn this on.')
+      if (next) await disablePush().catch(() => {})
+      setOn(false)
+    } finally { setBusy(false) }
+  }
+  return (
+    <Row label="When NineFlow is closed" hint="Reminders also arrive with every NineFlow tab closed, on this device. Reminders for the next 24 hours are handed to NineFlow's server (encrypted) when your tasks change. On iPhone and iPad, add NineFlow to the Home Screen first.">
+      <div className="flex flex-col items-end gap-1.5">
+        <Segmented size="sm" value={on ? 'on' : 'off'} onChange={(v) => !busy && toggle(v === 'on')}
+          options={[{ value: 'off', label: 'Off' }, { value: 'on', label: busy ? 'Turning on…' : 'On' }]} />
+        {note && <p className="text-xs text-coral-fg font-medium max-w-xs text-right">{note}</p>}
+      </div>
+    </Row>
   )
 }

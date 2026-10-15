@@ -7,6 +7,7 @@ import { emptyWork, saveWork, workKey } from '../work/workStore'
 import { carryForward, checkGate, createTask, dateKey, todayKey, withDate, withSessionPaused, withSessionResumed, withStatus } from '../lib/tasks'
 import { generateSample } from '../lib/sample'
 import { dueReminders, nagDue, reminderSchedule } from '../lib/taskMeta'
+import { onPushOpenTask, pushEnabled, syncPush } from '../lib/webPush'
 import { busyFor } from '../lib/gcalEvents'
 import { baseOfColumn, cleanColumns, columnOf, isOriginal } from '../lib/columns'
 import { currentProfileId } from '../lib/profiles'
@@ -693,6 +694,7 @@ export function PlannerProvider({ children }) {
     if (desktopReminders) return undefined
     const check = () => {
       if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return
+      if (pushEnabled()) return // this device gets them by push instead (even with the tab open)
       for (const d of dueReminders(tasksRef.current, settingsRef.current, new Date())) {
         if (remindedRef.current.has(d.id)) continue
         remindedRef.current.add(d.id)
@@ -707,6 +709,7 @@ export function PlannerProvider({ children }) {
     // Constant reminder: one nudge per round, per task, while it is still to do.
     const nag = () => {
       if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return
+      if (pushEnabled()) return
       for (const d of nagDue(tasksRef.current, settingsRef.current, new Date())) {
         const id = `nag@${d.task.id}@${d.task.date}@${d.round}`
         if (remindedRef.current.has(id)) continue
@@ -729,6 +732,17 @@ export function PlannerProvider({ children }) {
     const every = setInterval(send, 30 * 60_000)
     return () => { clearTimeout(soon); clearInterval(every) }
   }, [tasks, settings]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Website / installed web app with "Remind me when NineFlow is closed" on: hand the
+  // upcoming reminders to the server (only what changed), and refresh every 30 minutes.
+  useEffect(() => {
+    if (desktopReminders) return undefined
+    const send = () => { if (pushEnabled()) syncPush(reminderSchedule(tasksRef.current, settingsRef.current, new Date())) }
+    const soon = setTimeout(send, 1500)
+    const every = setInterval(send, 30 * 60_000)
+    return () => { clearTimeout(soon); clearInterval(every) }
+  }, [tasks, settings]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => (desktopReminders ? undefined : onPushOpenTask((id) => setSelectedId(id))), []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Desktop: clicking a reminder opens its task.
   useEffect(() => (desktopReminders ? desktopReminders.onOpenTask((id) => setSelectedId(id)) : undefined), []) // eslint-disable-line react-hooks/exhaustive-deps
