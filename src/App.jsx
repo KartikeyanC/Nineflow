@@ -46,8 +46,11 @@ function Shell() {
         setPalette((o) => !o)
       }
     }
+    // Phones (no keyboard) open it from the "More" sheet in MobileNav.
+    const onAsk = () => setPalette(true)
     window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
+    window.addEventListener('nineflow:palette', onAsk)
+    return () => { window.removeEventListener('keydown', onKey); window.removeEventListener('nineflow:palette', onAsk) }
   }, [])
 
   return (
