@@ -26,8 +26,12 @@ protocol.registerSchemesAsPrivileged([
 ])
 
 if (!app.requestSingleInstanceLock()) app.quit()
-// Windows shows notifications only for an app with this id (the installer's appId).
-if (process.platform === 'win32') app.setAppUserModelId('app.nineflow.desktop')
+// Windows shows notifications only for an app with this id (the installer's appId), and
+// groups and draws the taskbar button by it. Development runs (electron.exe, the Electron
+// icon) get their own id, so they never change how the installed app appears.
+const APP_ID = app.isPackaged ? 'app.nineflow.desktop' : 'app.nineflow.desktop.dev'
+if (process.platform === 'win32') app.setAppUserModelId(APP_ID)
+const WINDOW_ICON = path.join(DIST, 'icons', 'icon-512.png') // public/icons ends up in dist/; public/ itself isn't packaged
 
 let win = null // the planner
 let widget = null // the "today" list
@@ -120,7 +124,7 @@ function createWindow() {
     title: 'NineFlow',
     backgroundColor: '#FAF7F0',
     autoHideMenuBar: true,
-    icon: path.join(__dirname, '..', 'public', 'icons', 'icon-512.png'),
+    icon: WINDOW_ICON,
     show: false,
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
@@ -131,6 +135,8 @@ function createWindow() {
       backgroundThrottling: false, // reminders and Drive sync keep running while the window is hidden
     },
   })
+  // The taskbar button: this app's id, and its icon taken from NineFlow.exe itself.
+  if (process.platform === 'win32') win.setAppDetails({ appId: APP_ID, appIconPath: process.execPath, appIconIndex: 0, relaunchDisplayName: 'NineFlow' })
   win.once('ready-to-show', () => { if (startHidden) startHidden = false; else win.show() })
   win.on('show', hideWidget)
   // Closing hides the planner to the tray (so reminders keep coming) and, if chosen,
