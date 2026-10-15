@@ -105,3 +105,42 @@ export function allTags(tasks) {
   for (const t of tasks) for (const g of t.tags || []) n.set(g, (n.get(g) || 0) + 1)
   return [...n.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([tag, count]) => ({ tag, count }))
 }
+
+// ---- reminder schedule (desktop app) ----------------------------------------------
+// Every reminder and "keep reminding" nudge due in the next `hours`, as plain data the
+// desktop app's main process can fire on its own, even with the planner window closed
+// (see desktop/reminders.cjs). Each entry: { id, at (ms), title, body, taskId }.
+// It follows the same rules as dueReminders() and nagDue() above.
+export const SCHEDULE_HOURS = 48
+export function reminderSchedule(tasks, settings, now = new Date(), hours = SCHEDULE_HOURS) {
+  const out = []
+  const nowMs = now.getTime()
+  const until = nowMs + hours * 3600_000
+  const today = format(now, 'yyyy-MM-dd')
+  const anchorTime = settings?.reminders?.dayTime || ANCHOR_DEFAULT
+  for (const t of tasks) {
+    if (t.status !== 'todo' || !t.date || t.date < today) continue
+    // Without a start time only custom reminders apply (as in dueReminders).
+    if (!t.startTime && !Array.isArray(t.reminders)) continue
+    const start = reminderAnchor(t, anchorTime)
+    if (!start || start.getTime() - 1440 * 60_000 > until) continue
+    const offsets = effectiveReminders(t, settings)
+    const when = t.startTime ? `${t.startTime} · ` : ''
+    for (const offset of offsets) {
+      const at = start.getTime() - offset * 60_000
+      if (at < nowMs - 5 * 60_000 || at > until) continue
+      const title = offset === 0 ? `Starting now: ${t.title}` : offset >= 120 ? `Soon: ${t.title}` : `In ${offset} min: ${t.title}`
+      out.push({ id: `${t.id}@${t.date}@${t.startTime || 'day'}@${offset}`, at, title, body: `${when}${t.durationMinutes} min`, taskId: t.id })
+    }
+    // Keep reminding: every `every` minutes after the start, up to NAG_WINDOW, while it is still to do.
+    const every = t.nagEvery ?? settings?.reminders?.repeat
+    if (t.startTime && every > 0 && offsets.length) {
+      for (let late = every; late <= NAG_WINDOW; late += every) {
+        const at = start.getTime() + late * 60_000
+        if (at < nowMs - 5 * 60_000 || at > until) continue
+        out.push({ id: `nag@${t.id}@${t.date}@${Math.floor(late / every)}`, at, title: `Still to do: ${t.title}`, body: `Started ${late} min ago`, taskId: t.id })
+      }
+    }
+  }
+  return out.sort((a, b) => a.at - b.at).slice(0, 300)
+}

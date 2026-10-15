@@ -59,7 +59,7 @@ Closing NineFlow doesn't quit it. The planner hides, the app keeps running in th
 - It shows today's open tasks, anything carried over from earlier days (in red), and a "Done today" section. Tick a task to complete it, tick it again to undo. The change is saved straight into the planner's data, so the hidden planner syncs it to Drive or the account as usual (it keeps running while hidden, so reminders keep working too).
 - **Open NineFlow** brings the planner back (the list hides while the planner is open). The **x** hides the list but leaves the app in the tray.
 - Drag it anywhere and resize it; it remembers where you left it. It opens in the top right the first time, or if that spot is no longer on a screen.
-- **Tray icon:** click it to open the planner. Right-click for *Open NineFlow*, *Show/Hide today's list*, *Show today's list when I close NineFlow* (untick it to make the close button quit, as before) and *Quit NineFlow*. **File → Exit** also quits.
+- **Tray icon:** click it to open the planner. Right-click for *Open NineFlow*, *Show/Hide today's list*, *Show today's list when I close NineFlow* (untick it to close to the tray without the list), *Start NineFlow when I sign in (for reminders)* and *Quit NineFlow*. **File → Exit** also quits.
 - It shows the workspace and theme (light or dark) the device is using, and "sign in" when nobody is signed in.
 
 The list is its own small page (`widget.html`, `src/widget/`), not a second copy of the planner, so it doesn't start another sync or duplicate reminders. It's only in the desktop app; the website has no such window.
@@ -73,11 +73,24 @@ Until the installers are code-signed, people see a warning the first time:
 
 Signing removes these: a Windows code-signing certificate (from about $100–300/year, or Azure Trusted Signing) and an Apple Developer account ($99/year) for signing and notarising the Mac app. electron-builder picks up the certificates through environment variables; see its [code signing guide](https://www.electron.build/code-signing).
 
+## Reminders while the window is closed
+
+Reminders come from the app itself, not from the planner page, so they arrive while the window is closed, and right after the computer restarts:
+
+- The planner sends the next 48 hours of reminders (including *Keep reminding* repeats) to the app whenever tasks or settings change, and every 30 minutes. The app saves the list as `reminders.json` in its data folder and fires native notifications from it, even before the planner has loaded.
+- Clicking a notification opens the planner on that task.
+- A reminder that is up to 15 minutes late (the computer was asleep, or the app was just starting) still shows; older ones are dropped. If several for one task are due at once, only the latest shows.
+- Closing the window always keeps NineFlow running in the tray (the first time, a notification says so). *Quit NineFlow* in the tray menu stops reminders until it is opened again.
+- *Start NineFlow when I sign in (for reminders)* in the tray menu starts it hidden at sign-in: tray only, with the planner loading in the background to sync and refresh the reminder list.
+
+On the website, reminders still only arrive while a NineFlow tab is open.
+
 ## Files
 
 - `desktop/main.cjs`: the app window, the `app://nineflow` scheme that serves `dist/`, link handling, menus, the tray and the "today" list window (its position is kept in `desktop-prefs.json` in the app's data folder).
+- `desktop/reminders.cjs`: the reminder scheduler (saved schedule, firing, the 15-minute grace).
 - `desktop/google-auth.cjs`: Google sign-in through the system browser, token renewal, sign-out.
-- `desktop/preload.cjs`: the bridge the web app sees as `window.nineflowDesktop` (used by `src/lib/google.js` and the "today" list).
+- `desktop/preload.cjs`: the bridge the web app sees as `window.nineflowDesktop` (used by `src/lib/google.js`, reminders and the "today" list).
 - `widget.html`, `src/widget/`: the "today" list page.
 - `electron-builder.yml`: installer settings. `build/icon.png`: the app icon (1024 px).
 - `.github/workflows/desktop.yml`: builds Windows and Mac installers on GitHub.

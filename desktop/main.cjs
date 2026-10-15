@@ -3,16 +3,18 @@
 // opens instantly and works offline. Google sign-in goes through the system
 // browser (google-auth.cjs); links to other sites open in the browser too.
 //
-// Closing the window doesn't quit: the app hides to the system tray and a
-// small always-on-top "today" list (widget.html) opens in the top right of
-// the screen, so the day's tasks stay in view and can be ticked off. The
-// tray menu opens the planner again, hides the list, or quits.
+// Closing the window doesn't quit: the app hides to the system tray, so
+// reminders keep arriving (desktop/reminders.cjs), and a small always-on-top
+// "today" list (widget.html) opens in the top right of the screen, so the
+// day's tasks stay in view and can be ticked off. The tray menu opens the
+// planner again, hides the list, starts NineFlow at sign-in, or quits.
 
-const { app, BrowserWindow, Menu, Tray, ipcMain, nativeImage, net, protocol, screen, shell, session } = require('electron')
+const { app, BrowserWindow, Menu, Notification, Tray, ipcMain, nativeImage, net, protocol, screen, shell, session } = require('electron')
 const fs = require('node:fs')
 const path = require('node:path')
 const { pathToFileURL } = require('node:url')
 const auth = require('./google-auth.cjs')
+const { createScheduler } = require('./reminders.cjs')
 
 const ORIGIN = 'app://nineflow'
 const DIST = path.join(__dirname, '..', 'dist')
@@ -23,11 +25,18 @@ protocol.registerSchemesAsPrivileged([
 ])
 
 if (!app.requestSingleInstanceLock()) app.quit()
+// Windows shows notifications only for an app with this id (the installer's appId).
+if (process.platform === 'win32') app.setAppUserModelId('app.nineflow.desktop')
 
 let win = null // the planner
 let widget = null // the "today" list
 let tray = null
 let quitting = false
+let reminders = null // the main-process scheduler (desktop/reminders.cjs)
+// Started at sign-in (see the tray menu): stay in the tray, but load the planner
+// hidden so it syncs and sends a fresh reminder schedule.
+const LOGIN_ARGS = ['--hidden']
+let startHidden = process.argv.includes('--hidden') || (isMac && app.getLoginItemSettings().wasOpenedAsHidden)
 
 // ---- small preferences kept next to the app's data ----------------------------------
 const prefsFile = () => path.join(app.getPath('userData'), 'desktop-prefs.json')
@@ -80,15 +89,20 @@ function createWindow() {
       backgroundThrottling: false, // reminders and Drive sync keep running while the window is hidden
     },
   })
-  win.once('ready-to-show', () => win.show())
+  win.once('ready-to-show', () => { if (startHidden) startHidden = false; else win.show() })
   win.on('show', hideWidget)
-  // Closing hides the planner and brings up the today list. The tray menu (or
-  // File > Exit) really quits. Without a tray there's no way back, so it closes normally.
+  // Closing hides the planner to the tray (so reminders keep coming) and, if chosen,
+  // brings up the today list. The tray menu (or File > Exit) really quits. Without a
+  // tray there's no way back, so it closes normally.
   win.on('close', (e) => {
-    if (quitting || !tray || !readPrefs().widgetOnClose) return
+    if (quitting || !tray) return
     e.preventDefault()
     win.hide()
-    showWidget()
+    if (readPrefs().widgetOnClose) showWidget()
+    if (!readPrefs().trayTipShown) {
+      writePrefs({ trayTipShown: true })
+      notify({ title: 'NineFlow is still running', body: 'Reminders keep coming while the window is closed. To quit, right-click the NineFlow icon in the tray.' })
+    }
   })
 
   // New windows: the app's own pages (privacy) open in a small window; any
@@ -104,6 +118,26 @@ function createWindow() {
 
   win.loadURL(`${ORIGIN}/index.html`)
   win.on('closed', () => { win = null; if (widget) widget.destroy() })
+}
+
+// ---- reminders ------------------------------------------------------------------------
+const keep = new Set() // a notification that is garbage-collected can't be clicked
+function notify({ title, body, taskId }) {
+  if (!Notification.isSupported()) return
+  const n = new Notification({ title, body: body || '', icon: path.join(DIST, 'icons', 'icon-192.png') })
+  keep.add(n)
+  const drop = () => keep.delete(n)
+  n.on('close', drop)
+  n.on('click', () => { drop(); showMain(); if (taskId) openTask(taskId) })
+  n.show()
+  setTimeout(drop, 10 * 60_000)
+}
+// Open a task in the planner, waiting for it to load if the window was just made.
+function openTask(id) {
+  if (!win) return
+  const send = () => win && win.webContents.send('reminders:open-task', id)
+  if (win.webContents.isLoading()) win.webContents.once('did-finish-load', () => setTimeout(send, 1500))
+  else send()
 }
 
 // ---- the "today" list ----------------------------------------------------------------
@@ -182,6 +216,8 @@ function createTray() {
     { label: widget && widget.isVisible() ? "Hide today's list" : "Show today's list", click: () => (widget && widget.isVisible() ? hideWidget() : showWidget()) },
     { type: 'separator' },
     { label: "Show today's list when I close NineFlow", type: 'checkbox', checked: readPrefs().widgetOnClose, click: (item) => writePrefs({ widgetOnClose: item.checked }) },
+    { label: 'Start NineFlow when I sign in (for reminders)', type: 'checkbox', checked: app.getLoginItemSettings({ args: LOGIN_ARGS }).openAtLogin,
+      click: (item) => app.setLoginItemSettings({ openAtLogin: item.checked, openAsHidden: true, args: LOGIN_ARGS }) },
     { type: 'separator' },
     { label: 'Quit NineFlow', click: () => app.quit() },
   ]))
@@ -215,11 +251,17 @@ ipcMain.handle('google:get-token', async (_e, opts) => {
 })
 ipcMain.handle('google:sign-out', () => auth.signOut())
 
+// ---- reminder schedule from the planner (see preload.cjs) ---------------------------
+ipcMain.on('reminders:set', (e, list) => {
+  if (!reminders || !win || e.sender !== win.webContents) return // only the planner sets it
+  reminders.set(list)
+})
+
 // ---- the today list's buttons (see preload.cjs) --------------------------------------
 ipcMain.on('widget:open-app', showMain)
 ipcMain.on('widget:hide', hideWidget)
 
-app.on('second-instance', showMain)
+app.on('second-instance', (_e, argv) => { if (!argv.includes('--hidden')) showMain() })
 app.on('before-quit', () => { quitting = true })
 
 app.whenReady().then(async () => {
@@ -227,6 +269,7 @@ app.whenReady().then(async () => {
   allowGoogleApis()
   buildMenu()
   await auth.init()
+  reminders = createScheduler({ file: path.join(app.getPath('userData'), 'reminders.json'), notify })
   createTray()
   createWindow()
   app.on('activate', showMain)

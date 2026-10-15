@@ -6,7 +6,7 @@ import {
 import { emptyWork, saveWork, workKey } from '../work/workStore'
 import { carryForward, checkGate, createTask, dateKey, todayKey, withDate, withSessionPaused, withSessionResumed, withStatus } from '../lib/tasks'
 import { generateSample } from '../lib/sample'
-import { dueReminders, nagDue } from '../lib/taskMeta'
+import { dueReminders, nagDue, reminderSchedule } from '../lib/taskMeta'
 import { busyFor } from '../lib/gcalEvents'
 import { baseOfColumn, cleanColumns, columnOf, isOriginal } from '../lib/columns'
 import { currentProfileId } from '../lib/profiles'
@@ -686,7 +686,11 @@ export function PlannerProvider({ children }) {
   // Needs the browser's notification permission, asked for when you choose a
   // reminder; Settings → Reminders turns the default one on for every timed task.
   const remindedRef = useRef(new Set())
+  // In the desktop app the app itself fires reminders (so they arrive with the window
+  // closed): this page only sends it the schedule, below, and shows none of its own.
+  const desktopReminders = typeof window !== 'undefined' ? window.nineflowDesktop?.reminders : null
   useEffect(() => {
+    if (desktopReminders) return undefined
     const check = () => {
       if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return
       for (const d of dueReminders(tasksRef.current, settingsRef.current, new Date())) {
@@ -714,7 +718,20 @@ export function PlannerProvider({ children }) {
     tick()
     const timer = setInterval(tick, 20_000)
     return () => clearInterval(timer)
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Desktop: send the next 48 hours of reminders whenever tasks or settings change,
+  // and every 30 minutes as that window moves on.
+  useEffect(() => {
+    if (!desktopReminders) return undefined
+    const send = () => desktopReminders.set(reminderSchedule(tasksRef.current, settingsRef.current, new Date()))
+    const soon = setTimeout(send, 800)
+    const every = setInterval(send, 30 * 60_000)
+    return () => { clearTimeout(soon); clearInterval(every) }
+  }, [tasks, settings]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Desktop: clicking a reminder opens its task.
+  useEffect(() => (desktopReminders ? desktopReminders.onOpenTask((id) => setSelectedId(id)) : undefined), []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const categoryById = useMemo(() => {
     const m = new Map(settings.categories.map((c) => [c.id, c]))
