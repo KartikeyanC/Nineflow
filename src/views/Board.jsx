@@ -7,7 +7,8 @@ import {
 import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { addDays, parseISO } from 'date-fns'
-import { Plus, MoreHorizontal, Search, LayoutGrid, List, ArrowUpDown, CalendarClock, CalendarCheck, CalendarDays, Trash2, CheckSquare, X, Layers, SlidersHorizontal, Bookmark, Columns3 } from 'lucide-react'
+import { Plus, MoreHorizontal, Search, LayoutGrid, List, ArrowUpDown, CalendarClock, CalendarCheck, CalendarDays, Trash2, CheckSquare, X, Layers, SlidersHorizontal, Bookmark, Columns3, PauseCircle, XCircle } from 'lucide-react'
+import ParkedList, { parkedIn } from '../components/ParkedList'
 import { usePlanner } from '../store/PlannerContext'
 import { currentProfileId } from '../lib/profiles'
 import { allTags } from '../lib/taskMeta'
@@ -51,7 +52,7 @@ function collisionDetection(args) {
 }
 
 export default function Board() {
-  const { tasks, now, settings, updateSettings, moveToWorkspace, moveTask, sortStatus, moveOverdueToToday, clearCompleted, setQuickAdd, dashboardDate, setDashboardDate } = usePlanner()
+  const { tasks, allTasks, now, settings, updateSettings, moveToWorkspace, moveTask, sortStatus, moveOverdueToToday, clearCompleted, setQuickAdd, dashboardDate, setDashboardDate } = usePlanner()
   const [query, setQuery] = useState('')
   // Filters: a search plus When / Category / Priority / Tag, which can be saved as a named view.
   const [crit, setCrit] = useState(blankCrit)
@@ -69,6 +70,8 @@ export default function Board() {
   const pid = currentProfileId()
   const otherWorkspaces = pid ? listWorkspaces(pid).filter((w) => w.id !== currentWorkspaceId(pid)) : []
   const [selecting, setSelecting] = useState(false)
+  // Each column's paused and dropped tasks, listed from its menu (components/ParkedList.jsx).
+  const [parkedView, setParkedView] = useState(null) // { col, kind }
   const [picked, setPicked] = useState(() => new Set())
   const stopSelecting = () => { setSelecting(false); setPicked(new Set()) }
   const togglePick = (id) => setPicked((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n })
@@ -335,7 +338,7 @@ export default function Board() {
       )}
 
       {mode === 'list' ? (
-        <ListView columns={columns} cols={cols} />
+        <ListView columns={columns} cols={cols} onParked={(col, kind) => setParkedView({ col, kind })} />
       ) : (
         <DndContext sensors={sensors} collisionDetection={collisionDetection} measuring={MEASURING}
           onDragStart={onDragStart} onDragOver={onDragOver} onDragEnd={onDragEnd} onDragCancel={cancelDrag}>
@@ -366,6 +369,9 @@ export default function Board() {
                       ? { label: 'Clear completed', icon: Trash2, danger: true, onSelect: () => setConfirmClear(true) }
                       : { label: 'Move carried-over to today', icon: CalendarCheck, onSelect: () => moveOverdueToToday(s) },
                     'divider',
+                    { label: `Paused tasks (${parkedIn(allTasks, col, cols, 'paused').length})`, icon: PauseCircle, onSelect: () => setParkedView({ col, kind: 'paused' }) },
+                    { label: `Dropped tasks (${parkedIn(allTasks, col, cols, 'dropped').length})`, icon: XCircle, onSelect: () => setParkedView({ col, kind: 'dropped' }) },
+                    'divider',
                     { label: 'Edit columns…', icon: Columns3, onSelect: () => setEditingColumns(true) },
                   ]}
                   footer={
@@ -391,6 +397,8 @@ export default function Board() {
           </DragOverlay>, document.body)}
         </DndContext>
       )}
+
+      {parkedView && <ParkedList col={parkedView.col} cols={cols} kind={parkedView.kind} onClose={() => setParkedView(null)} />}
 
       <Modal open={editingColumns} onClose={() => setEditingColumns(false)} title="Board columns" width="max-w-lg">
         <ColumnsEditor />
@@ -455,8 +463,8 @@ function SortableCard({ task, tone, dragging, selecting, picked, onPick }) {
 
 // ---- list view ----------------------------------------------------------
 
-function ListView({ columns, cols }) {
-  const { categoryById, toggleComplete, setSelectedId, now } = usePlanner()
+function ListView({ columns, cols, onParked }) {
+  const { allTasks, categoryById, toggleComplete, setSelectedId, now } = usePlanner()
   return (
     <div className="space-y-4">
       {cols.map((col) => {
@@ -467,6 +475,27 @@ function ListView({ columns, cols }) {
             <div className={cx('flex items-center gap-2 px-5 py-3', c.header, c.text)}>
               <h2 className="font-bold text-sm">{col.name}</h2>
               <span className="h-5 min-w-5 px-1.5 rounded-full bg-card text-ink text-[11px] font-bold inline-flex items-center justify-center">{list.length}</span>
+              {/* This column's paused / dropped tasks: a chip when there are any, and the menu */}
+              {['paused', 'dropped'].map((kind) => {
+                const n = parkedIn(allTasks, col, cols, kind).length
+                return n > 0 && (
+                  <button key={kind} type="button" onClick={() => onParked(col, kind)}
+                    className="h-6 px-2 rounded-full bg-card/80 text-[11px] font-semibold inline-flex items-center gap-1 hover:bg-card transition">
+                    {kind === 'paused' ? <PauseCircle size={11} /> : <XCircle size={11} />}{n} {kind}
+                  </button>
+                )
+              })}
+              <div className="ml-auto">
+                <Menu items={[
+                  { label: `Paused tasks (${parkedIn(allTasks, col, cols, 'paused').length})`, icon: PauseCircle, onSelect: () => onParked(col, 'paused') },
+                  { label: `Dropped tasks (${parkedIn(allTasks, col, cols, 'dropped').length})`, icon: XCircle, onSelect: () => onParked(col, 'dropped') },
+                ]} trigger={({ toggle, open }) => (
+                  <button type="button" onClick={toggle} title="Column menu" aria-label={`${col.name} menu`}
+                    className={cx('h-7 w-7 rounded-full inline-flex items-center justify-center transition hover:bg-card/70', open && 'bg-card/70')}>
+                    <MoreHorizontal size={16} />
+                  </button>
+                )} />
+              </div>
             </div>
             {list.length === 0 ? (
               <p className="px-5 py-4 text-sm text-faint">Nothing here.</p>

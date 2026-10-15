@@ -1,12 +1,14 @@
 import React, { useState } from 'react'
-import { CalendarDays, Timer, ArrowRight, Repeat, Check, ListChecks, Bell } from 'lucide-react'
+import { createPortal } from 'react-dom'
+import { CalendarDays, Timer, ArrowRight, Repeat, Check, ListChecks, Bell, MoreHorizontal, PauseCircle, XCircle } from 'lucide-react'
+import ParkDialog from './ParkDialog'
 import { usePlanner } from '../store/PlannerContext'
 import { reminderShort } from '../lib/taskMeta'
 import { carriedLabel, dueLabel, fmtMinutes, isOverdue, subProgress, todayKey, totalMinutes } from '../lib/tasks'
 import { describe } from '../lib/recurrence'
 import RequiredBadge from './RequiredBadge'
 import { CARD_STYLE, STATUS_CARD_COLOR } from '../lib/columns'
-import { CategoryTag, CheckCircle, PriorityPill, cx } from './ui'
+import { CategoryTag, CheckCircle, Menu, PriorityPill, cx } from './ui'
 
 // In dark mode a card takes the colour of the column it sits in (see CARD_STYLE).
 
@@ -18,6 +20,7 @@ import { CategoryTag, CheckCircle, PriorityPill, cx } from './ui'
 export default function TaskCard({ task, tone, dragging = false, handleProps, style, innerRef, select }) {
   const { categoryById, toggleComplete, setSelectedId, updateTask, now } = usePlanner()
   const [leaving, setLeaving] = useState(false)
+  const [park, setPark] = useState(null) // 'pause' | 'drop'
   const done = task.status === 'completed'
   const overdue = isOverdue(task, now)
   const due = dueLabel(task, now)
@@ -67,8 +70,34 @@ export default function TaskCard({ task, tone, dragging = false, handleProps, st
               className={cx('shrink-0 h-5 w-5 rounded-md border-2 flex items-center justify-center', select.picked ? 'bg-accent border-accent text-white' : 'border-line bg-page')}>
               {select.picked && <Check size={12} strokeWidth={3.5} />}
             </span>
-          : <CheckCircle checked={done || leaving} onToggle={onCheck} />}
+          : (
+            <>
+              {!done && (
+                // The card's own menu: pause or drop it here. Its clicks never open or drag the card.
+                <span className="shrink-0 -my-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity"
+                  onClick={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+                  <Menu items={[
+                    { label: 'Pause…', icon: PauseCircle, onSelect: () => setPark('pause') },
+                    { label: 'Drop…', icon: XCircle, danger: true, onSelect: () => setPark('drop') },
+                  ]} trigger={({ toggle, open }) => (
+                    <button type="button" onClick={toggle} aria-label={`More for ${task.title || 'this task'}`} title="Pause or drop"
+                      className={cx('h-6 w-6 rounded-full inline-flex items-center justify-center text-faint hover:text-ink hover:bg-page transition', open && 'bg-page text-ink')}>
+                      <MoreHorizontal size={15} />
+                    </button>
+                  )} />
+                </span>
+              )}
+              <CheckCircle checked={done || leaving} onToggle={onCheck} />
+            </>
+          )}
       </div>
+      {/* Drawn on <body>: a dragged card has a transform, which would misplace a fixed dialog.
+          React still passes the dialog's events up to the card, so they stop here (no opening,
+          no dragging, no Space picking the card up while typing a reason). */}
+      {park && createPortal(
+        <div onClick={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+          <ParkDialog task={task} mode={park} onClose={() => setPark(null)} />
+        </div>, document.body)}
 
       {due && (
         <p className="mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-muted">
