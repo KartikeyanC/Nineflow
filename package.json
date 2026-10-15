@@ -1,7 +1,7 @@
 {
   "name": "daily-planner",
   "private": true,
-  "version": "0.1.18",
+  "version": "0.1.19",
   "description": "NineFlow: plan better, flow forward.",
   "author": "NineFlow",
   "main": "desktop/main.cjs",
