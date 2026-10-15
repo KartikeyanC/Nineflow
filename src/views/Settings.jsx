@@ -4,6 +4,7 @@ import { downloadIcs } from '../lib/calendar'
 import { THEMES, themeId } from '../lib/themes'
 import { disablePush, enablePush, pushEnabled, pushSupported } from '../lib/webPush'
 import { reminderSchedule } from '../lib/taskMeta'
+import { inboxAddress, inboxAvailable, newInboxKey } from '../lib/emailInbox'
 import { connectCalendar, disconnectCalendar, syncNow, syncedEvents, useCalendarOn, useCalendarStatus } from '../features/CalendarSync'
 import { isConfigured } from '../lib/google'
 import ColumnsEditor from '../components/ColumnsEditor'
@@ -277,6 +278,7 @@ export default function Settings() {
             </div>
           </Row>
           <ClosedReminders />
+          <EmailInbox />
           <Row label="Heatmap workload" hint="How the Month screen tints each day.">
             <Segmented size="sm" value={settings.heatmapMeasure} onChange={(v) => updateSettings({ heatmapMeasure: v })}
               options={[{ value: 'hours', label: 'Hours' }, { value: 'count', label: 'Task count' }]} />
@@ -458,6 +460,44 @@ function ClosedReminders() {
           options={[{ value: 'off', label: 'Off' }, { value: 'on', label: busy ? 'Turning on…' : 'On' }]} />
         {note && <p className="text-xs text-coral-fg font-medium max-w-xs text-right">{note}</p>}
       </div>
+    </Row>
+  )
+}
+
+// "Email to NineFlow": a private address; mail sent there becomes a task (src/lib/emailInbox.js).
+function EmailInbox() {
+  const { settings, updateSettings } = usePlanner()
+  const [copied, setCopied] = useState(false)
+  const inbox = settings.inbox || {}
+  const [allow, setAllow] = useState((inbox.allowFrom || []).join(', '))
+  if (!inboxAvailable()) return null
+  const address = inboxAddress(inbox.key)
+  const set = (patch) => updateSettings({ inbox: { ...inbox, ...patch } })
+  const copy = async () => {
+    try { await navigator.clipboard.writeText(address); setCopied(true); setTimeout(() => setCopied(false), 1500) } catch { /* the address is selectable */ }
+  }
+  const saveAllow = () => set({ allowFrom: allow.split(/[\s,;]+/).map((x) => x.trim().toLowerCase()).filter((x) => /.+@.+/.test(x)).slice(0, 10) })
+  return (
+    <Row label="Email to NineFlow" hint="Forward or send an email to your private address and it becomes a task. The subject is the title and is read like quick add (“tomorrow 3pm !high @admin”); without a day it goes to Someday. The email text goes in the notes.">
+      {!address ? (
+        <button type="button" className="btn-ghost h-9 py-0" onClick={() => set({ key: newInboxKey(), allowFrom: inbox.allowFrom || [] })}>Get my address</button>
+      ) : (
+        <div className="flex flex-col items-end gap-2 max-w-full">
+          <div className="flex items-center gap-2 max-w-full">
+            <code className="text-xs bg-page border border-line rounded-lg px-2 py-1.5 select-all break-all">{address}</code>
+            <button type="button" className="btn-ghost h-8 py-0 px-3 text-xs shrink-0" onClick={copy}>{copied ? 'Copied' : 'Copy'}</button>
+          </div>
+          <label className="flex items-center gap-2 text-xs text-muted">
+            Only from
+            <input className="input w-56 py-1 text-xs" placeholder="anyone with the address" value={allow}
+              onChange={(e) => setAllow(e.target.value)} onBlur={saveAllow} aria-label="Only accept email from these addresses" />
+          </label>
+          <div className="flex gap-3 text-xs">
+            <button type="button" className="text-muted hover:text-ink underline" onClick={() => { if (window.confirm('Get a new address? The old one stops working.')) set({ key: newInboxKey() }) }}>New address</button>
+            <button type="button" className="text-muted hover:text-coral-fg underline" onClick={() => set({ key: null })}>Turn off</button>
+          </div>
+        </div>
+      )}
     </Row>
   )
 }

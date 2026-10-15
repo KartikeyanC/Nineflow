@@ -8,6 +8,8 @@ import { carryForward, checkGate, createTask, dateKey, todayKey, withDate, withS
 import { generateSample } from '../lib/sample'
 import { dueReminders, nagDue, reminderSchedule } from '../lib/taskMeta'
 import { onPushOpenTask, pushEnabled, syncPush } from '../lib/webPush'
+import { confirmInbox, emailsToTasks, fetchInbox, inboxAvailable } from '../lib/emailInbox'
+import { parseQuickAdd } from '../lib/nlp'
 import { busyFor } from '../lib/gcalEvents'
 import { baseOfColumn, cleanColumns, columnOf, isOriginal } from '../lib/columns'
 import { currentProfileId } from '../lib/profiles'
@@ -743,6 +745,35 @@ export function PlannerProvider({ children }) {
     return () => { clearTimeout(soon); clearInterval(every) }
   }, [tasks, settings]) // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => (desktopReminders ? undefined : onPushOpenTask((id) => setSelectedId(id))), []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Email to NineFlow: collect emailed tasks when the planner opens, every 5 minutes while
+  // it's on screen, and when it comes back into view. Each is confirmed (and so deleted on
+  // the server) only after it has been added here.
+  const inboxKey = settings.inbox?.key
+  useEffect(() => {
+    if (!inboxKey || !inboxAvailable()) return undefined
+    let stop = false
+    let running = false
+    const collect = async () => {
+      if (running || stop || document.visibilityState !== 'visible') return
+      running = true
+      try {
+        const items = await fetchInbox(inboxKey)
+        if (stop || !items.length) return
+        const s = settingsRef.current
+        const { tasks: made } = emailsToTasks(items, {
+          parse: parseQuickAdd, categories: s.categories, existingIds: new Set(tasksRef.current.map((t) => t.id)), allowFrom: s.inbox?.allowFrom || [], now: new Date(),
+        })
+        if (made.length) addTasks(made, `Added ${made.length} task${made.length === 1 ? '' : 's'} from email`)
+        await confirmInbox(inboxKey, items.map((i) => i.id))
+      } catch { /* offline or not set up: try again later */ } finally { running = false }
+    }
+    const first = setTimeout(collect, 2500)
+    const every = setInterval(collect, 5 * 60_000)
+    const onVisible = () => { if (document.visibilityState === 'visible') collect() }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => { stop = true; clearTimeout(first); clearInterval(every); document.removeEventListener('visibilitychange', onVisible) }
+  }, [inboxKey]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Desktop: clicking a reminder opens its task.
   useEffect(() => (desktopReminders ? desktopReminders.onOpenTask((id) => setSelectedId(id)) : undefined), []) // eslint-disable-line react-hooks/exhaustive-deps
