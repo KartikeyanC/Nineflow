@@ -8,7 +8,7 @@ import { SortableContext, arrayMove, sortableKeyboardCoordinates, useSortable, v
 import { CSS } from '@dnd-kit/utilities'
 import { addDays, parseISO } from 'date-fns'
 import { Plus, MoreHorizontal, Search, LayoutGrid, List, ArrowUpDown, CalendarClock, CalendarCheck, CalendarDays, Trash2, CheckSquare, X, Layers, SlidersHorizontal, Bookmark, Columns3 } from 'lucide-react'
-import { ParkTabs, ParkedTasks, parkedIn } from '../components/ParkedList'
+import { ParkChips, ParkedTasks, parkedIn } from '../components/ParkedList'
 import { usePlanner } from '../store/PlannerContext'
 import { currentProfileId } from '../lib/profiles'
 import { allTags } from '../lib/taskMeta'
@@ -73,6 +73,8 @@ export default function Board() {
   // What each column shows, one click away: its tasks, or its paused / dropped ones.
   const [colShow, setColShow] = useState({}) // { [columnId]: 'active' | 'paused' | 'dropped' }
   const showOf = (id) => colShow[id] || 'active'
+  // The list being shown, unless it has emptied (everything resumed or restored): then the tasks.
+  const shownOf = (col, parked) => { const v = showOf(col.id); return v !== 'active' && !parked[v].length ? 'active' : v }
   const setShow = (id, v) => setColShow((m) => ({ ...m, [id]: v }))
   const parkedOf = (col) => ({ paused: parkedIn(allTasks, col, cols, 'paused'), dropped: parkedIn(allTasks, col, cols, 'dropped') })
   const [picked, setPicked] = useState(() => new Set())
@@ -341,7 +343,7 @@ export default function Board() {
       )}
 
       {mode === 'list' ? (
-        <ListView columns={columns} cols={cols} showOf={showOf} setShow={setShow} parkedOf={parkedOf} />
+        <ListView columns={columns} cols={cols} shownOf={shownOf} setShow={setShow} parkedOf={parkedOf} />
       ) : (
         <DndContext sensors={sensors} collisionDetection={collisionDetection} measuring={MEASURING}
           onDragStart={onDragStart} onDragOver={onDragOver} onDragEnd={onDragEnd} onDragCancel={cancelDrag}>
@@ -363,7 +365,7 @@ export default function Board() {
                   onPick={togglePick}
                   highlighted={activeId != null && overColumn === s}
                   onAdd={() => quickAddFor(col)}
-                  show={showOf(col.id)}
+                  show={shownOf(col, parkedOf(col))}
                   onShow={(v) => setShow(col.id, v)}
                   parked={parkedOf(col)}
                   menu={[
@@ -421,7 +423,10 @@ function Column({ col, ids, taskById, activeId, selecting, picked, onPick, highl
       className={cx('rounded-card p-3 flex flex-col min-h-[360px] transition-shadow duration-200 min-w-[86vw] md:min-w-0 snap-center', c.panel, highlighted && 'ring-2 ring-inset ring-current/25', c.text)}>
       <div className="flex items-center gap-2 px-1 mb-3">
         <span className="h-6 min-w-6 px-1.5 rounded-full bg-card text-ink text-xs font-bold inline-flex items-center justify-center shadow-soft">{ids.length}</span>
-        <h2 className={cx('font-bold text-sm truncate', c.text)}>{col.name}</h2>
+        <h2 className={cx('font-bold text-sm truncate', c.text)}>
+          {show === 'active' ? col.name : <button type="button" onClick={() => onShow('active')} title="Back to the tasks" className="hover:underline">{col.name}</button>}
+        </h2>
+        <ParkChips value={show} onChange={onShow} counts={{ paused: parked.paused.length, dropped: parked.dropped.length }} />
         <div className="ml-auto flex items-center gap-0.5">
           <button type="button" onClick={onAdd} title="Add task" className="h-7 w-7 rounded-full inline-flex items-center justify-center hover:bg-card/70 transition">
             <Plus size={15} />
@@ -435,8 +440,6 @@ function Column({ col, ids, taskById, activeId, selecting, picked, onPick, highl
         </div>
       </div>
 
-      <ParkTabs fill className="mx-1 mb-3" value={show} onChange={onShow}
-        counts={{ active: ids.length, paused: parked.paused.length, dropped: parked.dropped.length }} />
       {show === 'active' ? (
         <SortableContext items={ids} strategy={verticalListSortingStrategy}>
           <div className="flex flex-col gap-2.5 flex-1 overflow-y-auto pr-0.5 text-ink">
@@ -450,7 +453,7 @@ function Column({ col, ids, taskById, activeId, selecting, picked, onPick, highl
           </div>
         </SortableContext>
       ) : (
-        <div className="flex-1 overflow-y-auto pr-0.5"><ParkedTasks list={parked[show]} kind={show} layout="cards" /></div>
+        <div className="flex-1 overflow-y-auto pr-0.5"><ParkedTasks list={parked[show]} kind={show} layout="cards" onBack={() => onShow('active')} /></div>
       )}
 
       <button type="button" onClick={onAdd}
@@ -470,7 +473,7 @@ function SortableCard({ task, tone, dragging, selecting, picked, onPick }) {
 
 // ---- list view ----------------------------------------------------------
 
-function ListView({ columns, cols, showOf, setShow, parkedOf }) {
+function ListView({ columns, cols, shownOf, setShow, parkedOf }) {
   const { categoryById, toggleComplete, setSelectedId, now } = usePlanner()
   return (
     <div className="space-y-4">
@@ -478,17 +481,16 @@ function ListView({ columns, cols, showOf, setShow, parkedOf }) {
         const c = styleOf(col)
         const list = columns[col.id]
         const parked = parkedOf(col)
-        const show = showOf(col.id)
+        const show = shownOf(col, parked)
         return (
           <section key={col.id} className="card overflow-hidden">
             <div className={cx('flex items-center gap-2 px-5 py-3', c.header, c.text)}>
               <h2 className="font-bold text-sm">{col.name}</h2>
               <span className="h-5 min-w-5 px-1.5 rounded-full bg-card text-ink text-[11px] font-bold inline-flex items-center justify-center">{list.length}</span>
-              <ParkTabs className="ml-auto" value={showOf(col.id)} onChange={(v) => setShow(col.id, v)}
-                counts={{ active: list.length, paused: parked.paused.length, dropped: parked.dropped.length }} />
+              <ParkChips value={show} onChange={(v) => setShow(col.id, v)} counts={{ paused: parked.paused.length, dropped: parked.dropped.length }} />
             </div>
             {show !== 'active' ? (
-              <ParkedTasks list={parked[show]} kind={show} layout="rows" />
+              <ParkedTasks list={parked[show]} kind={show} layout="rows" onBack={() => setShow(col.id, 'active')} />
             ) : list.length === 0 ? (
               <p className="px-5 py-4 text-sm text-faint">Nothing here.</p>
             ) : (

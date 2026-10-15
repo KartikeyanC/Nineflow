@@ -16,29 +16,30 @@ export function parkedIn(allTasks, col, cols, kind) {
     .sort((a, b) => (kind === 'dropped' ? b.dropped.at.localeCompare(a.dropped.at) : (a.hold.until || '9999').localeCompare(b.hold.until || '9999')))
 }
 
-// One click between a column's tasks and its paused / dropped ones (Board, both views).
-// fill: three equal tabs across the full width (Board columns), without icons so they fit.
-export function ParkTabs({ value, onChange, counts, className, fill = false }) {
-  const tab = (id, label, n, Icon) => (
-    <button key={id} type="button" role="tab" aria-selected={value === id} onClick={() => onChange(id)}
-      className={cx('h-7 rounded-full font-semibold inline-flex items-center justify-center transition whitespace-nowrap min-w-0', fill ? 'px-1 gap-0.5 text-[11px]' : 'px-2.5 gap-1 text-[12px]',
-        value === id ? 'bg-card text-ink shadow-soft' : 'text-current opacity-75 hover:opacity-100')}>
-      {Icon && !fill && <Icon size={12} />}{label}
-      {n != null && <span className={cx('tnum', value === id ? 'text-muted' : '')}>{n}</span>}
+// Design 3: small chips next to a column's name, one per kind, shown only when the column has
+// some (a count with a pause or ✕ icon). One click shows that list in place; clicking the
+// lit chip again goes back to the column's tasks. Used on the Board, in both views.
+export function ParkChips({ value, onChange, counts, className }) {
+  const chip = (kind, n, Icon, label) => n > 0 && (
+    <button key={kind} type="button" aria-pressed={value === kind} onClick={() => onChange(value === kind ? 'active' : kind)}
+      title={value === kind ? 'Back to the tasks' : `Show ${n} ${label}`} aria-label={value === kind ? `Back to the tasks (showing ${label})` : `Show ${n} ${label}`}
+      className={cx('h-6 px-2 rounded-full text-[11px] font-semibold inline-flex items-center gap-1 transition tnum shrink-0',
+        value === kind ? 'bg-ink text-page' : 'bg-card/80 text-current hover:bg-card')}>
+      <Icon size={12} />{n}
     </button>
   )
+  if (!counts.paused && !counts.dropped) return null
   return (
-    <div role="tablist" aria-label="Show" className={cx('items-center gap-0.5 rounded-full bg-card/40 p-0.5', fill ? 'grid grid-cols-3' : 'inline-flex', className)}>
-      {tab('active', 'Tasks', counts.active)}
-      {tab('paused', 'Paused', counts.paused, PauseCircle)}
-      {tab('dropped', 'Dropped', counts.dropped, XCircle)}
-    </div>
+    <span className={cx('inline-flex items-center gap-1', className)}>
+      {chip('paused', counts.paused, PauseCircle, 'paused')}
+      {chip('dropped', counts.dropped, XCircle, 'dropped')}
+    </span>
   )
 }
 
 // The paused or dropped tasks of a column, shown in place of its cards (or its list rows).
 // layout: 'cards' (board view) | 'rows' (list view)
-export function ParkedTasks({ list, kind, layout = 'cards' }) {
+export function ParkedTasks({ list, kind, layout = 'cards', onBack }) {
   const { now, categoryById, setSelectedId, resumeTask, restoreTask, removeTask } = usePlanner()
   const [dropping, setDropping] = useState(null)
   const today = dateKey(now)
@@ -55,6 +56,12 @@ export function ParkedTasks({ list, kind, layout = 'cards' }) {
   }
   return (
     <>
+      {onBack && (
+        <div className={cx('flex items-center justify-between text-[11px] font-semibold text-muted', layout === 'cards' ? 'mb-2 px-1' : 'px-5 pt-3')}>
+          <span className="inline-flex items-center gap-1">{kind === 'dropped' ? <XCircle size={12} /> : <PauseCircle size={12} />}{kind === 'dropped' ? 'Dropped' : 'Paused'}</span>
+          <button type="button" onClick={onBack} className="hover:text-ink underline">Back to tasks</button>
+        </div>
+      )}
       <ul className={layout === 'cards' ? 'flex flex-col gap-2.5' : 'divide-y divide-line'}>
         {list.map((t) => {
           const meta = kind === 'dropped'
