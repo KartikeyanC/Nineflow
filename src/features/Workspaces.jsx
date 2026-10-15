@@ -81,7 +81,7 @@ function WorkspaceList({ onClose }) {
                 <p className="font-semibold">Delete “{w.name}”?</p>
                 <p className="mt-0.5 text-[12px]">Its tasks, habits, settings and work log are removed from every device. This can't be undone.</p>
                 <div className="mt-2.5 flex gap-2">
-                  <button type="button" onClick={() => remove(w)} className="h-8 rounded-full bg-coral-fg text-white px-3 text-[12px] font-semibold">Delete</button>
+                  <button type="button" onClick={() => remove(w)} className="h-8 rounded-full bg-danger text-white px-3 text-[12px] font-semibold">Delete</button>
                   <button type="button" onClick={() => setConfirm(null)} className="h-8 rounded-full px-3 text-[12px] font-semibold hover:bg-card/60">Keep it</button>
                 </div>
               </li>
@@ -105,8 +105,8 @@ function WorkspaceList({ onClose }) {
               <button type="button" onClick={() => { if (isCurrent) onClose?.(); else open(w.id) }} aria-current={isCurrent ? 'true' : undefined}
                 className={cx('flex flex-1 min-w-0 items-center gap-2.5 rounded-xl p-1.5 text-left transition', !isCurrent && 'hover:bg-subtle')}>
                 <Tile ws={w} />
-                <span className={cx('flex-1 min-w-0 truncate text-[13px] font-semibold', isCurrent && 'text-accent')}>{w.name}</span>
-                {isCurrent && <Check size={15} className="shrink-0 text-accent" aria-label="Current workspace" />}
+                <span className={cx('flex-1 min-w-0 truncate text-[13px] font-semibold', isCurrent && 'text-lav-fg')}>{w.name}</span>
+                {isCurrent && <Check size={15} className="shrink-0 text-lav-fg" aria-label="Current workspace" />}
               </button>
               <button type="button" onClick={() => startRename(w)} aria-label={`Rename ${w.name}`}
                 className="h-8 w-8 shrink-0 rounded-full inline-flex items-center justify-center text-faint opacity-60 hover:opacity-100 hover:bg-page hover:text-ink focus-visible:opacity-100 transition"><Pencil size={13} /></button>
@@ -184,7 +184,7 @@ export function WorkspacesSection() {
   return (
     <section className="card p-5">
       <div className="flex items-center gap-3 mb-3">
-        <span className="h-10 w-10 rounded-xl bg-accent-soft text-accent inline-flex items-center justify-center"><Layers size={18} /></span>
+        <span className="h-10 w-10 rounded-xl bg-accent-soft text-lav-fg inline-flex items-center justify-center"><Layers size={18} /></span>
         <div className="min-w-0">
           <h2 className="h-display text-base">Workspaces</h2>
           <p className="text-sm text-muted">Up to {WORKSPACE_LIMIT} separate planners under this one login, each with its own tasks, habits and settings.</p>

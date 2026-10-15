@@ -93,7 +93,7 @@ function CalendarConnect() {
 
   return (
     <div className="mb-5 rounded-2xl border border-line bg-page p-4">
-      <p className="text-sm font-semibold inline-flex items-center gap-2"><CalendarCheck size={15} className="text-accent" /> Send my tasks to Google Calendar</p>
+      <p className="text-sm font-semibold inline-flex items-center gap-2"><CalendarCheck size={15} className="text-lav-fg" /> Send my tasks to Google Calendar</p>
       <p className="text-[13px] text-muted mt-1">
         Tasks with a date become events on your primary calendar (all-day if they have no start time), and change or disappear when the task does.
         By default NineFlow only creates and edits its own events.
@@ -112,7 +112,7 @@ function CalendarConnect() {
             Also remove the events NineFlow added to my calendar
           </label>
           <div className="mt-3 flex gap-2">
-            <button type="button" className="btn-black h-8 py-0 px-3 bg-coral-fg" disabled={busy} onClick={disconnect}>{busy ? 'Disconnecting…' : 'Disconnect'}</button>
+            <button type="button" className="btn-danger h-8 py-0 px-3" disabled={busy} onClick={disconnect}>{busy ? 'Disconnecting…' : 'Disconnect'}</button>
             <button type="button" className="btn-ghost h-8 py-0 px-3" onClick={() => setConfirmOff(false)}>Keep it</button>
           </div>
         </div>
@@ -368,7 +368,7 @@ export default function Settings() {
           <div className="flex gap-2">
             <input className="input max-w-[200px] bg-card" placeholder="DELETE" value={deleteText} onChange={(e) => setDeleteText(e.target.value)} />
             <button type="button" disabled={!canDelete} onClick={() => { clearAll(); setDeleteText('') }}
-              className={cx('btn-black', canDelete ? 'bg-coral-fg' : 'opacity-40')}>
+              className={canDelete ? 'btn-danger' : 'btn-black opacity-40'}>
               Clear all data
             </button>
           </div>

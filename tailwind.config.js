@@ -46,6 +46,7 @@ export default {
         'accent-soft': v('accent-soft'),
         todo: v('todo'),
         'todo-soft': v('todo-soft'),
+        danger: '#D7373D', // destructive buttons and the Week "now" badge: fixed, 4.6:1 with white
       },
       borderRadius: {
         card: '20px',

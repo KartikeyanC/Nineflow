@@ -49,7 +49,7 @@ export default function FinishGate() {
         ))}
       </ul>
 
-      <p className={cx('mt-3 text-[12px] font-semibold tnum', g.blocked ? 'text-accent' : 'text-mint-fg')} role="status">
+      <p className={cx('mt-3 text-[12px] font-semibold tnum', g.blocked ? 'text-lav-fg' : 'text-mint-fg')} role="status">
         {g.blocked
           ? g.rule === 'any' ? 'None ticked yet. One is enough.' : `${g.ticked} of ${g.required} ticked`
           : g.rule === 'any' ? 'One is ticked. You can finish.' : 'All ticked. You can finish.'}

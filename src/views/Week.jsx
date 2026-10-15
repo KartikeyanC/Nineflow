@@ -230,7 +230,7 @@ export default function Week() {
                   </span>
                 ))}
                 {showNow && (
-                  <span className="absolute right-2 -translate-y-1/2 z-20 rounded-full bg-coral-fg text-white text-[10px] font-bold px-1.5 py-0.5"
+                  <span className="absolute right-2 -translate-y-1/2 z-20 rounded-full bg-danger text-white text-[10px] font-bold px-1.5 py-0.5"
                     style={{ top: (nowMin - GRID_START) * PX_PER_MIN }}>
                     {toHHMM(nowMin)}
                   </span>

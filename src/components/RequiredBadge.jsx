@@ -10,7 +10,7 @@ export default function RequiredBadge({ task, className }) {
   const g = checkGate(task)
   if (!g.required) return null
   return (
-    <span className={cx('inline-flex items-center gap-1 text-[11px] font-semibold tnum shrink-0', g.blocked ? 'text-accent' : 'text-mint-fg', className)}
+    <span className={cx('inline-flex items-center gap-1 text-[11px] font-semibold tnum shrink-0', g.blocked ? 'text-lav-fg' : 'text-mint-fg', className)}
       title={`${g.ticked} of ${g.required} required steps ticked (${g.rule === 'any' ? 'one is enough' : 'all are needed'}) before it can be finished`}>
       <Lock size={11} aria-hidden="true" /> {Math.min(g.ticked, g.needed)}/{g.needed}
     </span>

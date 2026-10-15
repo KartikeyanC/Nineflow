@@ -214,11 +214,11 @@ export default function TaskPanel() {
               <button type="button" className="btn-ghost h-8 py-0 px-3" onClick={() => setConfirm(false)}>Cancel</button>
               {task.recurrence ? (
                 <>
-                  <button type="button" className="btn-black h-8 py-0 px-3 bg-coral-fg" onClick={() => removeTask(task.id)}>This occurrence</button>
-                  <button type="button" className="btn-black h-8 py-0 px-3 bg-coral-fg" onClick={() => removeSeries(task.seriesId)}>Whole series</button>
+                  <button type="button" className="btn-danger h-8 py-0 px-3" onClick={() => removeTask(task.id)}>This occurrence</button>
+                  <button type="button" className="btn-danger h-8 py-0 px-3" onClick={() => removeSeries(task.seriesId)}>Whole series</button>
                 </>
               ) : (
-                <button type="button" className="btn-black h-8 py-0 px-3 bg-coral-fg" onClick={() => removeTask(task.id)}>Delete</button>
+                <button type="button" className="btn-danger h-8 py-0 px-3" onClick={() => removeTask(task.id)}>Delete</button>
               )}
             </div>
           ) : (

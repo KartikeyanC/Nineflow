@@ -72,7 +72,7 @@ export default function Widget() {
           </h1>
         </div>
         {signedIn && total > 0 && (
-          <span className="mt-0.5 pill bg-accent-soft text-accent tnum" title={`${done.length} of ${total} done`}>{done.length}/{total}</span>
+          <span className="mt-0.5 pill bg-accent-soft text-lav-fg tnum" title={`${done.length} of ${total} done`}>{done.length}/{total}</span>
         )}
         {desktop && (
           <button type="button" onClick={() => desktop.hide()} title="Hide this list (it stays in the tray)" aria-label="Hide today's list" style={noDrag}
@@ -92,7 +92,7 @@ export default function Widget() {
         {!signedIn ? (
           <p className="px-2 py-4 text-sm text-muted">Open NineFlow and sign in to see today's tasks here.</p>
         ) : total === 0 ? (
-          <p className="px-2 py-6 text-sm text-muted inline-flex items-center gap-2"><Sparkles size={14} className="text-accent" /> Nothing planned for today.</p>
+          <p className="px-2 py-6 text-sm text-muted inline-flex items-center gap-2"><Sparkles size={14} className="text-lav-fg" /> Nothing planned for today.</p>
         ) : (
           <>
             {open.length === 0 && <p className="px-2 py-3 text-sm font-semibold text-mint-fg inline-flex items-center gap-2"><Sparkles size={14} /> All done for today.</p>}
@@ -138,7 +138,7 @@ function Row({ task, sub, done = false, onToggle, held = false, onOpen }) {
       <div className="min-w-0 flex-1">
         <p className={cx('text-[13px] font-semibold truncate', done && 'line-through text-faint')} title={task.title}>{task.title}</p>
         {held
-          ? <p className="text-[10px] font-semibold text-accent" role="status">Has required steps. {onOpen && <button type="button" onClick={onOpen} className="underline underline-offset-2">Open NineFlow to tick them</button>}</p>
+          ? <p className="text-[10px] font-semibold text-lav-fg" role="status">Has required steps. {onOpen && <button type="button" onClick={onOpen} className="underline underline-offset-2">Open NineFlow to tick them</button>}</p>
           : sub && <p className="text-[10px] truncate text-faint">{sub}</p>}
       </div>
     </li>

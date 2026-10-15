@@ -264,7 +264,7 @@ export function ConfirmDialog({ open, onClose, onConfirm, title, body, confirmLa
       {body && <p className="text-sm text-muted mt-2">{body}</p>}
       <div className="flex justify-end gap-2 mt-6">
         <button type="button" className="btn-ghost" onClick={onClose}>Cancel</button>
-        <button type="button" className={cx('btn-black', danger && 'bg-coral-fg')} onClick={() => { onConfirm(); onClose() }}>
+        <button type="button" className={danger ? 'btn-danger' : 'btn-black'} onClick={() => { onConfirm(); onClose() }}>
           {confirmLabel}
         </button>
       </div>

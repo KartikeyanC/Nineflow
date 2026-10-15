@@ -29,7 +29,7 @@ export const COLUMNS_VERSION = 3
 // Literal class names, so Tailwind builds every one of them. `edge` is the dashed outline of the
 // "Add new task" button and the empty-column drop zone, in the column's own colour.
 export const COLUMN_STYLE = {
-  accent: { label: 'Orange', panel: 'bg-todo-soft/60', text: 'text-todo', header: 'bg-todo-soft', dot: 'bg-todo', edge: 'border-todo/50' },
+  accent: { label: 'Theme colour', panel: 'bg-todo-soft/60', text: 'text-todo', header: 'bg-todo-soft', dot: 'bg-todo', edge: 'border-todo/50' },
   sky: { label: 'Sky', panel: 'bg-sky/60', text: 'text-sky-fg', header: 'bg-sky', dot: 'bg-sky-fg', edge: 'border-sky-fg/50' },
   mint: { label: 'Mint', panel: 'bg-mint/60', text: 'text-mint-fg', header: 'bg-mint', dot: 'bg-mint-fg', edge: 'border-mint-fg/50' },
   lav: { label: 'Lavender', panel: 'bg-violet/60', text: 'text-violet-fg', header: 'bg-violet', dot: 'bg-violet-fg', edge: 'border-violet-fg/50' },

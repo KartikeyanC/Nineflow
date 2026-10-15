@@ -39,7 +39,7 @@ export default function WelcomeBack() {
       <div ref={dialogRef} tabIndex={-1} role="dialog" aria-modal="true" aria-labelledby="welcome-title" onMouseDown={(e) => e.stopPropagation()}
         className="outline-none w-full sm:max-w-md rounded-t-[28px] sm:rounded-[28px] bg-card shadow-modal animate-modal-in p-6 sm:p-7 grid gap-4">
         <div className="flex items-start justify-between gap-3">
-          <h2 id="welcome-title" className="font-serif text-[34px] leading-none">Welcome back{name ? <>, <em className="text-accent">{name}</em></> : ''}.</h2>
+          <h2 id="welcome-title" className="font-serif text-[34px] leading-none">Welcome back{name ? <>, <em className="text-lav-fg">{name}</em></> : ''}.</h2>
           <button type="button" onClick={close} aria-label="Close" className="h-9 w-9 shrink-0 rounded-full inline-flex items-center justify-center text-muted hover:bg-subtle hover:text-ink transition"><X size={16} /></button>
         </div>
         <p className="text-[14px] text-muted">

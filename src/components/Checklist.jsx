@@ -51,7 +51,7 @@ export function StepsEditor({ steps, onChange, ticks = true, commitOnBlur = fals
               aria-label={s.required ? 'Required to finish the task. Press to make it optional' : 'Make this step required to finish the task'}
               title={s.required ? 'Required to finish' : 'Make required to finish'}
               className={cx('h-6 w-6 shrink-0 rounded-full inline-flex items-center justify-center transition',
-                s.required ? 'text-accent bg-accent-soft' : 'text-faint opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:text-ink hover:bg-subtle')}>
+                s.required ? 'text-lav-fg bg-accent-soft' : 'text-faint opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:text-ink hover:bg-subtle')}>
               <Lock size={12} />
             </button>
             <button type="button" aria-label="Remove step" onClick={() => onChange(subs.filter((x) => x.id !== s.id))}
@@ -94,7 +94,7 @@ export default function Checklist({ task }) {
 
       {gate.required > 0 && (
         <div className="mb-2 flex flex-wrap items-center gap-2" role="group" aria-label="Required steps">
-          <span className="text-[11px] font-semibold text-accent inline-flex items-center gap-1"><Lock size={11} /> {gate.required} required to finish</span>
+          <span className="text-[11px] font-semibold text-lav-fg inline-flex items-center gap-1"><Lock size={11} /> {gate.required} required to finish</span>
           {gate.required > 1 && (
             <Segmented size="sm" value={gate.rule} onChange={(requireRule) => updateTask(task.id, { requireRule })}
               options={[{ value: 'all', label: 'All needed' }, { value: 'any', label: 'Any one' }]} />

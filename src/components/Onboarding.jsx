@@ -115,7 +115,7 @@ function Poster() {
           <ul className="mt-9 space-y-3.5">
             {[[ListChecks, 'Board, week and month views'], [Timer, 'Pomodoro that logs real focus time'], [BarChart3, 'Daily insights, habits and reports']].map(([Icon, t]) => (
               <li key={t} className="flex items-center gap-3 text-[15px] font-semibold text-white/90">
-                <span className="h-10 w-10 rounded-xl bg-accent/15 ring-1 ring-accent/30 text-accent flex items-center justify-center"><Icon size={18} /></span>{t}
+                <span className="h-10 w-10 rounded-xl bg-accent/15 ring-1 ring-accent/30 text-lav-fg flex items-center justify-center"><Icon size={18} /></span>{t}
               </li>
             ))}
           </ul>
