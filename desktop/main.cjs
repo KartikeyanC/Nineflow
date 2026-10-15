@@ -135,8 +135,12 @@ function createWindow() {
       backgroundThrottling: false, // reminders and Drive sync keep running while the window is hidden
     },
   })
-  // The taskbar button: this app's id, and its icon taken from NineFlow.exe itself.
-  if (process.platform === 'win32') win.setAppDetails({ appId: APP_ID, appIconPath: process.execPath, appIconIndex: 0, relaunchDisplayName: 'NineFlow' })
+  // The taskbar button: this app's id, and its name and icon taken from NineFlow.exe itself.
+  // (Electron ignores the icon and name without a relaunch command, so one is given.) The
+  // installed app only: a development run is electron.exe and must not claim NineFlow's look.
+  if (process.platform === 'win32' && app.isPackaged) {
+    win.setAppDetails({ appId: APP_ID, appIconPath: process.execPath, appIconIndex: 0, relaunchCommand: `"${process.execPath}"`, relaunchDisplayName: 'NineFlow' })
+  }
   win.once('ready-to-show', () => { if (startHidden) startHidden = false; else win.show() })
   win.on('show', hideWidget)
   // Closing hides the planner to the tray (so reminders keep coming) and, if chosen,
