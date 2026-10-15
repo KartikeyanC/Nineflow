@@ -10,8 +10,11 @@
   --card: 255 255 255;
   --line: 236 231 221;      /* soft warm border */
   --ink: 17 17 17;          /* #111 */
-  --muted: 120 113 104;     /* warm grey */
-  --faint: 170 163 153;
+  /* Readability: every text colour (muted, faint, each colour's -fg) reaches 4.5:1 on the
+     card, the page and its own tint, in every theme, light and dark. Muted stays a step
+     above faint (about 5.8:1). The one exception is the logo orange in the default theme. */
+  --muted: 101 96 88;     /* warm grey */
+  --faint: 119 111 100;
   --shadow: 60 50 30;
 
   /* Accent: NineFlow orange, exactly the logo's (#FF6A13). `lav` is the accent's token
@@ -22,21 +25,21 @@
   --lav: 255 236 224;       /* #FFECE0 */
   --lav-fg: 255 106 19;  /* #FF6A13 */
   --violet: 228 221 251;    /* #E4DDFB */
-  --violet-fg: 107 78 230;  /* #6B4EE6 */
+  --violet-fg: 98 67 228;  /* #6243E4 */
   --sky: 220 233 251;       /* #DCE9FB */
-  --sky-fg: 59 130 246;     /* #3B82F6 */
+  --sky-fg: 10 93 227;     /* #0A5DE3 */
   --butter: 251 239 196;    /* #FBEFC4 */
-  --butter-fg: 212 160 23;  /* #D4A017 */
+  --butter-fg: 135 102 15;  /* #87660F */
   --coral: 251 224 222;     /* #FBE0DE */
-  --coral-fg: 229 72 77;    /* #E5484D */
+  --coral-fg: 199 28 34;    /* #C71C22 */
   --mint: 221 243 230;      /* #DDF3E6 */
-  --mint-fg: 34 160 107;    /* #22A06B */
+  --mint-fg: 26 121 81;    /* #1A7951 */
   --peach: 255 236 224;  /* #FFECE0 */
   --peach-fg: 255 106 19;  /* #FF6A13 */
   --rose: 251 224 238;      /* #FBE0EE */
-  --rose-fg: 214 51 108;    /* #D6336C */
+  --rose-fg: 192 39 92;    /* #C0275C */
   --teal: 214 241 240;      /* #D6F1F0 */
-  --teal-fg: 15 139 141;    /* #0F8B8D */
+  --teal-fg: 13 117 119;    /* #0D7577 */
 
   /* Tokens the shared feature screens (src/features) use, in v1's palette:
      orange is v1's accent. */
@@ -59,7 +62,7 @@
   --line: 52 50 45;
   --ink: 245 242 236;
   --muted: 160 153 143;
-  --faint: 110 104 96;
+  --faint: 142 135 125;
   --shadow: 0 0 0;
 
   --lav: 74 40 20;
@@ -95,19 +98,19 @@
   --page: 243 247 252;
   --card: 255 255 255;
   --line: 222 230 241;
-  --muted: 98 112 130;
-  --faint: 150 163 180;
+  --muted: 85 97 113;
+  --faint: 97 113 135;
   --shadow: 20 40 80;
   --subtle: 236 242 250;
   --shell: 229 236 246;
   --hair: rgb(20 40 80 / 0.08);
   --lav: 222 234 255;
-  --lav-fg: 37 99 235;
+  --lav-fg: 26 91 234;
   --accent: 37 99 235;
   --accent-soft: 222 234 255;
   --peach: 222 234 255;
-  --peach-fg: 37 99 235;
-  --todo: 37 99 235;
+  --peach-fg: 26 91 234;
+  --todo: 26 91 234;
   --todo-soft: 222 234 255;
   --brand-a: 56 189 248;
   --brand-b: 37 99 235;
@@ -117,7 +120,7 @@
   --card: 22 29 40;
   --line: 40 52 70;
   --muted: 148 163 184;
-  --faint: 100 114 134;
+  --faint: 121 135 155;
   --shadow: 0 0 0;
   --subtle: 28 36 49;
   --shell: 19 25 35;
@@ -135,19 +138,19 @@
   --page: 244 248 243;
   --card: 255 255 255;
   --line: 224 233 222;
-  --muted: 106 120 106;
-  --faint: 158 171 156;
+  --muted: 88 99 88;
+  --faint: 101 116 99;
   --shadow: 30 60 30;
   --subtle: 237 244 235;
   --shell: 230 239 228;
   --hair: rgb(30 60 30 / 0.08);
   --lav: 218 242 228;
-  --lav-fg: 22 128 90;
+  --lav-fg: 21 119 84;
   --accent: 22 128 90;
   --accent-soft: 218 242 228;
   --peach: 218 242 228;
-  --peach-fg: 22 128 90;
-  --todo: 22 128 90;
+  --peach-fg: 21 119 84;
+  --todo: 21 119 84;
   --todo-soft: 218 242 228;
   --brand-a: 52 211 153;
   --brand-b: 22 128 90;
@@ -157,7 +160,7 @@
   --card: 24 31 26;
   --line: 44 56 46;
   --muted: 150 165 150;
-  --faint: 104 118 104;
+  --faint: 123 138 123;
   --shadow: 0 0 0;
   --subtle: 30 39 32;
   --shell: 21 27 22;
@@ -175,8 +178,8 @@
   --page: 252 245 248;
   --card: 255 255 255;
   --line: 240 224 233;
-  --muted: 125 106 117;
-  --faint: 176 156 167;
+  --muted: 108 92 102;
+  --faint: 130 104 118;
   --shadow: 80 30 55;
   --subtle: 248 238 243;
   --shell: 243 230 238;
@@ -197,7 +200,7 @@
   --card: 35 26 31;
   --line: 58 44 52;
   --muted: 168 150 160;
-  --faint: 117 100 110;
+  --faint: 147 129 140;
   --shadow: 0 0 0;
   --subtle: 42 31 37;
   --shell: 30 22 27;
@@ -215,8 +218,8 @@
   --page: 244 244 245;
   --card: 255 255 255;
   --line: 226 226 229;
-  --muted: 110 110 118;
-  --faint: 160 160 168;
+  --muted: 94 94 101;
+  --faint: 109 109 119;
   --shadow: 30 30 40;
   --subtle: 238 238 240;
   --shell: 231 231 234;
@@ -237,7 +240,7 @@
   --card: 27 27 30;
   --line: 46 46 51;
   --muted: 152 152 160;
-  --faint: 104 104 112;
+  --faint: 132 132 141;
   --shadow: 0 0 0;
   --subtle: 33 33 37;
   --shell: 22 22 25;
@@ -250,6 +253,13 @@
   --peach-fg: 176 158 255;
   --todo: 176 158 255; /* the lighter accent: To do is text on a dark tint */
   --todo-soft: 52 44 96;
+}
+
+/* Dark mode, Board cards on a coloured tint (lib/columns.js CARD_STYLE): the two grey text
+   levels get lighter there, so they stay readable (4.6:1 and 6:1) on every tint in every theme. */
+.dark .card-tint {
+  --muted: 202 202 202;
+  --faint: 177 177 177;
 }
 
 @layer base {

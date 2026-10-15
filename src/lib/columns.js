@@ -43,15 +43,15 @@ export const COLUMN_STYLE = {
 // white cards on pastel columns). Keyed by the column's colour, not its status, so a
 // lavender "Waiting" column that counts as To do has lavender cards.
 export const CARD_STYLE = {
-  accent: 'dark:bg-todo-soft dark:border-todo/30',
-  sky: 'dark:bg-sky dark:border-sky-fg/30',
-  mint: 'dark:bg-mint dark:border-mint-fg/30',
-  lav: 'dark:bg-violet dark:border-violet-fg/30',
-  butter: 'dark:bg-butter dark:border-butter-fg/30',
-  coral: 'dark:bg-coral dark:border-coral-fg/30',
-  peach: 'dark:bg-peach dark:border-peach-fg/30',
-  rose: 'dark:bg-rose dark:border-rose-fg/30',
-  teal: 'dark:bg-teal dark:border-teal-fg/30',
+  accent: 'card-tint dark:bg-todo-soft dark:border-todo/30',
+  sky: 'card-tint dark:bg-sky dark:border-sky-fg/30',
+  mint: 'card-tint dark:bg-mint dark:border-mint-fg/30',
+  lav: 'card-tint dark:bg-violet dark:border-violet-fg/30',
+  butter: 'card-tint dark:bg-butter dark:border-butter-fg/30',
+  coral: 'card-tint dark:bg-coral dark:border-coral-fg/30',
+  peach: 'card-tint dark:bg-peach dark:border-peach-fg/30',
+  rose: 'card-tint dark:bg-rose dark:border-rose-fg/30',
+  teal: 'card-tint dark:bg-teal dark:border-teal-fg/30',
 }
 // A card shown outside a column follows its status's original colour.
 export const STATUS_CARD_COLOR = { todo: 'accent', working: 'sky', review: 'lav', completed: 'mint' }
