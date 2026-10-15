@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react'
 import { Plus, Trash2, Download, Upload, Sparkles, AlertTriangle, CalendarPlus, CalendarCheck, Loader2, RefreshCw } from 'lucide-react'
 import { downloadIcs } from '../lib/calendar'
 import { THEMES, themeId } from '../lib/themes'
+import { CLIMATES, detectClimate } from '../lib/climate'
 import { disablePush, enablePush, pushEnabled, pushSupported } from '../lib/webPush'
 import { reminderSchedule } from '../lib/taskMeta'
 import { inboxAddress, inboxAvailable, newInboxKey } from '../lib/emailInbox'
@@ -314,6 +315,14 @@ export default function Settings() {
                 </button>
               ))}
             </div>
+          </Row>
+          <Row label="Seasons" hint="The Month banner shows each month's season where you are: its colours and scene.">
+            <select className="input w-auto min-w-[14rem] py-1.5" aria-label="Seasons" value={settings.climate || 'auto'}
+              onChange={(e) => updateSettings({ climate: e.target.value })}>
+              {CLIMATES.map((c) => (
+                <option key={c.id} value={c.id}>{c.id === 'auto' ? `Automatic (${CLIMATES.find((x) => x.id === detectClimate()).label})` : c.label}</option>
+              ))}
+            </select>
           </Row>
           <Row label="Appearance" hint="Light or dark, in any colour theme.">
             <Segmented size="sm" value={settings.theme} onChange={(v) => updateSettings({ theme: v })}

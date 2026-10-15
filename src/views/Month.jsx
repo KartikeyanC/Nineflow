@@ -5,6 +5,8 @@ import { usePlanner } from '../store/PlannerContext'
 import { dateKey, tasksOn, todayKey } from '../lib/tasks'
 import { cssVar } from '../lib/colors'
 import { IconButton, Segmented, cx } from '../components/ui'
+import SeasonScene from '../components/SeasonScene'
+import { climateOf, monthLook } from '../lib/climate'
 
 // Workload levels 0–4 and the lavender opacity for each.
 const LEVEL_ALPHA = [0, 0.1, 0.25, 0.45, 0.75]
@@ -20,6 +22,8 @@ export default function Month() {
   const moveMonth = (n) => setDashboardDate(dateKey(addMonths(selected, n)))
   const thisMonth = isSameMonth(monthStart, now)
   const measure = settings.heatmapMeasure
+  // The banner follows the month's season where you are (lib/climate.js).
+  const look = monthLook(monthStart.getMonth(), climateOf(settings))
 
   const grid = useMemo(() => {
     const opts = { weekStartsOn: settings.weekStart }
@@ -51,7 +55,7 @@ export default function Month() {
 
   return (
     <div className="animate-view-in flex gap-4">
-      <Poster month={format(monthStart, 'MMMM')} />
+      <Poster month={format(monthStart, 'MMMM')} look={look} />
 
       <div className="flex-1 min-w-0 relative">
         {/* Giant year, behind everything */}
@@ -59,6 +63,17 @@ export default function Month() {
           style={{ color: cssVar('--lav-fg', 0.16) }}>
           {format(monthStart, 'yyyy')}
         </span>
+
+        {/* Smaller screens: the season banner as a strip */}
+        <div className="xl:hidden relative h-20 rounded-card overflow-hidden mb-4 flex items-center px-4"
+          style={{ background: `linear-gradient(90deg, ${look.from} 0%, ${look.to} 100%)` }}>
+          <div className="relative z-10 text-white">
+            <p className="text-[11px] font-bold uppercase tracking-wider opacity-90">{look.label}</p>
+            <p className="text-xl font-black tracking-tight leading-tight">{format(monthStart, 'MMMM yyyy')}</p>
+          </div>
+          {/* the whole scene (a little trimmed at the top), small on the right, clear of the text */}
+          <SeasonScene season={look.season} viewBox="0 40 150 180" className="absolute right-3 bottom-0 h-20 w-[67px]" />
+        </div>
 
         <header className="relative flex flex-wrap items-end justify-between gap-3 mb-5">
           <div>
@@ -156,32 +171,17 @@ function Tile({ cell, onOpen }) {
   )
 }
 
-// Poster panel: gradient, vertical month name, flat scene.
-function Poster({ month }) {
+// Poster panel: the month's season (lib/climate.js): its colours, vertical month name, flat scene.
+function Poster({ month, look }) {
   return (
     <aside className="hidden xl:flex w-[150px] shrink-0 rounded-card overflow-hidden relative flex-col justify-between"
-      style={{ background: 'linear-gradient(180deg, rgb(var(--brand-a)) 0%, rgb(var(--brand-b)) 100%)', minHeight: 640 }}>
+      style={{ background: `linear-gradient(180deg, ${look.from} 0%, ${look.to} 100%)`, minHeight: 640 }}>
       <span className="absolute left-1/2 top-8 -translate-x-1/2 text-white font-black tracking-tight leading-none select-none"
         style={{ writingMode: 'vertical-rl', transform: 'translateX(-50%) rotate(180deg)', fontSize: 64 }}>
         {month}
       </span>
-      <svg viewBox="0 0 150 220" className="mt-auto w-full" aria-hidden>
-        {/* snow */}
-        {[18, 44, 70, 96, 122, 30, 84, 110].map((x, i) => (
-          <circle key={i} cx={x} cy={20 + (i % 3) * 22} r={i % 2 ? 2 : 1.4} fill="white" opacity="0.85" />
-        ))}
-        {/* mountains */}
-        <path d="M0 150 L40 80 L80 150 Z" fill="white" opacity="0.25" />
-        <path d="M50 150 L100 70 L150 150 Z" fill="white" opacity="0.4" />
-        <path d="M86 92 L100 70 L114 92 L106 88 L100 94 L94 88 Z" fill="white" />
-        {/* butter hill */}
-        <path d="M0 220 L0 170 Q60 130 150 165 L150 220 Z" fill={cssVar('--butter')} />
-        {/* house */}
-        <rect x="58" y="150" width="30" height="24" rx="2" fill={cssVar('--coral-fg')} />
-        <path d="M54 152 L73 136 L92 152 Z" fill={cssVar('--coral')} />
-        <rect x="69" y="160" width="8" height="14" rx="1" fill="white" opacity="0.9" />
-        <rect x="80" y="140" width="5" height="10" fill={cssVar('--coral')} />
-      </svg>
+      <span className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 rounded-full bg-black/45 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-white">{look.label}</span>
+      <SeasonScene season={look.season} className="mt-auto w-full" />
     </aside>
   )
 }
