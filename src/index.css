@@ -12,15 +12,17 @@
   --ink: 17 17 17;          /* #111 */
   /* Readability: every text colour (muted, faint, each colour's -fg) reaches 4.5:1 on the
      card, the page and its own tint, in every theme, light and dark. Muted stays a step
-     above faint (about 5.8:1). The one exception is the logo orange in the default theme. */
+     above faint (about 5.8:1). Orange text in the default light theme uses its own darker
+     orange (--lav-text below), so nothing is an exception. */
   --muted: 101 96 88;     /* warm grey */
   --faint: 119 111 100;
   --shadow: 60 50 30;
 
   /* Accent: NineFlow orange, exactly the logo's (#FF6A13). `lav` is the accent's token
      name (it began as lavender). The Lavender category colour lives in `violet`.
-     Every orange in the app is this one: --accent, --lav-fg, --peach-fg and --todo
-     are the same value on purpose, and the pale tints (--lav, --peach, --accent-soft,
+     Every orange fill, dot, border and chart is this one: --accent, --lav-fg, --peach-fg
+     and --todo are the same value on purpose (orange TEXT uses a darker orange, see
+     --lav-text), and the pale tints (--lav, --peach, --accent-soft,
      --todo-soft) are tints of its hue. */
   --lav: 255 236 224;       /* #FFECE0 */
   --lav-fg: 255 106 19;  /* #FF6A13 */
@@ -253,6 +255,22 @@
   --peach-fg: 176 158 255;
   --todo: 176 158 255; /* the lighter accent: To do is text on a dark tint */
   --todo-soft: 52 44 96;
+}
+
+/* Orange as text (text-lav-fg, text-peach-fg, text-todo; see tailwind.config.js textColor).
+   Everywhere it is the matching accent, worked out on the element itself, so it follows
+   dark mode and the colour themes. Only the default light theme uses a darker orange for
+   text (#BA4500, 4.65:1 on the pale orange, white and cream); the logo orange stays for
+   backgrounds, dots, borders, charts, buttons and the logo. */
+:root, .dark, [data-theme] {
+  --lav-text: var(--lav-fg);
+  --peach-text: var(--peach-fg);
+  --todo-text: var(--todo);
+}
+:root:not(.dark):not([data-theme]) {
+  --lav-text: 186 69 0;
+  --peach-text: 186 69 0;
+  --todo-text: 186 69 0;
 }
 
 /* Dark mode, Board cards on a coloured tint (lib/columns.js CARD_STYLE): the two grey text

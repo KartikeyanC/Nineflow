@@ -15,6 +15,14 @@ export default {
         // Shared feature screens ask for `font-serif`; v1 keeps Inter.
         serif: ['"Inter Variable"', 'Inter', 'system-ui', 'sans-serif'],
       },
+      // Orange as a TEXT colour uses its own variables (--*-text, index.css): in the default
+      // light theme that is a darker orange (#BA4500) so text stays readable; backgrounds,
+      // dots, borders and charts keep the logo orange. Other themes and dark mode: the same.
+      textColor: {
+        'lav-fg': v('lav-text'),
+        'peach-fg': v('peach-text'),
+        todo: v('todo-text'),
+      },
       colors: {
         page: v('page'),
         card: v('card'),
