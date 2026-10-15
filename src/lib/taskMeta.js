@@ -40,7 +40,7 @@ export function dueReminders(tasks, settings, now = new Date()) {
   const today = format(now, 'yyyy-MM-dd')
   const horizon = format(addDays(now, 2), 'yyyy-MM-dd')
   for (const t of tasks) {
-    if (t.status !== 'todo' || !t.date || t.date < today || t.date > horizon) continue
+    if (t.hold || t.dropped || t.status !== 'todo' || !t.date || t.date < today || t.date > horizon) continue
     const start = reminderAnchor(t, settings?.reminders?.dayTime || ANCHOR_DEFAULT)
     if (!start) continue
     // Without a start time only custom reminders apply, so "all day" tasks aren't nagged by the default.
@@ -71,7 +71,7 @@ export function nagDue(tasks, settings, now = new Date()) {
   const today = format(now, 'yyyy-MM-dd')
   const out = []
   for (const t of tasks) {
-    if (t.status !== 'todo' || t.date !== today || !t.startTime) continue
+    if (t.hold || t.dropped || t.status !== 'todo' || t.date !== today || !t.startTime) continue
     const every = t.nagEvery ?? fallback
     if (!every || !effectiveReminders(t, settings).length) continue
     const start = reminderAnchor(t, settings?.reminders?.dayTime || ANCHOR_DEFAULT)
@@ -119,7 +119,7 @@ export function reminderSchedule(tasks, settings, now = new Date(), hours = SCHE
   const today = format(now, 'yyyy-MM-dd')
   const anchorTime = settings?.reminders?.dayTime || ANCHOR_DEFAULT
   for (const t of tasks) {
-    if (t.status !== 'todo' || !t.date || t.date < today) continue
+    if (t.hold || t.dropped || t.status !== 'todo' || !t.date || t.date < today) continue
     // Without a start time only custom reminders apply (as in dueReminders).
     if (!t.startTime && !Array.isArray(t.reminders)) continue
     const start = reminderAnchor(t, anchorTime)

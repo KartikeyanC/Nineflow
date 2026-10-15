@@ -44,7 +44,7 @@ export default function Widget() {
   const { open, done } = useMemo(() => {
     const byDate = (a, b) => a.date.localeCompare(b.date)
     return {
-      open: sortByTime(tasks.filter((t) => t.status !== 'completed' && t.date && t.date <= today)).sort(byDate),
+      open: sortByTime(tasks.filter((t) => !t.hold && !t.dropped && t.status !== 'completed' && t.date && t.date <= today)).sort(byDate),
       done: tasks.filter((t) => t.status === 'completed' && t.date === today),
     }
   }, [tasks, today])

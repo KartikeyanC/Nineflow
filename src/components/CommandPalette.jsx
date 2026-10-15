@@ -1,11 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { Search, LayoutDashboard, KanbanSquare, CalendarRange, CalendarDays, Grid2x2, Inbox, Settings, Briefcase, Plus, Target, Sparkles, MessageCircle, Moon, CornerDownLeft, ListTodo, StickyNote } from 'lucide-react'
+import { Search, LayoutDashboard, KanbanSquare, CalendarRange, CalendarDays, Grid2x2, Inbox, Settings, Briefcase, Plus, Target, Sparkles, MessageCircle, Moon, CornerDownLeft, ListTodo, StickyNote, PauseCircle } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
 import { Modal, cx } from './ui'
 
 // Ctrl/Cmd+K: jump to a screen, run an action, find a task, or type a new one.
 export default function CommandPalette({ open, onClose }) {
-  const { tasks, settings, updateSettings, setView, setQuickAdd, setSelectedId, setGoalPlannerOpen, setPromptListOpen, setAskOpen } = usePlanner()
+  const { allTasks: tasks, settings, updateSettings, setView, setQuickAdd, setSelectedId, setGoalPlannerOpen, setPromptListOpen, setAskOpen } = usePlanner()
   const [q, setQ] = useState('')
   const [i, setI] = useState(0)
   const listRef = useRef(null)
@@ -22,6 +22,7 @@ export default function CommandPalette({ open, onClose }) {
       { label: 'Agenda', icon: ListTodo, run: go('agenda') },
       { label: 'Matrix', icon: Grid2x2, run: go('matrix') },
       { label: 'Notes', icon: StickyNote, run: go('notes') },
+      { label: 'Paused', icon: PauseCircle, run: go('paused') },
       { label: 'Someday', icon: Inbox, run: go('someday') },
       ...(settings.modules?.work ? [{ label: 'Work OS', icon: Briefcase, run: go('work') }] : []),
       { label: 'Settings', icon: Settings, run: go('settings') },
@@ -41,7 +42,7 @@ export default function CommandPalette({ open, onClose }) {
           .filter((t) => t.title.toLowerCase().includes(needle) || (t.tags || []).some((g) => g.includes(needle.replace(/^#/, ''))))
           .sort((a, b) => (a.status === 'completed') - (b.status === 'completed'))
           .slice(0, 8)
-          .map((t) => ({ label: t.title, hint: t.status === 'completed' ? 'Done' : t.date || 'Someday', icon: ListTodo, group: 'Tasks', run: () => setSelectedId(t.id) }))
+          .map((t) => ({ label: t.title, hint: t.dropped ? 'Dropped' : t.hold ? 'Paused' : t.status === 'completed' ? 'Done' : t.date || 'Someday', icon: ListTodo, group: 'Tasks', run: () => setSelectedId(t.id) }))
       : []
     const create = needle ? [{ label: `Add “${q.trim()}”`, icon: Plus, group: 'Create', run: () => setQuickAdd({ title: q.trim() }) }] : []
     return [...create, ...actions.filter(match), ...nav.filter(match), ...found]

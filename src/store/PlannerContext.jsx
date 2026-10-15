@@ -4,7 +4,7 @@ import {
   onSaveStatus, saveFocus, saveHabits, saveSettings, saveTasks, syncedKeys, uid,
 } from '../lib/storage'
 import { emptyWork, saveWork, workKey } from '../work/workStore'
-import { carryForward, checkGate, createTask, dateKey, todayKey, withDate, withSessionPaused, withSessionResumed, withStatus } from '../lib/tasks'
+import { DROP_KEEP_DAYS, carryForward, checkGate, createTask, dateKey, isParked, todayKey, withDate, withSessionPaused, withSessionResumed, withStatus } from '../lib/tasks'
 import { generateSample } from '../lib/sample'
 import { dueReminders, nagDue, reminderSchedule } from '../lib/taskMeta'
 import { onPushOpenTask, pushEnabled, syncPush } from '../lib/webPush'
@@ -75,6 +75,7 @@ export function PlannerProvider({ children }) {
 
   // Latest tasks for callbacks that need them without re-creating themselves.
   const tasksRef = useRef(tasks)
+  const activeTasks = useMemo(() => (tasks.some(isParked) ? tasks.filter((t) => !isParked(t)) : tasks), [tasks])
   const settingsRef = useRef(null) // latest settings for timers that must not restart on every change
   tasksRef.current = tasks
   settingsRef.current = settings
@@ -427,6 +428,33 @@ export function PlannerProvider({ children }) {
 
   // Deleting one occurrence of a series records its date as skipped so the
   // horizon fill doesn't bring it back.
+  // ---- paused and dropped (lib/tasks.js isParked; views/Paused.jsx) ----
+  // Stop a task on purpose: it leaves every plan until resumed (or until `until`, when it
+  // comes back by itself). A running timer is stopped first.
+  const pauseTask = useCallback((id, { reason = 'Not now', until = null } = {}) => {
+    const t = tasksRef.current.find((x) => x.id === id)
+    if (!t) return
+    offerUndo(`Paused “${t.title}”`)
+    const now = new Date()
+    setTasks((ts) => ts.map((x) => (x.id === id ? { ...withStatus(x, x.status === 'working' ? 'todo' : x.status, now), hold: { reason, since: now.toISOString(), until }, dropped: null } : x)))
+  }, [offerUndo])
+  // Back on the plan, on `date` (today by default).
+  const resumeTask = useCallback((id, date = todayKey()) => {
+    setTasks((ts) => ts.map((x) => (x.id === id ? { ...withDate({ ...x, hold: null }, date), hold: null } : x)))
+  }, [])
+  // Let a task go: hidden everywhere, kept 30 days (Paused screen) so it can be restored.
+  const dropTask = useCallback((id, reason = 'Let go') => {
+    const t = tasksRef.current.find((x) => x.id === id)
+    if (!t) return
+    offerUndo(`Dropped “${t.title}”`)
+    const now = new Date()
+    setTasks((ts) => ts.map((x) => (x.id === id ? { ...withStatus(x, x.status === 'working' ? 'todo' : x.status, now), dropped: { reason, at: now.toISOString() }, hold: null } : x)))
+    setSelectedId((sel) => (sel === id ? null : sel))
+  }, [offerUndo])
+  const restoreTask = useCallback((id, date = todayKey()) => {
+    setTasks((ts) => ts.map((x) => (x.id === id ? { ...withDate({ ...x, dropped: null }, date), dropped: null } : x)))
+  }, [])
+
   const removeTask = useCallback((id) => {
     const gone = tasksRef.current.find((x) => x.id === id)
     if (gone) offerUndo(`Deleted “${gone.title}”`)
@@ -480,6 +508,9 @@ export function PlannerProvider({ children }) {
   // Unfinished work continues by itself. On each new day (and when another window or the cloud hands over
   // fresh tasks), a task left open in the last few days moves to today; its start day stays. One Undo
   // puts them all back. See carryForward in lib/tasks.js for what is, and is not, carried.
+  //
+  // Also daily: a paused task whose "check again" day has come returns to today's plan, and
+  // a dropped task is deleted for good DROP_KEEP_DAYS after it was dropped.
   const dayNow = dateKey(now)
   useEffect(() => {
     const { moved } = carryForward(tasksRef.current, new Date())
@@ -487,6 +518,20 @@ export function PlannerProvider({ children }) {
     offerUndo(`Carried ${moved} unfinished task${moved === 1 ? '' : 's'} to today`)
     setTasks((ts) => carryForward(ts, new Date()).tasks)
   }, [dayNow, syncTick, offerUndo])
+
+  useEffect(() => {
+    setTasks((ts) => {
+      const today = todayKey()
+      const cutoff = Date.now() - DROP_KEEP_DAYS * 864e5
+      let changed = false
+      const next = ts.flatMap((t) => {
+        if (t.dropped && Date.parse(t.dropped.at) < cutoff) { changed = true; return [] }
+        if (t.hold?.until && t.hold.until <= today) { changed = true; return [{ ...withDate({ ...t, hold: null }, today), hold: null }] }
+        return [t]
+      })
+      return changed ? next : ts
+    })
+  }, [dayNow, syncTick])
 
   // Another tab saved: take its copy instead of overwriting it on our next
   // save. Browsers fire 'storage' only in the other tabs, and only when the
@@ -785,7 +830,12 @@ export function PlannerProvider({ children }) {
 
   const value = useMemo(
     () => ({
-      tasks,
+      tasks: activeTasks, // without paused and dropped tasks: what every plan and list shows
+      allTasks: tasks, // everything, for the Paused screen, the task panel and search
+      pauseTask,
+      resumeTask,
+      dropTask,
+      restoreTask,
       settings,
       now,
       view,
@@ -864,7 +914,7 @@ export function PlannerProvider({ children }) {
       dismissUndo,
     }),
     [
-      tasks, settings, now, view, setView, selectedId, quickAdd, dashboardDate, calendarMode, openDay,
+      activeTasks, tasks, pauseTask, resumeTask, dropTask, restoreTask, settings, now, view, setView, selectedId, quickAdd, dashboardDate, calendarMode, openDay,
       addTask, addTasks, gateTaskId, closeGate, finishGate, moveToWorkspace, goalPlannerOpen, promptListOpen, askOpen, updateTask, setSessions, setStatus, toggleComplete, moveTask, sortStatus,
       moveOverdueToToday, clearCompleted, removeTask, setRecurrence, removeSeries, applyToUpcoming, planDay,
       previewPlan, applyPlan, moveTasksTo,

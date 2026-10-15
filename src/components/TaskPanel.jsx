@@ -6,6 +6,7 @@ import { currentProfileId } from '../lib/profiles'
 import { cleanColumns, columnOf } from '../lib/columns'
 import { currentWorkspaceId, listWorkspaces } from '../lib/workspaces'
 import { usePlanner } from '../store/PlannerContext'
+import ParkDialog from './ParkDialog'
 import { STATUSES, STATUS_LABEL, carriedLabel, daysOnPlan, endDayOf, fmtMinutes, isOverdue, startDayOf, todayKey, totalMinutes } from '../lib/tasks'
 import { FREQS, FREQ_LABEL, describe } from '../lib/recurrence'
 import { CategoryPills, IconButton, PriorityPills, Segmented, cx, useDialogFocus } from './ui'
@@ -19,8 +20,9 @@ const STATUS_PILL = { todo: 'bg-todo-soft text-todo', working: 'bg-sky text-sky-
 
 // Floating side panel that edits the selected task in place.
 export default function TaskPanel() {
-  const { tasks, settings, selectedId, setSelectedId, updateTask, setStatus, removeTask, removeSeries, setRecurrence, applyToUpcoming, moveToWorkspace, moveTask, focus, startFocus, categoryById, now } = usePlanner()
+  const { allTasks: tasks, settings, selectedId, resumeTask, restoreTask, setSelectedId, updateTask, setStatus, removeTask, removeSeries, setRecurrence, applyToUpcoming, moveToWorkspace, moveTask, focus, startFocus, categoryById, now } = usePlanner()
   const task = tasks.find((t) => t.id === selectedId)
+  const [park, setPark] = useState(null) // 'pause' | 'drop'
   const cols = cleanColumns(settings.columns)
   const [confirm, setConfirm] = useState(false)
   const panelRef = useRef(null)
@@ -63,6 +65,16 @@ export default function TaskPanel() {
           </div>
           <IconButton label="Close" onClick={close}><X size={16} /></IconButton>
         </header>
+        {(task.hold || task.dropped) && (
+          <div className={cx('mx-6 mb-2 rounded-2xl px-4 py-3 flex flex-wrap items-center gap-3', task.dropped ? 'bg-coral' : 'bg-sky')}>
+            <p className={cx('text-[13px] font-semibold flex-1 min-w-[12rem]', task.dropped ? 'text-coral-fg' : 'text-sky-fg')}>
+              {task.dropped ? `Dropped: ${task.dropped.reason}` : `Paused: ${task.hold.reason}${task.hold.until ? ` · back on ${task.hold.until}` : ''}`}
+            </p>
+            <button type="button" className="btn-ghost h-8 py-0 px-3" onClick={() => (task.dropped ? restoreTask(task.id) : resumeTask(task.id))}>
+              {task.dropped ? 'Restore to today' : 'Resume today'}
+            </button>
+          </div>
+        )}
 
         <div className="flex-1 overflow-y-auto px-6 pb-4">
           {task.status !== 'completed' && (
@@ -227,8 +239,17 @@ export default function TaskPanel() {
               <Trash2 size={14} /> Delete
             </button>
           )}
-          <button type="button" className="btn-black" onClick={close}>Done</button>
+          <div className="flex items-center gap-2">
+            {!task.hold && !task.dropped && task.status !== 'completed' && !confirm && (
+              <>
+                <button type="button" className="btn-ghost h-9 py-0 px-3" onClick={() => setPark('pause')} title="Stopped or blocked: take it off your plan, with a reason">Pause…</button>
+                <button type="button" className="btn-ghost h-9 py-0 px-3" onClick={() => setPark('drop')} title="Let it go, with a reason (restorable for 30 days)">Drop…</button>
+              </>
+            )}
+            <button type="button" className="btn-black" onClick={close}>Done</button>
+          </div>
         </footer>
+        {park && <ParkDialog task={task} mode={park} onClose={() => setPark(null)} />}
       </aside>
     </div>
   )

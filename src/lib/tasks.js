@@ -69,6 +69,8 @@ export function createTask(fields = {}) {
     seriesId: null,
     recurrence: null, // { freq, until, skip } | null
     interruption: null, // { by, at, resume, resumeMode, resolved } | null
+    hold: null, // paused on purpose: { reason, since, until: 'yyyy-MM-dd' | null } | null (see Paused)
+    dropped: null, // let go, kept 30 days: { reason, at } | null
     ...fields,
   }
   // The day it started: the day it was first planned for. Fixed here, and read-only everywhere.
@@ -281,7 +283,31 @@ export function streak(tasks, now = new Date()) {
 // A missed occurrence of a repeating task doesn't count: the series comes round
 // again, so it shouldn't pile up as unfinished work.
 export const isOverdue = (task, now = new Date()) =>
-  !!task.date && task.status !== 'completed' && task.date < dateKey(now) && !(task.seriesId && task.recurrence)
+  !!task.date && task.status !== 'completed' && task.date < dateKey(now) && !(task.seriesId && task.recurrence) && !isParked(task)
+
+// ---- paused and dropped ------------------------------------------------------------------
+// A task can be stopped on purpose (paused, with a reason and maybe a day to check again)
+// or let go (dropped, with a reason; kept 30 days, then deleted). Either way it leaves every
+// plan, list, board and reminder until it is resumed or restored (see views/Paused.jsx).
+export const isParked = (task) => !!(task?.hold || task?.dropped)
+export const PAUSE_REASONS = ['Waiting on someone', 'Blocked', 'Need more info', 'Not now', 'Other']
+export const DROP_REASONS = ['Not needed any more', 'Done another way', 'Someone else did it', 'Too big as it is', 'Lost interest', 'Other']
+export const DROP_KEEP_DAYS = 30
+
+// Keeps slipping: still to do, never started, first planned SLIP_DAYS or more days ago, and
+// still on the plan (carried or moved along). Repeating tasks don't count. Longest first.
+export const SLIP_DAYS = 3
+export function slipping(tasks, now = new Date()) {
+  const today = dateKey(now)
+  const out = []
+  for (const t of tasks) {
+    if (isParked(t) || t.status !== 'todo' || t.startedAt || (t.sessions || []).length || !t.date || (t.seriesId && t.recurrence)) continue
+    const first = t.startDate ?? t.date
+    const days = differenceInCalendarDays(parseISO(today), parseISO(first))
+    if (days >= SLIP_DAYS && t.date <= dateKey(addDays(now, 1))) out.push({ task: t, days })
+  }
+  return out.sort((a, b) => b.days - a.days)
+}
 
 export const isDueToday = (task, now = new Date()) => task.date === dateKey(now)
 

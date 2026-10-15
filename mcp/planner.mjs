@@ -161,15 +161,20 @@ export function view(task, cats) {
     ...(steps.length ? { steps: steps.map((s) => ({ title: s.title, done: !!s.done, ...(s.required ? { required: true } : {}) })) } : {}),
     ...(task.recurrence ? { repeats: task.recurrence.freq } : {}),
     ...(task.completedAt ? { completed_at: task.completedAt } : {}),
+    ...(task.hold ? { paused: { reason: task.hold.reason, until: task.hold.until } } : {}),
+    ...(task.dropped ? { dropped: { reason: task.dropped.reason } } : {}),
   }
 }
 
-const isOverdue = (t, today) => !!t.date && t.status !== 'completed' && t.date < today && !(t.seriesId && t.recurrence)
+// Paused or dropped on purpose (NineFlow's Paused screen): off every plan, so not open work.
+const parked = (t) => !!(t.hold || t.dropped)
+const isOverdue = (t, today) => !!t.date && t.status !== 'completed' && t.date < today && !(t.seriesId && t.recurrence) && !parked(t)
 
 export function filterTasks(tasks, { from, to, date, status = 'open', query, category, tag, include_someday = false } = {}, now = new Date()) {
   const today = dateKey(now)
   const q = query ? String(query).toLowerCase() : null
   return tasks.filter((t) => {
+    if (status !== 'all' && parked(t)) return false
     if (status === 'open' && t.status === 'completed') return false
     if (status === 'done' && t.status !== 'completed') return false
     if (status === 'overdue' && !isOverdue(t, today)) return false
@@ -187,14 +192,15 @@ export function filterTasks(tasks, { from, to, date, status = 'open', query, cat
 export function overview(bundle, ws, now = new Date()) {
   const today = dateKey(now)
   const tasks = getTasks(bundle, ws)
-  const todays = tasks.filter((t) => t.date === today)
+  const todays = tasks.filter((t) => t.date === today && !parked(t))
   return {
     today,
     workspace: workspaces(bundle).find((w) => w.id === ws)?.name || 'My planner',
     workspaces: workspaces(bundle),
     today_tasks: { total: todays.length, done: todays.filter((t) => t.status === 'completed').length, working: todays.filter((t) => t.status === 'working').length },
     overdue: tasks.filter((t) => isOverdue(t, today)).length,
-    someday: tasks.filter((t) => !t.date && t.status !== 'completed').length,
+    someday: tasks.filter((t) => !t.date && t.status !== 'completed' && !parked(t)).length,
+    paused: tasks.filter((t) => t.hold && !t.dropped).length,
     categories: categories(bundle, ws).map((c) => c.name),
     habits: getHabits(bundle, ws).map((h) => ({ id: h.id, name: h.name, done_today: (h.done || []).includes(today) })),
   }

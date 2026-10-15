@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { LayoutDashboard, KanbanSquare, CalendarRange, CalendarDays, Grid2x2, Settings, Briefcase, ListTodo, Inbox, StickyNote, MoreHorizontal, Search, X } from 'lucide-react'
+import { LayoutDashboard, KanbanSquare, CalendarRange, CalendarDays, Grid2x2, Settings, Briefcase, ListTodo, Inbox, StickyNote, PauseCircle, MoreHorizontal, Search, X } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
 import { cx } from './ui'
 
@@ -14,6 +14,7 @@ const MORE = [
   { id: 'agenda', label: 'Agenda', icon: ListTodo },
   { id: 'matrix', label: 'Matrix', icon: Grid2x2 },
   { id: 'someday', label: 'Someday', icon: Inbox },
+  { id: 'paused', label: 'Paused', icon: PauseCircle },
   { id: 'notes', label: 'Notes', icon: StickyNote },
   { id: 'work', label: 'Work OS', icon: Briefcase },
   { id: 'settings', label: 'Settings', icon: Settings },

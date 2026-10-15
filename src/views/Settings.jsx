@@ -143,7 +143,7 @@ function CalendarConnect() {
 }
 
 export default function Settings() {
-  const { settings, updateSettings, addCategory, updateCategory, removeCategory, tasks, habits, importData, loadSample, clearAll } = usePlanner()
+  const { settings, updateSettings, addCategory, updateCategory, removeCategory, tasks, allTasks, habits, importData, loadSample, clearAll } = usePlanner()
   const [newName, setNewName] = useState('')
   const [newColor, setNewColor] = useState('lav')
   const [pendingImport, setPendingImport] = useState(null) // parsed backup awaiting confirm
@@ -164,7 +164,7 @@ export default function Settings() {
   }
   const fileRef = useRef(null)
 
-  const usage = (id) => tasks.filter((t) => t.category === id).length
+  const usage = (id) => allTasks.filter((t) => t.category === id).length
 
   const submitCategory = (e) => {
     e.preventDefault()

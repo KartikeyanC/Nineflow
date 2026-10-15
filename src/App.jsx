@@ -27,11 +27,12 @@ import Matrix from './views/Matrix'
 import Someday from './views/Someday'
 import Agenda from './views/Agenda'
 import Notes from './views/Notes'
+import Paused from './views/Paused'
 import CommandPalette from './components/CommandPalette'
 import Settings from './views/Settings'
 import Work from './work/Work'
 
-const VIEWS = { dashboard: Dashboard, board: Board, week: Week, month: Month, matrix: Matrix, someday: Someday, agenda: Agenda, notes: Notes, work: Work, settings: Settings }
+const VIEWS = { dashboard: Dashboard, board: Board, week: Week, month: Month, matrix: Matrix, someday: Someday, agenda: Agenda, notes: Notes, paused: Paused, work: Work, settings: Settings }
 
 function Shell() {
   const { view, setQuickAdd } = usePlanner()

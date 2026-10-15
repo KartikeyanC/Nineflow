@@ -181,6 +181,8 @@ function normalizeTask(t) {
     recurrence: t.recurrence && t.recurrence.freq ? { freq: t.recurrence.freq, until: t.recurrence.until ?? null, skip: t.recurrence.skip ?? [] } : null,
     // Work that interrupted the plan: { by, at, resume, resumeMode, resolved }
     interruption: t.interruption && typeof t.interruption === 'object' ? t.interruption : null,
+    hold: t.hold && typeof t.hold === 'object' ? { reason: String(t.hold.reason || 'Not now').slice(0, 120), since: typeof t.hold.since === 'string' ? t.hold.since : null, until: /^\d{4}-\d{2}-\d{2}$/.test(t.hold.until || '') ? t.hold.until : null } : null,
+    dropped: t.dropped && typeof t.dropped === 'object' ? { reason: String(t.dropped.reason || 'Let go').slice(0, 120), at: typeof t.dropped.at === 'string' ? t.dropped.at : new Date().toISOString() } : null,
   }
 }
 

@@ -109,7 +109,7 @@ export function CapacityBar({ dayKey, i = 0 }) {
 // Unfinished work from earlier days, without red or "overdue": decide each
 // one (today, tomorrow, someday, let go) or fit what fits into today.
 export function CarriedOver({ i = 0 }) {
-  const { tasks, now, settings, categoryById, setSelectedId, moveTasksTo, removeTask } = usePlanner()
+  const { tasks, now, settings, categoryById, setSelectedId, moveTasksTo, dropTask } = usePlanner()
   const [all, setAll] = useState(false)
   const today = dateKey(now)
   const tomorrow = dateKey(addDays(now, 1))
@@ -157,7 +157,7 @@ export function CarriedOver({ i = 0 }) {
                 <Choice onClick={() => move(t, today, 'today')}>Today</Choice>
                 <Choice onClick={() => move(t, tomorrow, 'tomorrow')}>Tomorrow</Choice>
                 <Choice onClick={() => move(t, null, 'Someday')} title="No date: keep it without a day"><Inbox size={11} /> Someday</Choice>
-                <Choice onClick={() => removeTask(t.id)} quiet>Let go</Choice>
+                <Choice onClick={() => dropTask(t.id, 'Let go')} quiet title="Drop it: off your plan, restorable from Paused for 30 days">Let go</Choice>
               </div>
             </li>
           )

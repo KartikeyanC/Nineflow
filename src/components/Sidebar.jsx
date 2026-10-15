@@ -1,5 +1,5 @@
 import React from 'react'
-import { LayoutDashboard, KanbanSquare, CalendarRange, CalendarDays, Grid2x2, Inbox, ListTodo, StickyNote, Settings, Plus, Moon, Sun, Briefcase } from 'lucide-react'
+import { LayoutDashboard, KanbanSquare, CalendarRange, CalendarDays, Grid2x2, Inbox, ListTodo, StickyNote, PauseCircle, Settings, Plus, Moon, Sun, Briefcase } from 'lucide-react'
 import { BrandMark, Wordmark } from './Brand'
 import { usePlanner } from '../store/PlannerContext'
 import { dayStats } from '../lib/tasks'
@@ -20,6 +20,7 @@ const NAV = [
   { id: 'agenda', label: 'Agenda', icon: ListTodo },
   { id: 'matrix', label: 'Matrix', icon: Grid2x2 },
   { id: 'someday', label: 'Someday', icon: Inbox },
+  { id: 'paused', label: 'Paused', icon: PauseCircle },
   { id: 'notes', label: 'Notes', icon: StickyNote },
   { id: 'work', label: 'Work OS', icon: Briefcase },
   { id: 'settings', label: 'Settings', icon: Settings },
