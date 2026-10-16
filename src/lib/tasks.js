@@ -31,15 +31,18 @@ export const subProgress = (task) => {
   const subs = task.subtasks || []
   return { done: subs.filter((s) => s.done).length, total: subs.length }
 }
-// "Before you finish": a task with required steps can't become Completed until enough of them are ticked.
-// task.requireRule is 'all' (every required step) or 'any' (at least one).
+// "Before you finish": a task with a checklist can't become Completed until its steps are ticked.
+// When some steps are locked as required, only those count, and task.requireRule is 'all'
+// (every required step) or 'any' (at least one). Otherwise every step counts (`explicit` false).
 export const requiredSteps = (task) => (task.subtasks || []).filter((s) => s.required)
 export function checkGate(task) {
-  const req = requiredSteps(task)
-  const rule = task.requireRule === 'any' ? 'any' : 'all'
+  const locked = requiredSteps(task)
+  const explicit = locked.length > 0
+  const req = explicit ? locked : task.subtasks || []
+  const rule = explicit && task.requireRule === 'any' ? 'any' : 'all'
   const ticked = req.filter((s) => s.done).length
   const needed = req.length === 0 ? 0 : rule === 'any' ? 1 : req.length
-  return { required: req.length, ticked, needed, rule, blocked: ticked < needed, missing: req.filter((s) => !s.done) }
+  return { required: req.length, explicit, ticked, needed, rule, blocked: ticked < needed, missing: req.filter((s) => !s.done), steps: req }
 }
 export const todayKey = () => format(new Date(), 'yyyy-MM-dd')
 export const dateKey = (d) => format(d, 'yyyy-MM-dd')

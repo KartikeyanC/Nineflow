@@ -4,10 +4,10 @@ import { usePlanner } from '../store/PlannerContext'
 import { checkGate } from '../lib/tasks'
 import { Modal, cx } from './ui'
 
-// "Before you finish": a task with required steps can't be completed until they
-// are ticked (all of them, or just one, as the task is set). Whatever tried to
-// complete it (the tick on a card, a drag to Completed, the status buttons) stops
-// here; ticking the boxes unlocks "Finish", which then does what was asked.
+// "Before you finish": a task with checklist steps can't be completed until they
+// are ticked (every step, or only the ones locked as required: all of them or just
+// one, as the task is set). Whatever tried to complete it (the tick on a card, a
+// drag to Completed, the status buttons) stops here; ticking the boxes unlocks "Finish", which then does what was asked.
 // "Finish anyway" is the way out when a step doesn't apply: it asks for a reason
 // and the task keeps it, so it stays visible what was skipped.
 export default function FinishGate() {
@@ -22,18 +22,19 @@ export default function FinishGate() {
   if (!task || task.status === 'completed') return null
 
   const g = checkGate(task)
-  const steps = (task.subtasks || []).filter((s) => s.required)
+  const steps = g.steps
+  const noun = g.explicit ? (steps.length === 1 ? 'a required step' : 'required steps') : steps.length === 1 ? 'a checklist step' : 'checklist steps'
   const tick = (id) => updateTask(task.id, { subtasks: task.subtasks.map((s) => (s.id === id ? { ...s, done: !s.done } : s)) })
   const why = reason.trim()
 
   return (
     <Modal open onClose={closeGate} width="max-w-md" title="Before you finish">
       <p className="text-sm text-muted -mt-1">
-        <b className="text-ink">{task.title || 'This task'}</b> has {steps.length === 1 ? 'a required step' : 'required steps'}.
+        <b className="text-ink">{task.title || 'This task'}</b> has {noun}.
         {' '}{g.rule === 'any' ? 'Tick at least one to finish it.' : steps.length === 1 ? 'Tick it to finish.' : 'Tick every one to finish it.'}
       </p>
 
-      <ul className="mt-4 space-y-1" aria-label="Required steps">
+      <ul className="mt-4 space-y-1" aria-label={g.explicit ? 'Required steps' : 'Checklist steps'}>
         {steps.map((s) => (
           <li key={s.id}>
             <button type="button" role="checkbox" aria-checked={s.done} onClick={() => tick(s.id)}
@@ -43,7 +44,7 @@ export default function FinishGate() {
                 {s.done && <Check size={12} strokeWidth={3.5} />}
               </span>
               <span className={cx('flex-1 min-w-0 text-sm font-semibold', s.done && 'text-faint line-through')}>{s.title}</span>
-              <Lock size={12} className="shrink-0 text-faint" aria-hidden="true" />
+              {g.explicit && <Lock size={12} className="shrink-0 text-faint" aria-hidden="true" />}
             </button>
           </li>
         ))}

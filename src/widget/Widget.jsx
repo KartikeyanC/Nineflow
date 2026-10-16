@@ -49,13 +49,13 @@ export default function Widget() {
     }
   }, [tasks, today])
   const total = open.length + done.length
-  const [held, setHeld] = useState(null) // a task whose required steps are not ticked yet
+  const [held, setHeld] = useState(null) // a task whose checklist steps are not ticked yet
 
   const toggle = (id) => {
     // Start from what is saved right now, not what this window last drew.
     const fresh = loadTasks()
     const t = fresh.find((x) => x.id === id)
-    // Required steps are ticked in the planner (it lists them); finishing here would skip them.
+    // Checklist steps are ticked in the planner (it lists them); finishing here would skip them.
     if (t && t.status !== 'completed' && checkGate(t).blocked) { setHeld(id); return }
     setHeld(null)
     saveTasks(fresh.map((t) => (t.id === id ? withStatus(t, t.status === 'completed' ? 'todo' : 'completed') : t)))
@@ -138,7 +138,7 @@ function Row({ task, sub, done = false, onToggle, held = false, onOpen }) {
       <div className="min-w-0 flex-1">
         <p className={cx('text-[13px] font-semibold truncate', done && 'line-through text-faint')} title={task.title}>{task.title}</p>
         {held
-          ? <p className="text-[10px] font-semibold text-lav-fg" role="status">Has required steps. {onOpen && <button type="button" onClick={onOpen} className="underline underline-offset-2">Open NineFlow to tick them</button>}</p>
+          ? <p className="text-[10px] font-semibold text-lav-fg" role="status">Has unticked steps. {onOpen && <button type="button" onClick={onOpen} className="underline underline-offset-2">Open NineFlow to tick them</button>}</p>
           : sub && <p className="text-[10px] truncate text-faint">{sub}</p>}
       </div>
     </li>

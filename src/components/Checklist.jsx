@@ -92,7 +92,7 @@ export default function Checklist({ task }) {
       </div>
       {total > 0 && <ProgressBar value={done / total} tone="bg-mint-fg" className="mb-2" />}
 
-      {gate.required > 0 && (
+      {gate.explicit && (
         <div className="mb-2 flex flex-wrap items-center gap-2" role="group" aria-label="Required steps">
           <span className="text-[11px] font-semibold text-lav-fg inline-flex items-center gap-1"><Lock size={11} /> {gate.required} required to finish</span>
           {gate.required > 1 && (
@@ -109,7 +109,7 @@ export default function Checklist({ task }) {
           Finished without {task.skippedChecks.missing.length ? task.skippedChecks.missing.map((m) => `“${m}”`).join(', ') : 'some checks'}: {task.skippedChecks.reason}
         </p>
       ) : (
-        <p className="mt-2 text-[12px] font-semibold text-mint-fg inline-flex items-center gap-1.5"><Check size={13} /> Checked: {gate.ticked} of {gate.required} required</p>
+        <p className="mt-2 text-[12px] font-semibold text-mint-fg inline-flex items-center gap-1.5"><Check size={13} /> Checked: {gate.ticked} of {gate.required}{gate.explicit ? ' required' : ''}</p>
       ))}
     </section>
   )
