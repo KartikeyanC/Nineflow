@@ -129,30 +129,25 @@ export default function TaskCard({ task, tone, dragging = false, handleProps, st
         </p>
       )}
 
-      {/* One line, nothing cut short: board columns are at least 340px (Board.jsx) so this fits in full. */}
-      <div className="mt-3 flex items-center gap-1.5">
-        <CategoryTag category={categoryById(task.category)} className="shrink-0 whitespace-nowrap" />
-        {/* Actual first, then the estimate: "4h 11m / 30m". */}
-        <span className="shrink-0 inline-flex items-center gap-1 text-[11px] text-faint font-medium tnum whitespace-nowrap" title={actual ? `Took ${fmtMinutes(actual)} · estimated ${fmtMinutes(task.durationMinutes)}` : undefined}>
-          <Timer size={12} className="shrink-0" />
-          <span>
-            {actual > 0 && (
-              <span className={cx('font-semibold', actual > task.durationMinutes * 1.15 ? 'text-peach-fg' : 'text-mint-fg')}>
-                {fmtMinutes(actual)}{' / '}
-              </span>
-            )}
-            {fmtMinutes(task.durationMinutes)}
-          </span>
+      <div className="mt-3 flex items-center gap-2">
+        <CategoryTag category={categoryById(task.category)} />
+        <span className="inline-flex items-center gap-1 text-[11px] text-faint font-medium" title={actual ? `Estimated ${fmtMinutes(task.durationMinutes)} · actual ${fmtMinutes(actual)}` : undefined}>
+          <Timer size={12} /> {fmtMinutes(task.durationMinutes)}
+          {actual > 0 && (
+            <span className={cx('font-semibold', actual > task.durationMinutes * 1.15 ? 'text-peach-fg' : 'text-mint-fg')}>
+              → took {fmtMinutes(actual)}
+            </span>
+          )}
         </span>
         {sub.total > 0 && (
-          <span className={cx('inline-flex items-center gap-1 text-[11px] font-semibold tnum whitespace-nowrap shrink-0', sub.done === sub.total ? 'text-mint-fg' : 'text-faint')} title={`${sub.done} of ${sub.total} steps done`}>
+          <span className={cx('inline-flex items-center gap-1 text-[11px] font-semibold tnum', sub.done === sub.total ? 'text-mint-fg' : 'text-faint')} title={`${sub.done} of ${sub.total} steps done`}>
             <ListChecks size={12} /> {sub.done}/{sub.total}
           </span>
         )}
         <RequiredBadge task={task} />
-        {task.recurrence && <Repeat size={12} className="shrink-0 text-lav-fg" title={describe(task.recurrence)} />}
-        {Array.isArray(task.reminders) && task.reminders.length > 0 && <Bell size={12} className="shrink-0 text-faint" aria-label="Has reminders" title={`Reminders: ${task.reminders.map(reminderShort).join(', ')}`} />}
-        <PriorityPill priority={task.priority} className="ml-auto shrink-0 whitespace-nowrap" />
+        {task.recurrence && <Repeat size={12} className="text-lav-fg" title={describe(task.recurrence)} />}
+        {Array.isArray(task.reminders) && task.reminders.length > 0 && <Bell size={12} className="text-faint" aria-label="Has reminders" title={`Reminders: ${task.reminders.map(reminderShort).join(', ')}`} />}
+        <PriorityPill priority={task.priority} className="ml-auto" />
       </div>
     </div>
   )

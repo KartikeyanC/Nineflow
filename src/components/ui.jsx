@@ -15,12 +15,12 @@ export function PriorityPill({ priority, className }) {
   )
 }
 
-export function CategoryTag({ category, className, title }) {
+export function CategoryTag({ category, className }) {
   if (!category) return null
   const c = colorOf(category.color)
   return (
-    <span className={cx('pill', c.bg, c.text, className)} title={title}>
-      <span className={cx('shrink-0 h-1.5 w-1.5 rounded-full', c.dot)} />
+    <span className={cx('pill', c.bg, c.text, className)}>
+      <span className={cx('h-1.5 w-1.5 rounded-full', c.dot)} />
       {category.name}
     </span>
   )
