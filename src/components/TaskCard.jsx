@@ -129,30 +129,24 @@ export default function TaskCard({ task, tone, dragging = false, handleProps, st
         </p>
       )}
 
-      {/* Top-aligned, every item's first line 24px tall (a pill's height), so "→ took" lines up with
-          the estimate and the step count and the time it took sits right below "took", never split. */}
-      <div className="mt-3 flex items-start gap-2">
+      <div className="mt-3 flex items-center gap-2">
         <CategoryTag category={categoryById(task.category)} />
-        <span className="inline-flex items-start gap-1 text-[11px] leading-6 text-faint font-medium" title={actual ? `Estimated ${fmtMinutes(task.durationMinutes)} · actual ${fmtMinutes(actual)}` : undefined}>
-          <Timer size={12} className="shrink-0 mt-1.5" /> {fmtMinutes(task.durationMinutes)}
+        <span className="inline-flex items-center gap-1 text-[11px] text-faint font-medium" title={actual ? `Estimated ${fmtMinutes(task.durationMinutes)} · actual ${fmtMinutes(actual)}` : undefined}>
+          <Timer size={12} /> {fmtMinutes(task.durationMinutes)}
           {actual > 0 && (
-            <span className={cx('inline-flex items-start gap-1 font-semibold', actual > task.durationMinutes * 1.15 ? 'text-peach-fg' : 'text-mint-fg')}>
-              →
-              <span className="flex flex-col">
-                <span>took</span>
-                <span className="leading-4 whitespace-nowrap tnum">{fmtMinutes(actual)}</span>
-              </span>
+            <span className={cx('font-semibold', actual > task.durationMinutes * 1.15 ? 'text-peach-fg' : 'text-mint-fg')}>
+              → took {fmtMinutes(actual)}
             </span>
           )}
         </span>
         {sub.total > 0 && (
-          <span className={cx('inline-flex items-center gap-1 h-6 text-[11px] font-semibold tnum', sub.done === sub.total ? 'text-mint-fg' : 'text-faint')} title={`${sub.done} of ${sub.total} steps done`}>
+          <span className={cx('inline-flex items-center gap-1 text-[11px] font-semibold tnum', sub.done === sub.total ? 'text-mint-fg' : 'text-faint')} title={`${sub.done} of ${sub.total} steps done`}>
             <ListChecks size={12} /> {sub.done}/{sub.total}
           </span>
         )}
-        <RequiredBadge task={task} className="h-6" />
-        {task.recurrence && <Repeat size={12} className="shrink-0 mt-1.5 text-lav-fg" title={describe(task.recurrence)} />}
-        {Array.isArray(task.reminders) && task.reminders.length > 0 && <Bell size={12} className="shrink-0 mt-1.5 text-faint" aria-label="Has reminders" title={`Reminders: ${task.reminders.map(reminderShort).join(', ')}`} />}
+        <RequiredBadge task={task} />
+        {task.recurrence && <Repeat size={12} className="text-lav-fg" title={describe(task.recurrence)} />}
+        {Array.isArray(task.reminders) && task.reminders.length > 0 && <Bell size={12} className="text-faint" aria-label="Has reminders" title={`Reminders: ${task.reminders.map(reminderShort).join(', ')}`} />}
         <PriorityPill priority={task.priority} className="ml-auto" />
       </div>
     </div>
