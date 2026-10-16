@@ -73,8 +73,20 @@ export default function Board() {
   // What each column shows, one click away: its tasks, or its paused / dropped ones.
   const [colShow, setColShow] = useState({}) // { [columnId]: 'active' | 'paused' | 'dropped' }
   const showOf = (id) => colShow[id] || 'active'
-  // The list being shown, unless it has emptied (everything resumed or restored): then the tasks.
-  const shownOf = (col, parked) => { const v = showOf(col.id); return v !== 'active' && !parked[v].length ? 'active' : v }
+  const shownOf = (col) => showOf(col.id)
+  // A list that empties while it is open (its last task resumed or restored) goes back to the
+  // tasks. An empty list opened on purpose stays open.
+  const lastCounts = useRef({})
+  useEffect(() => {
+    for (const col of cols) {
+      const v = showOf(col.id)
+      if (v === 'active') continue
+      const n = parkedIn(allTasks, col, cols, v).length
+      const was = lastCounts.current[`${col.id}:${v}`]
+      if (was > 0 && n === 0) setShow(col.id, 'active')
+      lastCounts.current[`${col.id}:${v}`] = n
+    }
+  }, [allTasks, colShow]) // eslint-disable-line react-hooks/exhaustive-deps
   const setShow = (id, v) => setColShow((m) => ({ ...m, [id]: v }))
   const parkedOf = (col) => ({ paused: parkedIn(allTasks, col, cols, 'paused'), dropped: parkedIn(allTasks, col, cols, 'dropped') })
   const [picked, setPicked] = useState(() => new Set())
@@ -365,7 +377,7 @@ export default function Board() {
                   onPick={togglePick}
                   highlighted={activeId != null && overColumn === s}
                   onAdd={() => quickAddFor(col)}
-                  show={shownOf(col, parkedOf(col))}
+                  show={shownOf(col)}
                   onShow={(v) => setShow(col.id, v)}
                   parked={parkedOf(col)}
                   menu={[
@@ -420,14 +432,14 @@ function Column({ col, ids, taskById, activeId, selecting, picked, onPick, highl
   const c = styleOf(col)
   return (
     <section ref={setNodeRef}
-      className={cx('rounded-card p-3 flex flex-col min-h-[360px] transition-shadow duration-200 min-w-[86vw] md:min-w-0 snap-center', c.panel, highlighted && 'ring-2 ring-inset ring-current/25', c.text)}>
-      <div className="flex items-center gap-2 px-1 mb-3">
+      className={cx('[container-type:inline-size] rounded-card p-3 flex flex-col min-h-[360px] transition-shadow duration-200 min-w-[86vw] md:min-w-0 snap-center', c.panel, highlighted && 'ring-2 ring-inset ring-current/25', c.text)}>
+      {/* The name never gets cut: the chips sit next to it, or on their own line below it in a narrow column */}
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 px-1 mb-3">
         <span className="h-6 min-w-6 px-1.5 rounded-full bg-card text-ink text-xs font-bold inline-flex items-center justify-center shadow-soft">{ids.length}</span>
-        <h2 className={cx('font-bold text-sm truncate', c.text)}>
+        <h2 className={cx('font-bold text-sm whitespace-nowrap', c.text)}>
           {show === 'active' ? col.name : <button type="button" onClick={() => onShow('active')} title="Back to the tasks" className="hover:underline">{col.name}</button>}
         </h2>
-        <ParkChips value={show} onChange={onShow} counts={{ paused: parked.paused.length, dropped: parked.dropped.length }} />
-        <div className="ml-auto flex items-center gap-0.5">
+        <div className="ml-auto flex items-center gap-0.5 order-2">
           <button type="button" onClick={onAdd} data-tip="Add task" aria-label="Add task" className="h-7 w-7 rounded-full inline-flex items-center justify-center hover:bg-card/70 transition">
             <Plus size={15} />
           </button>
@@ -438,6 +450,7 @@ function Column({ col, ids, taskById, activeId, selecting, picked, onPick, highl
             </button>
           )} />
         </div>
+        <ParkChips className="order-1 [@container(max-width:300px)]:order-3 [@container(max-width:300px)]:basis-full" value={show} onChange={onShow} counts={{ paused: parked.paused.length, dropped: parked.dropped.length }} />
       </div>
 
       {show === 'active' ? (
@@ -481,7 +494,7 @@ function ListView({ columns, cols, shownOf, setShow, parkedOf }) {
         const c = styleOf(col)
         const list = columns[col.id]
         const parked = parkedOf(col)
-        const show = shownOf(col, parked)
+        const show = shownOf(col)
         return (
           <section key={col.id} className="card overflow-hidden">
             <div className={cx('flex items-center gap-2 px-5 py-3', c.header, c.text)}>

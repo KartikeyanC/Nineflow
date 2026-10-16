@@ -16,19 +16,18 @@ export function parkedIn(allTasks, col, cols, kind) {
     .sort((a, b) => (kind === 'dropped' ? b.dropped.at.localeCompare(a.dropped.at) : (a.hold.until || '9999').localeCompare(b.hold.until || '9999')))
 }
 
-// Design 3: small chips next to a column's name, one per kind, shown only when the column has
-// some (a count with a pause or ✕ icon). One click shows that list in place; clicking the
+// Design 3: small chips next to a column's name, one per kind, always there (a count with a
+// pause or ✕ icon; dimmer at 0). One click shows that list in place; clicking the
 // lit chip again goes back to the column's tasks. Used on the Board, in both views.
 export function ParkChips({ value, onChange, counts, className }) {
-  const chip = (kind, n, Icon, label) => n > 0 && (
+  const chip = (kind, n, Icon, label) => (
     <button key={kind} type="button" aria-pressed={value === kind} onClick={() => onChange(value === kind ? 'active' : kind)}
-      title={value === kind ? 'Back to the tasks' : `Show ${n} ${label}`} aria-label={value === kind ? `Back to the tasks (showing ${label})` : `Show ${n} ${label}`}
+      title={value === kind ? 'Back to the tasks' : n ? `Show ${n} ${label}` : `Show ${label} (none yet)`} aria-label={value === kind ? `Back to the tasks (showing ${label})` : `Show ${n} ${label}`}
       className={cx('h-6 px-2 rounded-full text-[11px] font-semibold inline-flex items-center gap-1 transition tnum shrink-0',
-        value === kind ? 'bg-ink text-page' : 'bg-card/80 text-current hover:bg-card')}>
+        value === kind ? 'bg-ink text-page' : n ? 'bg-card/80 text-current hover:bg-card' : 'bg-card/40 text-current opacity-60 hover:opacity-100')}>
       <Icon size={12} />{n}
     </button>
   )
-  if (!counts.paused && !counts.dropped) return null
   return (
     <span className={cx('inline-flex items-center gap-1', className)}>
       {chip('paused', counts.paused, PauseCircle, 'paused')}
@@ -47,21 +46,26 @@ export function ParkedTasks({ list, kind, layout = 'cards', onBack }) {
   const btn = (danger) => cx('inline-flex items-center gap-1 h-7 rounded-full px-2.5 text-[12px] font-semibold border border-line bg-card transition',
     danger ? 'text-coral-fg hover:bg-coral' : 'text-muted hover:text-ink hover:bg-page')
 
-  if (!list.length) {
-    return (
-      <p className={cx('text-sm text-faint', layout === 'cards' ? 'px-2 py-6 text-center' : 'px-5 py-4')}>
-        {kind === 'dropped' ? 'Nothing dropped from here.' : 'Nothing paused here.'} Use a card's <b>…</b> menu to {kind === 'dropped' ? 'drop' : 'pause'} a task.
-      </p>
-    )
-  }
-  return (
-    <>
-      {onBack && (
+  const back = onBack && (
         <div className={cx('flex items-center justify-between text-[11px] font-semibold text-muted', layout === 'cards' ? 'mb-2 px-1' : 'px-5 pt-3')}>
           <span className="inline-flex items-center gap-1">{kind === 'dropped' ? <XCircle size={12} /> : <PauseCircle size={12} />}{kind === 'dropped' ? 'Dropped' : 'Paused'}</span>
           <button type="button" onClick={onBack} className="hover:text-ink underline">Back to tasks</button>
         </div>
-      )}
+      )
+  if (!list.length) {
+    return (
+      <>
+        {back}
+        <p className={cx('text-sm text-faint', layout === 'cards' ? 'px-2 py-6 text-center' : 'px-5 py-4')}>
+          {kind === 'dropped' ? 'Nothing dropped from here yet.' : 'Nothing paused here yet.'} Use a card's <b>…</b> menu to {kind === 'dropped' ? 'drop' : 'pause'} a task.
+          {kind === 'dropped' && ' Dropped tasks are kept 30 days, then deleted.'}
+        </p>
+      </>
+    )
+  }
+  return (
+    <>
+      {back}
       <ul className={layout === 'cards' ? 'flex flex-col gap-2.5' : 'divide-y divide-line'}>
         {list.map((t) => {
           const meta = kind === 'dropped'
