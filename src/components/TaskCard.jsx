@@ -129,16 +129,20 @@ export default function TaskCard({ task, tone, dragging = false, handleProps, st
         </p>
       )}
 
-      {/* Wraps whole chips onto a second line in narrow columns; no chip breaks inside. */}
-      <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1.5">
-        <CategoryTag category={categoryById(task.category)} className="shrink-0 whitespace-nowrap" />
-        <span className="inline-flex items-center gap-1 text-[11px] text-faint font-medium tnum whitespace-nowrap shrink-0" title={actual ? `Estimated ${fmtMinutes(task.durationMinutes)} · actual ${fmtMinutes(actual)}` : undefined}>
-          <Timer size={12} className="shrink-0" /> {fmtMinutes(task.durationMinutes)}
-          {actual > 0 && (
-            <span className={cx('font-semibold', actual > task.durationMinutes * 1.15 ? 'text-peach-fg' : 'text-mint-fg')}>
-              → took {fmtMinutes(actual)}
-            </span>
-          )}
+      {/* One line. In a narrow column the category name gives way first (its dot still shows), then the estimate. */}
+      <div className="mt-3 flex items-center gap-1.5 min-w-0">
+        <CategoryTag category={categoryById(task.category)} className="min-w-[2.25rem] shrink-[100] whitespace-nowrap" title={categoryById(task.category)?.name} />
+        {/* Actual first ("4h 11m / 30m"), so a cut-off hides the estimate, not what it took. */}
+        <span className="flex items-center gap-1 min-w-0 text-[11px] text-faint font-medium tnum whitespace-nowrap" title={actual ? `Took ${fmtMinutes(actual)} · estimated ${fmtMinutes(task.durationMinutes)}` : undefined}>
+          <Timer size={12} className="shrink-0" />
+          <span className="truncate">
+            {actual > 0 && (
+              <span className={cx('font-semibold', actual > task.durationMinutes * 1.15 ? 'text-peach-fg' : 'text-mint-fg')}>
+                {fmtMinutes(actual)}{' / '}
+              </span>
+            )}
+            {fmtMinutes(task.durationMinutes)}
+          </span>
         </span>
         {sub.total > 0 && (
           <span className={cx('inline-flex items-center gap-1 text-[11px] font-semibold tnum whitespace-nowrap shrink-0', sub.done === sub.total ? 'text-mint-fg' : 'text-faint')} title={`${sub.done} of ${sub.total} steps done`}>
@@ -146,8 +150,8 @@ export default function TaskCard({ task, tone, dragging = false, handleProps, st
           </span>
         )}
         <RequiredBadge task={task} />
-        {task.recurrence && <Repeat size={12} className="text-lav-fg" title={describe(task.recurrence)} />}
-        {Array.isArray(task.reminders) && task.reminders.length > 0 && <Bell size={12} className="text-faint" aria-label="Has reminders" title={`Reminders: ${task.reminders.map(reminderShort).join(', ')}`} />}
+        {task.recurrence && <Repeat size={12} className="shrink-0 text-lav-fg" title={describe(task.recurrence)} />}
+        {Array.isArray(task.reminders) && task.reminders.length > 0 && <Bell size={12} className="shrink-0 text-faint" aria-label="Has reminders" title={`Reminders: ${task.reminders.map(reminderShort).join(', ')}`} />}
         <PriorityPill priority={task.priority} className="ml-auto shrink-0 whitespace-nowrap" />
       </div>
     </div>
