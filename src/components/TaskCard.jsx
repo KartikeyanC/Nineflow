@@ -4,7 +4,8 @@ import { CalendarDays, Timer, ArrowRight, Repeat, Check, ListChecks, Bell, MoreH
 import ParkDialog from './ParkDialog'
 import { usePlanner } from '../store/PlannerContext'
 import { reminderShort } from '../lib/taskMeta'
-import { carriedLabel, dueLabel, fmtMinutes, isOverdue, subProgress, todayKey, totalMinutes } from '../lib/tasks'
+import { carriedLabel, daysOnPlan, dueLabel, fmtMinutes, isOverdue, startDayOf, subProgress, todayKey, totalMinutes } from '../lib/tasks'
+import { format, parseISO } from 'date-fns'
 import { describe } from '../lib/recurrence'
 import RequiredBadge from './RequiredBadge'
 import { CARD_STYLE, STATUS_CARD_COLOR } from '../lib/columns'
@@ -114,6 +115,11 @@ export default function TaskCard({ task, tone, dragging = false, handleProps, st
         >
           Move to today <ArrowRight size={12} />
         </button>
+      )}
+
+      {/* Which day it started, once it has been going for more than a day (see the day trail) */}
+      {!done && startDayOf(task) && task.date && startDayOf(task) < task.date && (
+        <p className="mt-1.5 text-[11px] font-medium text-faint">Since {format(parseISO(startDayOf(task)), 'MMM d')} · day {daysOnPlan(task, now)}</p>
       )}
 
       {(task.tags || []).length > 0 && (

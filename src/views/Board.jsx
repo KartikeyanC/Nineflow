@@ -9,6 +9,8 @@ import { CSS } from '@dnd-kit/utilities'
 import { addDays, parseISO } from 'date-fns'
 import { Plus, MoreHorizontal, Search, LayoutGrid, List, ArrowUpDown, CalendarClock, CalendarCheck, CalendarDays, Trash2, CheckSquare, X, Layers, SlidersHorizontal, Bookmark, Columns3 } from 'lucide-react'
 import { ParkChips, ParkedTasks, parkedIn } from '../components/ParkedList'
+import FrozenCard from '../components/FrozenCard'
+import { frozenOn } from '../lib/tasks'
 import { usePlanner } from '../store/PlannerContext'
 import { currentProfileId } from '../lib/profiles'
 import { allTags } from '../lib/taskMeta'
@@ -72,6 +74,10 @@ export default function Board() {
   const [selecting, setSelecting] = useState(false)
   // What each column shows, one click away: its tasks, or its paused / dropped ones.
   const [colShow, setColShow] = useState({}) // { [columnId]: 'active' | 'paused' | 'dropped' }
+  // A day's frozen records: tasks that were on it and moved on unfinished (lib/tasks.js frozenOn),
+  // each in the column it was in that day. Only for one day (not "All days").
+  const frozenFor = (col) => (scope !== 'day' ? [] : frozenOn(allTasks, dashboardDate)
+    .filter(({ entry }) => columnOf({ status: entry.status, column: entry.column }, cols) === col.id))
   const showOf = (id) => colShow[id] || 'active'
   const shownOf = (col) => showOf(col.id)
   // A list that empties while it is open (its last task resumed or restored) goes back to the
@@ -355,7 +361,7 @@ export default function Board() {
       )}
 
       {mode === 'list' ? (
-        <ListView columns={columns} cols={cols} shownOf={shownOf} setShow={setShow} parkedOf={parkedOf} />
+        <ListView columns={columns} cols={cols} shownOf={shownOf} setShow={setShow} parkedOf={parkedOf} frozenFor={frozenFor} />
       ) : (
         <DndContext sensors={sensors} collisionDetection={collisionDetection} measuring={MEASURING}
           onDragStart={onDragStart} onDragOver={onDragOver} onDragEnd={onDragEnd} onDragCancel={cancelDrag}>
@@ -380,6 +386,7 @@ export default function Board() {
                   show={shownOf(col)}
                   onShow={(v) => setShow(col.id, v)}
                   parked={parkedOf(col)}
+                  frozen={frozenFor(col)}
                   menu={[
                     { label: 'Add task', icon: Plus, onSelect: () => quickAddFor(col) },
                     { label: 'Sort by priority', icon: ArrowUpDown, onSelect: () => sortStatus(s, 'priority') },
@@ -426,7 +433,7 @@ export default function Board() {
   )
 }
 
-function Column({ col, ids, taskById, activeId, selecting, picked, onPick, highlighted, onAdd, menu, footer, show = 'active', onShow, parked }) {
+function Column({ col, ids, taskById, activeId, selecting, picked, onPick, highlighted, onAdd, menu, footer, show = 'active', onShow, parked, frozen = [] }) {
   const status = col.id
   const { setNodeRef } = useDroppable({ id: status })
   const c = styleOf(col)
@@ -457,9 +464,15 @@ function Column({ col, ids, taskById, activeId, selecting, picked, onPick, highl
         <SortableContext items={ids} strategy={verticalListSortingStrategy}>
           <div className="flex flex-col gap-2.5 flex-1 overflow-y-auto pr-0.5 text-ink">
             {ids.map((id) => taskById.get(id) && <SortableCard key={id} task={taskById.get(id)} tone={col.color} dragging={id === activeId} selecting={selecting} picked={picked.has(id)} onPick={() => onPick(id)} />)}
-            {ids.length === 0 && (
+            {ids.length === 0 && frozen.length === 0 && (
               <div className={cx('flex-1 flex items-center justify-center text-xs font-semibold border-2 border-dashed rounded-2xl min-h-[96px]', c.text, c.edge, 'opacity-70')}>
                 Drop tasks here
+              </div>
+            )}
+            {frozen.length > 0 && (
+              <div className="mt-1 flex flex-col gap-2">
+                <p className="px-1 text-[11px] font-semibold text-muted">Moved on from this day · {frozen.length}</p>
+                {frozen.map(({ task, entry }) => <FrozenCard key={task.id} task={task} entry={entry} />)}
               </div>
             )}
             {footer}
@@ -486,7 +499,7 @@ function SortableCard({ task, tone, dragging, selecting, picked, onPick }) {
 
 // ---- list view ----------------------------------------------------------
 
-function ListView({ columns, cols, shownOf, setShow, parkedOf }) {
+function ListView({ columns, cols, shownOf, setShow, parkedOf, frozenFor }) {
   const { categoryById, toggleComplete, setSelectedId, now } = usePlanner()
   return (
     <div className="space-y-4">
@@ -495,6 +508,7 @@ function ListView({ columns, cols, shownOf, setShow, parkedOf }) {
         const list = columns[col.id]
         const parked = parkedOf(col)
         const show = shownOf(col)
+        const frozen = frozenFor(col)
         return (
           <section key={col.id} className="card overflow-hidden">
             <div className={cx('flex items-center gap-2 px-5 py-3', c.header, c.text)}>
@@ -504,7 +518,7 @@ function ListView({ columns, cols, shownOf, setShow, parkedOf }) {
             </div>
             {show !== 'active' ? (
               <ParkedTasks list={parked[show]} kind={show} layout="rows" onBack={() => setShow(col.id, 'active')} />
-            ) : list.length === 0 ? (
+            ) : list.length === 0 && frozen.length === 0 ? (
               <p className="px-5 py-4 text-sm text-faint">Nothing here.</p>
             ) : (
               <ul className="divide-y divide-line">
@@ -528,6 +542,7 @@ function ListView({ columns, cols, shownOf, setShow, parkedOf }) {
                     </li>
                   )
                 })}
+                {frozen.map(({ task, entry }) => <FrozenCard key={`frozen-${task.id}`} task={task} entry={entry} layout="row" />)}
               </ul>
             )}
           </section>

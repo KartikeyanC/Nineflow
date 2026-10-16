@@ -115,6 +115,19 @@ export default function TaskPanel() {
                 ? <AutoDay day={endDayOf(task)} note={daysOnPlan(task, now) > 1 ? `${daysOnPlan(task, now)} days` : 'same day'} title="Set automatically: the day this task was completed" />
                 : <AutoDay empty="Not finished yet" note={daysOnPlan(task, now) ? `day ${daysOnPlan(task, now)}` : ''} title="Set automatically when the task is completed" />}
             </Row>
+            {(task.trail || []).length > 0 && (
+              <Row icon={CalendarDays} label="Day trail">
+                <ol className="flex flex-wrap items-center gap-1 text-[12px]" aria-label="The days this task was on">
+                  {task.trail.map((e) => (
+                    <li key={e.date} className="inline-flex items-center gap-1">
+                      <span className="pill bg-page border border-line text-muted">{format(parseISO(e.date), 'MMM d')} · {STATUS_LABEL[e.status]}</span>
+                      <span className="text-faint" aria-hidden="true">→</span>
+                    </li>
+                  ))}
+                  <li className="pill bg-lav text-lav-fg">{task.status === 'completed' ? 'Done' : task.date ? `${format(parseISO(task.date), 'MMM d')} · ${STATUS_LABEL[task.status]}` : 'Someday'}</li>
+                </ol>
+              </Row>
+            )}
             {cols.length > STATUSES.length && (
               <Row icon={Columns3} label="Column">
                 <select className="input w-auto min-w-[9rem] py-1.5" value={columnOf(task, cols)} aria-label="Board column"

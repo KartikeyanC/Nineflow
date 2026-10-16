@@ -101,13 +101,23 @@ export function createTask(fields = {}, now = new Date()) {
     seriesId: null,
     recurrence: null,
     interruption: null,
+    trail: [],
     ...fields,
   }
   return { ...task, startDate: task.startDate ?? task.date ?? null }
 }
 
+// When an unfinished task leaves a day that has come, that day keeps a record of it
+// (src/lib/tasks.js leaveTrail): one entry per day, latest status wins.
+function leaveTrail(task, now) {
+  if (!task.date || task.date > dateKey(now) || task.status === 'completed') return task
+  const rest = (task.trail || []).filter((e) => e.date !== task.date)
+  return { ...task, trail: [...rest, { date: task.date, status: task.status, column: task.column ?? null }].sort((a, b) => a.date.localeCompare(b.date)).slice(-60) }
+}
+
 export function withDate(task, date, now = new Date()) {
   if (task.date === date) return task
+  task = leaveTrail(task, now)
   const start = task.startDate ?? task.date
   const untouched = task.status === 'todo' && !task.startedAt && (task.sessions || []).length === 0
   const notArrived = start == null || start >= dateKey(now)

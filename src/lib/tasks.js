@@ -69,6 +69,7 @@ export function createTask(fields = {}) {
     seriesId: null,
     recurrence: null, // { freq, until, skip } | null
     interruption: null, // { by, at, resume, resumeMode, resolved } | null
+    trail: [], // the days it was on before it moved on unfinished: [{ date, status, column }] (see leaveTrail)
     hold: null, // paused on purpose: { reason, since, until: 'yyyy-MM-dd' | null } | null (see Paused)
     dropped: null, // let go, kept 30 days: { reason, at } | null
     ...fields,
@@ -96,8 +97,33 @@ export function daysOnPlan(task, now = new Date()) {
 // Editing a task's planned day. A task you have not touched yet and that has not arrived (its start day is
 // today or later) takes its new start day with it; once it has been worked on, or carried over from an
 // earlier day, its start day stays where it was.
+// ---- the day trail ------------------------------------------------------------------
+// When an unfinished task leaves a day that has already come (carried forward, or moved by
+// hand), that day keeps a frozen record of it: the date, and the status (and Board column) it
+// had there. Past days on the Board show these as read-only cards ("moved on"), and the task
+// panel shows the trail, so it's always easy to see which day something started and where it
+// has been. One entry per day; the latest status that day wins.
+export const TRAIL_MAX = 60
+export function leaveTrail(task, now = new Date()) {
+  if (!task.date || task.date > dateKey(now) || task.status === 'completed') return task
+  const entry = { date: task.date, status: task.status, column: task.column ?? null }
+  const rest = (task.trail || []).filter((e) => e.date !== task.date)
+  return { ...task, trail: [...rest, entry].sort((a, b) => a.date.localeCompare(b.date)).slice(-TRAIL_MAX) }
+}
+// The tasks that were on `day` and have since moved on, with what they were that day.
+export function frozenOn(tasks, day) {
+  const out = []
+  for (const t of tasks) {
+    if (t.date === day) continue
+    const e = (t.trail || []).find((x) => x.date === day)
+    if (e) out.push({ task: t, entry: e })
+  }
+  return out
+}
+
 export function withDate(task, date, now = new Date()) {
   if (task.date === date) return task
+  task = leaveTrail(task, now)
   const start = task.startDate ?? task.date
   const untouched = task.status === 'todo' && !task.startedAt && task.sessions.length === 0
   const notArrived = start == null || start >= dateKey(now)
@@ -322,7 +348,8 @@ export function carryForward(tasks, now = new Date()) {
   const next = tasks.map((t) => {
     if (!isOverdue(t, now) || differenceInCalendarDays(parseISO(today), parseISO(t.date)) > CARRY_FORWARD_DAYS) return t
     moved++
-    return { ...t, date: today, startDate: t.startDate ?? t.date }
+    const left = leaveTrail(t, now)
+    return { ...left, date: today, startDate: t.startDate ?? t.date }
   })
   return { tasks: moved ? next : tasks, moved }
 }
