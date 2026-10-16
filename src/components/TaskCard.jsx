@@ -28,6 +28,7 @@ export default function TaskCard({ task, tone, dragging = false, handleProps, st
   const sub = subProgress(task)
   // Estimate vs actual, shown once a task is finished.
   const actual = done ? totalMinutes(task, now) : 0
+  const overBy = actual > 0 ? actual - task.durationMinutes : 0 // minutes over (+) or under (−) the estimate
 
   // Pop the circle, slide the card out, then change status.
   const onCheck = () => {
@@ -129,25 +130,29 @@ export default function TaskCard({ task, tone, dragging = false, handleProps, st
         </p>
       )}
 
-      <div className="mt-3 flex items-center gap-2">
-        <CategoryTag category={categoryById(task.category)} />
-        <span className="inline-flex items-center gap-1 text-[11px] text-faint font-medium" title={actual ? `Estimated ${fmtMinutes(task.durationMinutes)} · actual ${fmtMinutes(actual)}` : undefined}>
+      {/* One line at normal widths. flex-wrap only kicks in when a column is too narrow, so the priority
+          pill moves down a line rather than spilling out of the card. */}
+      <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1.5">
+        <CategoryTag category={categoryById(task.category)} className="shrink-0 whitespace-nowrap" />
+        {/* Estimate, then how far off it was: "30m +3h 41m" over, "30m −10m" under. Kept as one piece. */}
+        <span className="inline-flex items-center gap-1 text-[11px] text-faint font-medium tnum whitespace-nowrap shrink-0"
+          title={actual ? `Took ${fmtMinutes(actual)} · estimated ${fmtMinutes(task.durationMinutes)}${overBy ? ` · ${fmtMinutes(Math.abs(overBy))} ${overBy > 0 ? 'over' : 'under'}` : ''}` : undefined}>
           <Timer size={12} /> {fmtMinutes(task.durationMinutes)}
-          {actual > 0 && (
-            <span className={cx('font-semibold', actual > task.durationMinutes * 1.15 ? 'text-peach-fg' : 'text-mint-fg')}>
-              → took {fmtMinutes(actual)}
+          {overBy !== 0 && (
+            <span className={cx('font-semibold', overBy > 0 ? 'text-peach-fg' : 'text-mint-fg')}>
+              {overBy > 0 ? '+' : '−'}{fmtMinutes(Math.abs(overBy))}
             </span>
           )}
         </span>
         {sub.total > 0 && (
-          <span className={cx('inline-flex items-center gap-1 text-[11px] font-semibold tnum', sub.done === sub.total ? 'text-mint-fg' : 'text-faint')} title={`${sub.done} of ${sub.total} steps done`}>
+          <span className={cx('inline-flex items-center gap-1 text-[11px] font-semibold tnum whitespace-nowrap shrink-0', sub.done === sub.total ? 'text-mint-fg' : 'text-faint')} title={`${sub.done} of ${sub.total} steps done`}>
             <ListChecks size={12} /> {sub.done}/{sub.total}
           </span>
         )}
         <RequiredBadge task={task} />
         {task.recurrence && <Repeat size={12} className="text-lav-fg" title={describe(task.recurrence)} />}
         {Array.isArray(task.reminders) && task.reminders.length > 0 && <Bell size={12} className="text-faint" aria-label="Has reminders" title={`Reminders: ${task.reminders.map(reminderShort).join(', ')}`} />}
-        <PriorityPill priority={task.priority} className="ml-auto" />
+        <PriorityPill priority={task.priority} className="ml-auto shrink-0 whitespace-nowrap" />
       </div>
     </div>
   )
