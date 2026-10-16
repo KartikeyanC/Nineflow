@@ -366,7 +366,7 @@ export default function Board() {
         <DndContext sensors={sensors} collisionDetection={collisionDetection} measuring={MEASURING}
           onDragStart={onDragStart} onDragOver={onDragOver} onDragEnd={onDragEnd} onDragCancel={cancelDrag}>
           {/* Phones: one column per screen, swipe between them. */}
-          <div className="flex md:grid gap-4 flex-1 min-h-0 overflow-x-auto snap-x snap-mandatory -mx-3 px-3 md:mx-0 md:px-0 md:[grid-template-columns:repeat(var(--cols),minmax(250px,1fr))]"
+          <div className="flex md:grid gap-4 flex-1 min-h-0 overflow-x-auto snap-x snap-mandatory -mx-3 px-3 md:mx-0 md:px-0 md:[grid-template-columns:repeat(var(--cols),minmax(340px,1fr))]"
             style={{ '--cols': cols.length }}>
             {cols.map((col) => {
               const s = col.id
@@ -439,7 +439,7 @@ function Column({ col, ids, taskById, activeId, selecting, picked, onPick, highl
   const c = styleOf(col)
   return (
     <section ref={setNodeRef}
-      className={cx('[container-type:inline-size] rounded-card p-3 flex flex-col min-h-[360px] transition-shadow duration-200 min-w-[86vw] md:min-w-0 snap-center', c.panel, highlighted && 'ring-2 ring-inset ring-current/25', c.text)}>
+      className={cx('[container-type:inline-size] rounded-card p-3 flex flex-col min-h-[360px] transition-shadow duration-200 min-w-[max(86vw,340px)] md:min-w-0 snap-center', c.panel, highlighted && 'ring-2 ring-inset ring-current/25', c.text)}>
       {/* The name never gets cut: the chips sit next to it, or on their own line below it in a narrow column */}
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 px-1 mb-3">
         <span className="h-6 min-w-6 px-1.5 rounded-full bg-card text-ink text-xs font-bold inline-flex items-center justify-center shadow-soft">{ids.length}</span>

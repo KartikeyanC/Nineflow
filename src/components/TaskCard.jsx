@@ -129,13 +129,13 @@ export default function TaskCard({ task, tone, dragging = false, handleProps, st
         </p>
       )}
 
-      {/* One line. In a narrow column the category name gives way first (its dot still shows), then the estimate. */}
-      <div className="mt-3 flex items-center gap-1.5 min-w-0">
-        <CategoryTag category={categoryById(task.category)} className="min-w-[2.25rem] shrink-[100] whitespace-nowrap" title={categoryById(task.category)?.name} />
-        {/* Actual first ("4h 11m / 30m"), so a cut-off hides the estimate, not what it took. */}
-        <span className="flex items-center gap-1 min-w-0 text-[11px] text-faint font-medium tnum whitespace-nowrap" title={actual ? `Took ${fmtMinutes(actual)} · estimated ${fmtMinutes(task.durationMinutes)}` : undefined}>
+      {/* One line, nothing cut short: board columns are at least 340px (Board.jsx) so this fits in full. */}
+      <div className="mt-3 flex items-center gap-1.5">
+        <CategoryTag category={categoryById(task.category)} className="shrink-0 whitespace-nowrap" />
+        {/* Actual first, then the estimate: "4h 11m / 30m". */}
+        <span className="shrink-0 inline-flex items-center gap-1 text-[11px] text-faint font-medium tnum whitespace-nowrap" title={actual ? `Took ${fmtMinutes(actual)} · estimated ${fmtMinutes(task.durationMinutes)}` : undefined}>
           <Timer size={12} className="shrink-0" />
-          <span className="truncate">
+          <span>
             {actual > 0 && (
               <span className={cx('font-semibold', actual > task.durationMinutes * 1.15 ? 'text-peach-fg' : 'text-mint-fg')}>
                 {fmtMinutes(actual)}{' / '}
