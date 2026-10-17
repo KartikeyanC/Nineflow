@@ -3,6 +3,7 @@
 // (see api/notify.js for why). The webhook links are saved with the planner settings, so they
 // follow the person to their other devices.
 import { getConn } from './connections'
+import { hasNoSite } from './platform'
 import { sendTelegram } from './telegram'
 
 export const KINDS = {
@@ -43,7 +44,7 @@ export async function sendChat(hook, title, text) {
     return sendTelegram(conn, title, text)
   }
   const root = base()
-  if (!root && typeof location !== 'undefined' && location.protocol === 'app:') throw new Error('Sending to chat needs the NineFlow site. Set VITE_API_BASE for the desktop app.')
+  if (hasNoSite()) throw new Error('Sending to chat needs the NineFlow site. Set VITE_API_BASE for the desktop or phone app.')
   let res
   try {
     res = await fetch(`${root}/api/notify`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ kind: hook.kind, url: hook.url, title, text }) })

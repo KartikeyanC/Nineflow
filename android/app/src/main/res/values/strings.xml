@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">NineFlow</string>
+    <string name="title_activity_main">NineFlow</string>
+    <string name="package_name">app.nineflow.mobile</string>
+    <string name="custom_url_scheme">app.nineflow.mobile</string>
+</resources>

@@ -3,6 +3,10 @@
 // for the person's email/profile and for files this app creates in their
 // Drive (drive.file scope; the rest of their Drive stays out of reach).
 
+// In the phone app, the bridge (window.nineflowDesktop) must exist before this file reads it just below. An
+// import always finishes before the importing file runs, however the bundler splits chunks (a script tag or
+// an import in main.jsx was not enough: shared code can be loaded before an entry's own imports).
+import '../native/boot'
 import { mockEnabled } from './googleMock'
 
 // In the desktop app (desktop/preload.cjs) sign-in happens in the system

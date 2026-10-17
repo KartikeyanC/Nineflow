@@ -4,15 +4,17 @@
 // promptToTasks(prompt, { today, categories }) → [{ title, date, startTime, durationMinutes, priority, category }]
 // Throws an Error with a message that is fine to show.
 
+import { hasNoSite } from './platform'
+
 const TIME = /^([01]\d|2[0-3]):[0-5]\d$/
 const DATE = /^\d{4}-\d{2}-\d{2}$/
 
-// The web app calls its own site. The desktop app (app://) has no server, so
-// it calls the deployed site named by VITE_API_BASE.
+// The web app calls its own site. The desktop and phone apps have no server, so
+// they call the deployed site named by VITE_API_BASE.
 function endpoint(name) {
   const base = (import.meta.env.VITE_API_BASE || '').replace(/\/$/, '')
   if (base) return `${base}/api/${name}`
-  if (typeof location !== 'undefined' && location.protocol === 'app:') return null
+  if (hasNoSite()) return null
   return `/api/${name}`
 }
 

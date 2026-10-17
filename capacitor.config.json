@@ -1,0 +1,13 @@
+{
+  "appId": "app.nineflow.mobile",
+  "appName": "NineFlow",
+  "webDir": "dist",
+  "android": {
+    "allowMixedContent": false
+  },
+  "plugins": {
+    "LocalNotifications": {
+      "iconColor": "#FF6A13"
+    }
+  }
+}

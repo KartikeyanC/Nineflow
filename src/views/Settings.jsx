@@ -750,6 +750,13 @@ function ClosedReminders() {
   const [on, setOn] = useState(pushEnabled)
   const [busy, setBusy] = useState(false)
   const [note, setNote] = useState(null)
+  if (window.nineflowDesktop?.platform === 'android') {
+    return (
+      <Row label="When NineFlow is closed" hint="Reminders are set on this phone, so they arrive with NineFlow closed. Android may ask you to allow notifications, and “Alarms & reminders” so they arrive on the minute.">
+        <span className="text-xs font-semibold text-mint-fg">Always on</span>
+      </Row>
+    )
+  }
   if (window.nineflowDesktop) {
     return (
       <Row label="When NineFlow is closed" hint="The desktop app keeps running in the tray, so reminders still arrive. Right-click the tray icon to start NineFlow when you sign in.">

@@ -6,6 +6,7 @@
 // files.
 
 import { useEffect, useState } from 'react'
+import { isNativeApp } from './platform'
 
 let deferred = null // the browser's saved install prompt
 const listeners = new Set()
@@ -14,8 +15,8 @@ const notify = () => listeners.forEach((fn) => fn())
 if (typeof window !== 'undefined') {
   window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferred = e; notify() })
   window.addEventListener('appinstalled', () => { deferred = null; notify() })
-  // The desktop app (app://) ships its files, so it needs no service worker.
-  if (import.meta.env.PROD && 'serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+  // The desktop app (app://) and the phone app ship their files, so they need no service worker.
+  if (import.meta.env.PROD && 'serviceWorker' in navigator && /^https?:$/.test(location.protocol) && !isNativeApp()) {
     window.addEventListener('load', () => {
       navigator.serviceWorker.register('/sw.js').catch(() => {})
       // Hand the worker the files this page already loaded, so the app opens offline after the first visit.

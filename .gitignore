@@ -14,3 +14,7 @@ release
 
 # Google OAuth client files downloaded from Google Cloud (they contain a secret)
 client_secret*.json
+
+# Android build tools and signing key (see docs/MOBILE.md)
+.android-tools/
+android-signing/

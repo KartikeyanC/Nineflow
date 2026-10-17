@@ -3,6 +3,7 @@
 // by a web page). Each session is sent once: lib/connections.js remembers which ones went.
 import { format } from 'date-fns'
 import { markSent, wasSent } from './connections'
+import { hasNoSite } from './platform'
 
 // Finished sessions that began on `dayKey` and ran at least a minute:
 // [{ key: 'taskId|start', title, start: Date, end: Date }]
@@ -76,7 +77,7 @@ const base = () => (import.meta.env.VITE_API_BASE || '').replace(/\/$/, '')
 
 async function toggl(body) {
   const root = base()
-  if (!root && typeof location !== 'undefined' && location.protocol === 'app:') throw new Error('Toggl needs the NineFlow site. Set VITE_API_BASE for the desktop app.')
+  if (hasNoSite()) throw new Error('Toggl needs the NineFlow site. Set VITE_API_BASE for the desktop or phone app.')
   let res
   try { res = await fetch(`${root}/api/toggl`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }) }
   catch { throw new Error("Couldn't reach NineFlow's server. Check your connection and try again.") }

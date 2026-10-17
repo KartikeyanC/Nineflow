@@ -3,10 +3,11 @@
 // app can subscribe to the link. The secret is in the planner's settings (so every device shows the
 // same link and keeps it up to date).
 import { useSyncExternalStore } from 'react'
+import { hasNoSite } from './platform'
 
 const apiRoot = () => (import.meta.env.VITE_API_BASE || '').replace(/\/$/, '')
 // Where the link points: the NineFlow site. The desktop app has none of its own, so it needs VITE_API_BASE.
-const siteRoot = () => apiRoot() || (typeof location !== 'undefined' && location.protocol !== 'app:' ? location.origin : '')
+const siteRoot = () => apiRoot() || (hasNoSite() || typeof location === 'undefined' ? '' : location.origin)
 
 export const feedAvailable = () => !!siteRoot()
 export const feedUrl = (token) => `${siteRoot()}/api/feed?k=${token}`
