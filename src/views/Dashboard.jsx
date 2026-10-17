@@ -3,7 +3,8 @@ import { addDays, differenceInCalendarDays, format, isSameDay, parseISO, subDays
 import { Bar, BarChart, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis } from 'recharts'
 import {
   ArrowRight, Plus, X, Flame, ListChecks, CheckCircle2, Activity, Circle, Eye,
-  Sparkles, AlertTriangle, TrendingUp, Clock3, Flag, PieChart as PieIcon, Repeat, Wand2, Zap, Moon, CalendarDays, Hourglass,
+  Sparkles, AlertTriangle, TrendingUp, Clock3, Flag, PieChart as PieIcon, Repeat, Wand2, Zap, Moon, CalendarDays, Hourglass, PartyPopper,
+  Sun, CloudSun, Cloud, CloudFog, CloudDrizzle, CloudRain, CloudSnow, CloudLightning, Droplets,
 } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
 import { uid } from '../lib/storage'
@@ -14,6 +15,8 @@ import { buildInsights } from '../lib/insights'
 import { describePlan } from '../lib/schedule'
 import { eventsOn, useCalendarEvents, useShowEvents } from '../lib/gcalEvents'
 import { currentProfile, firstName } from '../lib/profiles'
+import { describeCode, useWeather } from '../lib/weather'
+import { useHolidays } from '../lib/holidays'
 import { colorOf, cssVar, PRIORITY_STYLE } from '../lib/colors'
 import { CategoryTag, CheckCircle, Segmented, cx } from '../components/ui'
 import RequiredBadge from '../components/RequiredBadge'
@@ -27,8 +30,10 @@ const hh = (min) => `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(m
 const INSIGHT_ICON = { sparkles: Sparkles, alert: AlertTriangle, trend: TrendingUp, clock: Clock3, flag: Flag, pie: PieIcon }
 
 export default function Dashboard() {
-  const { tasks, now, dashboardDate, setDashboardDate } = usePlanner()
+  const { tasks, now, settings, dashboardDate, setDashboardDate } = usePlanner()
   const day = useMemo(() => parseISO(dashboardDate), [dashboardDate])
+  const holidays = useHolidays(settings.holidays, [day.getFullYear()])
+  const holiday = holidays?.[dashboardDate] || null
   const isToday = isSameDay(day, now)
   const list = useMemo(() => sortByTime(tasksOn(tasks, dashboardDate)), [tasks, dashboardDate])
   const counts = {
@@ -48,6 +53,8 @@ export default function Dashboard() {
           <h1 className="h-display text-3xl">{greeting}{firstName(currentProfile()?.name) ? `, ${firstName(currentProfile().name)}` : ''} 👋</h1>
           <p className="text-sm text-muted mt-1 font-medium">{format(day, 'EEEE, MMMM d, yyyy')}</p>
           <p className="text-sm text-faint">Let's make today productive.</p>
+          {holiday && <p className="mt-1.5 inline-flex items-center gap-1.5 text-[12px] font-semibold text-peach-fg"><PartyPopper size={13} aria-hidden="true" /> {holiday}</p>}
+          <WeatherChip dayKey={dashboardDate} />
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {isToday && <RitualPrompt />}
@@ -91,6 +98,31 @@ export default function Dashboard() {
 
 // To do has its own colour (the logo orange), which is not one of the category colours in colors.js.
 const TODO_TONE = { bg: 'bg-todo-soft', text: 'text-todo' }
+
+const WEATHER_ICONS = { Sun, CloudSun, Cloud, CloudFog, CloudDrizzle, CloudRain, CloudSnow, CloudLightning }
+
+// The weather for the day being looked at, from Open-Meteo (Settings → Connections). Nothing shows while it is off.
+function WeatherChip({ dayKey }) {
+  const { settings } = usePlanner()
+  const { state, data } = useWeather(settings.weather)
+  if (state === 'off' || state === 'loading') return null
+  if (state === 'error') return <p className="mt-1.5 text-[12px] text-faint">Weather isn't available right now.</p>
+  const d = data.days.find((x) => x.date === dayKey)
+  const isToday = dayKey === data.days[0]?.date
+  if (!d) return null
+  const { label, icon } = describeCode(isToday ? data.now.code : d.code)
+  const Icon = WEATHER_ICONS[icon] || Cloud
+  const place = settings.weather.place
+  return (
+    <p className="mt-1.5 inline-flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[12px] font-semibold text-muted" title={`${label} in ${place.name}${place.country ? `, ${place.country}` : ''}`}>
+      <Icon size={14} className="text-sky-fg" aria-hidden="true" />
+      <span>{isToday ? `${data.now.temp}°` : `${d.max}°`}</span>
+      <span className="text-faint font-medium">{d.max}° / {d.min}° · {label}</span>
+      {d.rain != null && d.rain >= 30 && <span className="inline-flex items-center gap-1 text-faint font-medium"><Droplets size={12} aria-hidden="true" />{d.rain}%</span>}
+      <span className="text-faint font-medium">· {place.name}</span>
+    </p>
+  )
+}
 
 function Stat({ label, value, sub, icon: Icon, tone }) {
   const c = typeof tone === 'string' ? colorOf(tone) : tone

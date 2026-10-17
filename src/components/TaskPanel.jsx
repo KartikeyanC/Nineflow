@@ -1,7 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { format, parseISO } from 'date-fns'
-import { Activity, CalendarCheck, CalendarDays, Clock, Timer, Tag, Flag, Trash2, X, Repeat, ArrowRight, CalendarPlus, Layers, Bell, Hash, Columns3 } from 'lucide-react'
+import { Activity, CalendarCheck, CalendarDays, Clock, Timer, Tag, Flag, Trash2, X, Repeat, ArrowRight, CalendarPlus, Layers, Bell, Hash, Columns3, Video } from 'lucide-react'
 import { googleCalendarUrl } from '../lib/calendar'
+import { meetLinkFor } from '../lib/gcal'
+import { useCalendarOn } from '../features/CalendarSync'
 import { currentProfileId } from '../lib/profiles'
 import { cleanColumns, columnOf } from '../lib/columns'
 import { currentWorkspaceId, listWorkspaces } from '../lib/workspaces'
@@ -20,6 +22,7 @@ const STATUS_PILL = { todo: 'bg-todo-soft text-todo', working: 'bg-sky text-sky-
 
 // Floating side panel that edits the selected task in place.
 export default function TaskPanel() {
+  const calendarOn = useCalendarOn()
   const { allTasks: tasks, settings, selectedId, resumeTask, restoreTask, setSelectedId, updateTask, setStatus, removeTask, removeSeries, setRecurrence, applyToUpcoming, moveToWorkspace, moveTask, focus, startFocus, categoryById, now } = usePlanner()
   const task = tasks.find((t) => t.id === selectedId)
   const [park, setPark] = useState(null) // 'pause' | 'drop'
@@ -187,6 +190,7 @@ export default function TaskPanel() {
             <Row icon={Hash} label="Tags" top>
               <TagsField task={task} />
             </Row>
+            {calendarOn && task.date && <MeetRow task={task} onChange={(meet) => updateTask(task.id, { meet })} />}
             {otherWorkspaces.length > 0 && focus?.taskId !== task.id && (
               <Row icon={Layers} label="Workspace">
                 <select className="input h-9 py-0 w-full" value="" aria-label="Move this task to another workspace"
@@ -265,6 +269,22 @@ export default function TaskPanel() {
         {park && <ParkDialog task={task} mode={park} onClose={() => setPark(null)} />}
       </aside>
     </div>
+  )
+}
+
+// A Google Meet link on the task's calendar event. Needs Calendar sync (Settings); the link is made the
+// next time the sync runs, and stays on the event if this is switched off again.
+function MeetRow({ task, onChange }) {
+  const link = meetLinkFor(task.id)
+  return (
+    <Row icon={Video} label="Meet" top>
+      <div className="flex flex-wrap items-center gap-2">
+        <Segmented size="sm" value={task.meet ? 'on' : 'off'} onChange={(v) => onChange(v === 'on')} options={[{ value: 'off', label: 'No link' }, { value: 'on', label: 'Add Meet link' }]} />
+        {task.meet && (link
+          ? <a href={link} target="_blank" rel="noopener noreferrer" className="text-[12px] font-semibold text-lav-fg underline underline-offset-2">Join the meeting</a>
+          : <span className="text-[12px] text-muted">Added to the calendar event in a moment.</span>)}
+      </div>
+    </Row>
   )
 }
 

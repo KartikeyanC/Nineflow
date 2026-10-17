@@ -23,6 +23,8 @@ export const loadMap = () => {
 }
 const saveMap = (m) => { try { localStorage.setItem(MAP_KEY(), JSON.stringify(m)) } catch { /* ignore */ } }
 export const syncedCount = () => Object.keys(loadMap()).length
+// The Google Meet link of a task's event, once the sync has made it ('' until then).
+export const meetLinkFor = (taskId) => loadMap()[taskId]?.meet || ''
 
 // What goes to Google for one task.
 export function eventFor(task, categoryName) {
@@ -51,7 +53,13 @@ export function eventFor(task, categoryName) {
   }
 }
 
-const hashOf = (ev) => JSON.stringify([ev.summary, ev.description, ev.start, ev.end, ev.reminders])
+// A Meet link is asked for once per event (a second request would add another meeting). It goes with
+// `conferenceDataVersion=1`, and only on the call that creates it.
+const withMeet = (ev, task) => ({ ...ev, conferenceData: { createRequest: { requestId: `nf-${task.id}`, conferenceSolutionKey: { type: 'hangoutsMeet' } } } })
+const MEET_PARAM = '?conferenceDataVersion=1'
+const meetOf = (ev) => ev?.hangoutLink || ev?.conferenceData?.entryPoints?.find((p) => p.entryPointType === 'video')?.uri || ''
+
+const hashOf = (ev, task) => JSON.stringify([ev.summary, ev.description, ev.start, ev.end, ev.reminders, task?.meet === true])
 
 async function call(token, url, opts = {}) {
   let r
@@ -94,7 +102,7 @@ export async function syncCalendar({ tasks, categories = [], now = new Date(), t
   const todo = []
   for (const t of wanted) {
     const ev = eventFor(t, catName(t.category))
-    const hash = hashOf(ev)
+    const hash = hashOf(ev, t)
     if (!map[t.id]) todo.push({ t, ev, hash, kind: 'create' })
     else if (map[t.id].hash !== hash) todo.push({ t, ev, hash, kind: 'update' })
   }
@@ -102,14 +110,21 @@ export async function syncCalendar({ tasks, categories = [], now = new Date(), t
   try {
     await pool(todo, 3, async ({ t, ev, hash, kind }) => {
       if (kind === 'update') {
-        const r = await call(token, `${API}/${encodeURIComponent(map[t.id].eventId)}`, { method: 'PATCH', body: JSON.stringify(ev) })
-        if (r.ok) { map[t.id] = { eventId: map[t.id].eventId, hash }; out.updated += 1; return }
+        const had = map[t.id].meet || ''
+        const wantsNew = t.meet === true && !had
+        const r = await call(token, `${API}/${encodeURIComponent(map[t.id].eventId)}${wantsNew ? MEET_PARAM : ''}`, { method: 'PATCH', body: JSON.stringify(wantsNew ? withMeet(ev, t) : ev) })
+        if (r.ok) {
+          const link = wantsNew ? meetOf(await r.json().catch(() => null)) : had
+          map[t.id] = { eventId: map[t.id].eventId, hash, ...(link ? { meet: link } : {}) }
+          out.updated += 1; return
+        }
         // Deleted from the calendar by hand: put it back.
       }
-      const r = await call(token, API, { method: 'POST', body: JSON.stringify(ev) })
+      const r = await call(token, `${API}${t.meet === true ? MEET_PARAM : ''}`, { method: 'POST', body: JSON.stringify(t.meet === true ? withMeet(ev, t) : ev) })
       if (!r.ok) throw new Error(`Google Calendar error ${r.status}`)
       const made = await r.json()
-      map[t.id] = { eventId: made.id, hash }
+      const link = t.meet === true ? meetOf(made) : ''
+      map[t.id] = { eventId: made.id, hash, ...(link ? { meet: link } : {}) }
       out.created += 1
     })
     await pool(stale, 3, async (id) => {

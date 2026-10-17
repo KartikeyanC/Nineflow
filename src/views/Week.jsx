@@ -2,11 +2,12 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { addDays, format, getISOWeek, isSameDay, isSameMonth, parseISO, startOfWeek } from 'date-fns'
 import { DndContext, KeyboardSensor, MouseSensor, TouchSensor, pointerWithin, useDraggable, useDroppable, useSensor, useSensors } from '@dnd-kit/core'
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { ChevronLeft, ChevronRight, Plus, Check, CheckCircle2, Flame, Wand2, CalendarDays } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Plus, Check, CheckCircle2, Flame, Wand2, CalendarDays, PartyPopper } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
 import { dateKey, fmtMinutes, tasksOn, totalMinutes } from '../lib/tasks'
 import { unscheduledOn, describePlan } from '../lib/schedule'
 import { eventsOn, useCalendarEvents, useShowEvents } from '../lib/gcalEvents'
+import { useHolidays } from '../lib/holidays'
 import { colorOf, cssVar } from '../lib/colors'
 import { PriorityPill, ProgressBar, Segmented, cx } from '../components/ui'
 
@@ -71,6 +72,7 @@ export default function Week() {
     return Array.from({ length: 7 }, (_, i) => addDays(start, i))
   }, [anchor, mode, settings.weekStart])
 
+  const holidays = useHolidays(settings.holidays, days.map((d) => d.getFullYear())) // public holidays, or null when off
   const todayInRange = days.some((d) => isSameDay(d, now))
   const shift = (dir) => setAnchor((a) => addDays(a, dir * (mode === 'day' ? 1 : 7)))
 
@@ -194,14 +196,16 @@ export default function Week() {
             </div>
             {days.map((day) => {
               const today = isSameDay(day, now)
+              const holiday = holidays?.[dateKey(day)]
               return (
-                <button key={dateKey(day)} type="button"
+                <button key={dateKey(day)} type="button" title={holiday || undefined} aria-label={holiday ? `${format(day, 'EEEE d')}, ${holiday}` : undefined}
                   onClick={() => { setAnchor(day); setMode('day') }}
                   className={cx('rounded-2xl py-2 flex flex-col items-center transition hover:-translate-y-0.5',
                     today ? 'bg-brand text-white' : 'bg-page text-ink hover:bg-lav/60')}>
                   <span className={cx('text-[10px] font-bold uppercase tracking-wider', today ? 'text-white/80' : 'text-faint')}>{format(day, 'EEE')}</span>
                   {/* .h-display sets text-ink, so today's date needs its colour set here or it vanishes on the ink tile. */}
                   <span className={cx('h-display text-2xl leading-tight', today && 'text-white')}>{format(day, 'd')}</span>
+                  {holiday && <PartyPopper size={11} className={cx('mt-0.5', today ? 'text-white' : 'text-peach-fg')} aria-hidden="true" />}
                 </button>
               )
             })}

@@ -36,6 +36,8 @@ export const DEFAULT_SETTINGS = {
   notes: [], // sticky notes: [{ id, text, color, pinned, createdAt, updatedAt }]
   countdowns: [], // days-left cards on the Dashboard: [{ id, name, date: 'yyyy-MM-dd' }]
   sidebarMin: false, // keep the sidebar an icon rail even where its labels would fit (see lib/sidebarRail.js)
+  weather: { on: false, place: null }, // today's weather on the Dashboard (lib/weather.js); place: { name, region, country, lat, lon }
+  holidays: { on: false, country: '' }, // public holidays on Week and Month (lib/holidays.js); country: ISO code, '' = from the browser
 }
 
 const FOCUS_KEY = () => storageKey('focus')
@@ -121,6 +123,8 @@ export function loadSettings() {
     modules: { ...DEFAULT_SETTINGS.modules, ...(stored.modules || {}) },
     workHours: { ...DEFAULT_SETTINGS.workHours, ...(stored.workHours || {}) },
     reminders: { ...DEFAULT_SETTINGS.reminders, ...(stored.reminders || {}) },
+    weather: { ...DEFAULT_SETTINGS.weather, ...(stored.weather || {}) },
+    holidays: { ...DEFAULT_SETTINGS.holidays, ...(stored.holidays || {}) },
     columns: stored.columnsV === COLUMNS_VERSION ? cleanColumns(stored.columns) : migrateColumns(cleanColumns(stored.columns)),
     columnsV: COLUMNS_VERSION,
     palette: THEMES.some((t) => t.id === stored.palette) ? stored.palette : 'default',
@@ -183,6 +187,7 @@ function normalizeTask(t) {
     interruption: t.interruption && typeof t.interruption === 'object' ? t.interruption : null,
     trail: Array.isArray(t.trail) ? t.trail.filter((e) => e && /^\d{4}-\d{2}-\d{2}$/.test(e.date || '') && ['todo', 'working', 'review', 'completed'].includes(e.status)).slice(-60).map((e) => ({ date: e.date, status: e.status, column: typeof e.column === 'string' ? e.column : null })) : [],
     hold: t.hold && typeof t.hold === 'object' ? { reason: String(t.hold.reason || 'Not now').slice(0, 120), since: typeof t.hold.since === 'string' ? t.hold.since : null, until: /^\d{4}-\d{2}-\d{2}$/.test(t.hold.until || '') ? t.hold.until : null } : null,
+    meet: t.meet === true, // add a Google Meet link to its calendar event (lib/gcal.js)
     dropped: t.dropped && typeof t.dropped === 'object' ? { reason: String(t.dropped.reason || 'Let go').slice(0, 120), at: typeof t.dropped.at === 'string' ? t.dropped.at : new Date().toISOString() } : null,
   }
 }

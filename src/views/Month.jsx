@@ -1,12 +1,13 @@
 import React, { useMemo } from 'react'
 import { addDays, addMonths, eachDayOfInterval, endOfMonth, endOfWeek, format, isSameDay, isSameMonth, parseISO, startOfMonth, startOfWeek } from 'date-fns'
-import { ChevronLeft, ChevronRight, Flame, CheckCircle2, Clock3 } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Flame, CheckCircle2, Clock3, PartyPopper } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
 import { dateKey, tasksOn, todayKey } from '../lib/tasks'
 import { cssVar } from '../lib/colors'
 import { IconButton, Segmented, cx } from '../components/ui'
 import SeasonScene from '../components/SeasonScene'
 import { climateOf, monthLook } from '../lib/climate'
+import { useHolidays } from '../lib/holidays'
 
 // Workload levels 0–4 and the lavender opacity for each.
 const LEVEL_ALPHA = [0, 0.1, 0.25, 0.45, 0.75]
@@ -36,13 +37,16 @@ export default function Month() {
   )
 
   // One record per tile: tasks, planned hours, level.
+  // Public holidays (Settings → Connections), by 'yyyy-MM-dd'; null while switched off.
+  const holidays = useHolidays(settings.holidays, grid.map((d) => d.getFullYear()))
+
   const cells = useMemo(() => grid.map((day) => {
     const key = dateKey(day)
     const list = tasksOn(tasks, key)
     const hours = list.reduce((s, t) => s + t.durationMinutes, 0) / 60
     const level = measure === 'count' ? levelOf(list.length, COUNT_STEPS) : levelOf(hours, HOUR_STEPS)
-    return { day, key, list, hours, level, inMonth: isSameMonth(day, monthStart), today: isSameDay(day, now), selected: key === dashboardDate }
-  }), [grid, tasks, measure, monthStart, now, dashboardDate])
+    return { day, key, list, hours, level, holiday: holidays?.[key] || null, inMonth: isSameMonth(day, monthStart), today: isSameDay(day, now), selected: key === dashboardDate }
+  }), [grid, tasks, measure, monthStart, now, dashboardDate, holidays])
 
   const monthCells = cells.filter((c) => c.inMonth)
   const stats = useMemo(() => {
@@ -139,11 +143,11 @@ export default function Month() {
 }
 
 function Tile({ cell, onOpen }) {
-  const { day, list, level, inMonth, today, selected } = cell
+  const { day, list, level, holiday, inMonth, today, selected } = cell
   const strong = level === 4
   return (
-    <button type="button" onClick={onOpen} aria-label={`${format(day, 'EEEE, MMMM d')}${list.length ? `, ${list.length} task${list.length === 1 ? '' : 's'}` : ''}. Open this day`}
-      aria-current={today ? 'date' : undefined}
+    <button type="button" onClick={onOpen} aria-label={`${format(day, 'EEEE, MMMM d')}${holiday ? `, ${holiday}` : ''}${list.length ? `, ${list.length} task${list.length === 1 ? '' : 's'}` : ''}. Open this day`}
+      aria-current={today ? 'date' : undefined} title={holiday || undefined}
       className={cx(
         'relative text-left rounded-xl sm:rounded-2xl p-1.5 sm:p-2 min-h-[60px] sm:min-h-[104px] flex flex-col transition duration-200 hover:-translate-y-0.5 hover:shadow-lift',
         level === 0 && 'border border-line',
@@ -162,10 +166,11 @@ function Tile({ cell, onOpen }) {
         <span className={cx('text-sm font-bold leading-none', today && 'text-coral-fg')}>{format(day, 'd')}</span>
       </div>
       <div className="mt-auto space-y-0.5 hidden sm:block">
-        {list.slice(0, 2).map((t) => (
+        {holiday && <p className={cx('text-[10px] font-bold truncate inline-flex items-center gap-1 max-w-full', strong ? 'text-white' : 'text-peach-fg')}><PartyPopper size={10} className="shrink-0" />{holiday}</p>}
+        {list.slice(0, holiday ? 1 : 2).map((t) => (
           <p key={t.id} className={cx('text-[11px] font-medium truncate', t.status === 'completed' && 'line-through opacity-60', !strong && 'text-muted')}>{t.title}</p>
         ))}
-        {list.length > 2 && <p className={cx('text-[10px] font-semibold', strong ? 'text-white/70' : 'text-faint')}>+{list.length - 2} more</p>}
+        {list.length > (holiday ? 1 : 2) && <p className={cx('text-[10px] font-semibold', strong ? 'text-white/70' : 'text-faint')}>+{list.length - (holiday ? 1 : 2)} more</p>}
       </div>
     </button>
   )

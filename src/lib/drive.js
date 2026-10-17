@@ -88,3 +88,22 @@ export async function updateFile(fileId, data) {
   })
   return r ? r.json() : null
 }
+
+// A Google Sheet or Google Doc made by uploading plain content and letting Drive convert it
+// (CSV → Sheet, HTML → Doc). Works with the drive.file scope, so no extra permission is needed.
+// `googleType` is the Google type to convert to; the file goes into the "Daily Planner" folder.
+export async function createConverted({ name, content, sourceType, googleType }) {
+  const folder = await ensureFolder()
+  const boundary = `dp${Math.random().toString(36).slice(2)}`
+  const body = [
+    `--${boundary}`, 'Content-Type: application/json; charset=UTF-8', '',
+    JSON.stringify({ name, parents: [folder.id], mimeType: googleType }),
+    `--${boundary}`, `Content-Type: ${sourceType}; charset=UTF-8`, '',
+    content,
+    `--${boundary}--`, '',
+  ].join('\r\n')
+  const r = await call(`${UPLOAD}/files?uploadType=multipart&fields=${FIELDS}`, {
+    method: 'POST', headers: { 'Content-Type': `multipart/related; boundary=${boundary}` }, body,
+  })
+  return r.json() // { id, name, webViewLink, … }
+}

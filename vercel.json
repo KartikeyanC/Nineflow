@@ -9,7 +9,7 @@
       "headers": [
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' 'sha256-BxIEEQSVqSGgNKKR7feeYsXkFzP5wglE1W2weubuADE=' 'sha256-Dl54cYuYsKZKQDp+fxxCesUtTOposKHZJtjOIK5rYGs=' 'sha256-bMcN6UnGQ6PPzrs10f+yACXvFxxoOyfjE/zUMfs3hGg=' https://accounts.google.com/gsi/client; style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style; img-src 'self' data: blob: https://*.googleusercontent.com; font-src 'self' data:; connect-src 'self' https://www.googleapis.com https://oauth2.googleapis.com https://accounts.google.com/gsi/ https://*.supabase.co wss://*.supabase.co; frame-src https://accounts.google.com/gsi/; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+          "value": "default-src 'self'; script-src 'self' 'sha256-BxIEEQSVqSGgNKKR7feeYsXkFzP5wglE1W2weubuADE=' 'sha256-Dl54cYuYsKZKQDp+fxxCesUtTOposKHZJtjOIK5rYGs=' 'sha256-bMcN6UnGQ6PPzrs10f+yACXvFxxoOyfjE/zUMfs3hGg=' https://accounts.google.com/gsi/client; style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style; img-src 'self' data: blob: https://*.googleusercontent.com; font-src 'self' data:; connect-src 'self' https://www.googleapis.com https://oauth2.googleapis.com https://accounts.google.com/gsi/ https://*.supabase.co wss://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://date.nager.at; frame-src https://accounts.google.com/gsi/; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
         },
         {
           "key": "Strict-Transport-Security",

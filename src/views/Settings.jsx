@@ -8,9 +8,13 @@ import { reminderSchedule } from '../lib/taskMeta'
 import { inboxAddress, inboxAvailable, newInboxKey } from '../lib/emailInbox'
 import { connectCalendar, disconnectCalendar, syncNow, syncedEvents, useCalendarOn, useCalendarStatus } from '../features/CalendarSync'
 import { isConfigured } from '../lib/google'
+import { currentProfile } from '../lib/profiles'
 import ColumnsEditor from '../components/ColumnsEditor'
 import { cleanTemplates, cleanViews, critCount } from '../lib/views'
 import { setShowEvents, useCalendarEvents, useShowEvents } from '../lib/gcalEvents'
+import { searchPlaces } from '../lib/weather'
+import { exportReportToDoc, exportTasksToSheet } from '../lib/exportGoogle'
+import { COUNTRIES, countryFromBrowser } from '../lib/holidays'
 import { format } from 'date-fns'
 import AccountSection from '../features/Account'
 import InstallApp from '../features/InstallApp'
@@ -138,6 +142,107 @@ function CalendarConnect() {
       )}
       {st.message && !on && <p className="mt-2 text-[12px] text-peach-fg font-semibold">{st.message}</p>}
       {error && <p role="alert" className="mt-2 text-[13px] text-coral-fg font-semibold">{error}</p>}
+    </div>
+  )
+}
+
+// Free, no-account connections: today's weather (Open-Meteo) and public holidays (Nager.Date).
+// Both are switched on here and appear on the Dashboard, Week and Month.
+function ConnectionsSection({ settings, updateSettings }) {
+  const { tasks, now, dashboardDate } = usePlanner()
+  const [query, setQuery] = useState('')
+  const [results, setResults] = useState(null)
+  const [searching, setSearching] = useState(false)
+  const [error, setError] = useState(null)
+  const place = settings.weather.place
+  const onOff = (on, set) => (
+    <Segmented size="sm" value={on ? 'on' : 'off'} onChange={(v) => set(v === 'on')} options={[{ value: 'on', label: 'On' }, { value: 'off', label: 'Off' }]} />
+  )
+  const search = async (e) => {
+    e.preventDefault(); setError(null); setSearching(true)
+    try { setResults(await searchPlaces(query)) } catch (err) { setError(err.message || 'Could not search places.') } finally { setSearching(false) }
+  }
+  const pick = (p) => { updateSettings({ weather: { on: true, place: p } }); setResults(null); setQuery('') }
+  const country = settings.holidays.country || countryFromBrowser()
+
+  return (
+    <section className="card p-5 space-y-5">
+      <div>
+        <h2 className="h-display text-base mb-1">Connections</h2>
+        <p className="text-sm text-muted">Free services that add context to your day. None needs an account, and only the city or country you choose is sent.</p>
+      </div>
+
+      <div className="space-y-3">
+        <Row label="Weather" hint={place ? `${place.name}${place.region ? `, ${place.region}` : ''}${place.country ? `, ${place.country}` : ''}. Shown under the date on the Dashboard (Open-Meteo).` : 'Today and the week ahead under the date on the Dashboard (Open-Meteo).'}>
+          {onOff(settings.weather.on && !!place, (on) => updateSettings({ weather: { ...settings.weather, on } }))}
+        </Row>
+        <form className="flex flex-wrap items-center gap-2" onSubmit={search}>
+          <input className="input max-w-[260px]" placeholder={place ? 'Change city' : 'Search for your city'} aria-label="Search for your city" value={query} onChange={(e) => setQuery(e.target.value)} />
+          <button type="submit" className="btn-ghost" disabled={searching || query.trim().length < 2}>{searching ? 'Searching…' : 'Search'}</button>
+        </form>
+        {results && (results.length ? (
+          <ul className="rounded-2xl border border-line divide-y divide-line overflow-hidden max-w-md" aria-label="Matching places">
+            {results.map((p) => (
+              <li key={`${p.lat},${p.lon}`}>
+                <button type="button" className="w-full text-left px-3.5 py-2 text-sm hover:bg-page" onClick={() => pick(p)}>
+                  <span className="font-semibold">{p.name}</span><span className="text-muted">{p.region ? `, ${p.region}` : ''}{p.country ? `, ${p.country}` : ''}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : <p className="text-[13px] text-muted">No city matches that. Try another spelling.</p>)}
+        {error && <p role="alert" className="text-[13px] text-coral-fg font-semibold">{error}</p>}
+      </div>
+
+      <div className="space-y-3 pt-4 border-t border-line">
+        <Row label="Public holidays" hint="Marked on Week, Month and the Dashboard (Nager.Date). Not every country has data.">
+          {onOff(settings.holidays.on, (on) => updateSettings({ holidays: { ...settings.holidays, on } }))}
+        </Row>
+        {settings.holidays.on && (
+          <label className="flex flex-wrap items-center gap-2 text-sm">
+            <span className="font-semibold">Country</span>
+            <select className="input w-auto max-w-[220px]" value={country} onChange={(e) => updateSettings({ holidays: { ...settings.holidays, country: e.target.value } })}>
+              {!COUNTRIES.some(([c]) => c === country) && <option value={country}>{country || 'Choose a country'}</option>}
+              {COUNTRIES.map(([c, n]) => <option key={c} value={c}>{n}</option>)}
+            </select>
+          </label>
+        )}
+      </div>
+      {isConfigured() && <GoogleExport tasks={tasks} categories={settings.categories} now={now} dayKey={dashboardDate} />}
+    </section>
+  )
+}
+
+// One-off copies into the person's own Google Drive (Daily Planner folder), as a Google Sheet or Google Doc.
+function GoogleExport({ tasks, categories, now, dayKey }) {
+  const [busy, setBusy] = useState('')
+  const [done, setDone] = useState(null) // { label, url }
+  const [error, setError] = useState(null)
+  const run = (kind, make) => async () => {
+    setError(null); setDone(null); setBusy(kind)
+    try {
+      const f = await make()
+      setDone({ label: f.name, url: f.webViewLink })
+    } catch (e) {
+      setError(e?.name === 'AuthError' || /expired|connected/i.test(e?.message || '') ? 'Sign in with Google again to export.' : (e?.message || 'Could not export.'))
+    } finally { setBusy('') }
+  }
+  return (
+    <div className="space-y-3 pt-4 border-t border-line">
+      <div>
+        <p className="text-sm font-semibold">Google Sheets and Docs</p>
+        <p className="text-xs text-muted mt-0.5">Copies made in your own Google Drive (Daily Planner folder). They are snapshots, so they don't change when your tasks do.</p>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <button type="button" className="btn-ghost" disabled={!!busy} onClick={run('sheet', () => exportTasksToSheet({ tasks, categories, now }))}>
+          {busy === 'sheet' ? <><Loader2 size={14} className="animate-spin" /> Exporting…</> : <><Download size={14} /> All tasks to a Google Sheet</>}
+        </button>
+        <button type="button" className="btn-ghost" disabled={!!busy} onClick={run('doc', () => exportReportToDoc({ tasks, categories, dayKey, now, name: currentProfile()?.name || '' }))}>
+          {busy === 'doc' ? <><Loader2 size={14} className="animate-spin" /> Exporting…</> : <><Download size={14} /> The day's report to a Google Doc</>}
+        </button>
+      </div>
+      {done && <p role="status" className="text-[13px] font-semibold text-mint-fg">Saved “{done.label}”. {done.url && <a href={done.url} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">Open it</a>}</p>}
+      {error && <p role="alert" className="text-[13px] text-coral-fg font-semibold">{error}</p>}
     </div>
   )
 }
@@ -369,6 +474,8 @@ export default function Settings() {
             <button type="button" className="btn-ghost" onClick={() => downloadIcs(tasks, settings.categories)}><CalendarPlus size={14} /> Download .ics for Google Calendar</button>
           </div>
         </section>
+
+        <ConnectionsSection settings={settings} updateSettings={updateSettings} />
 
         {/* Danger zone */}
         <section className="rounded-card border border-coral-fg/30 bg-coral/40 p-5">
