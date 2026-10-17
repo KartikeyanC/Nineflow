@@ -38,6 +38,7 @@ export const DEFAULT_SETTINGS = {
   sidebarMin: false, // keep the sidebar an icon rail even where its labels would fit (see lib/sidebarRail.js)
   weather: { on: false, place: null }, // today's weather on the Dashboard (lib/weather.js); place: { name, region, country, lat, lon }
   holidays: { on: false, country: '' }, // public holidays on Week and Month (lib/holidays.js); country: ISO code, '' = from the browser
+  chat: { hooks: [], autoReport: false }, // chat webhooks (lib/notify.js): [{ id, kind, name, url }]; autoReport sends the day's report when you close the day
 }
 
 const FOCUS_KEY = () => storageKey('focus')
@@ -112,6 +113,16 @@ export function saveHabits(habits) {
   write(HABITS_KEY(), habits)
 }
 
+// Chat webhooks: at most 8, each a known service (see lib/notify.js for the allowed kinds).
+const CHAT_KINDS = ['slack', 'discord', 'teams', 'ntfy', 'webhook']
+function cleanChat(v) {
+  const hooks = Array.isArray(v?.hooks)
+    ? v.hooks.filter((h) => h && CHAT_KINDS.includes(h.kind) && typeof h.url === 'string' && /^https:\/\//.test(h.url))
+      .slice(0, 8).map((h) => ({ id: typeof h.id === 'string' ? h.id : uid(), kind: h.kind, name: String(h.name || '').slice(0, 40), url: h.url.slice(0, 600) }))
+    : []
+  return { hooks, autoReport: v?.autoReport === true }
+}
+
 export function loadSettings() {
   const stored = read(SETTINGS_KEY(), {})
   const settings = {
@@ -125,6 +136,7 @@ export function loadSettings() {
     reminders: { ...DEFAULT_SETTINGS.reminders, ...(stored.reminders || {}) },
     weather: { ...DEFAULT_SETTINGS.weather, ...(stored.weather || {}) },
     holidays: { ...DEFAULT_SETTINGS.holidays, ...(stored.holidays || {}) },
+    chat: cleanChat(stored.chat),
     columns: stored.columnsV === COLUMNS_VERSION ? cleanColumns(stored.columns) : migrateColumns(cleanColumns(stored.columns)),
     columnsV: COLUMNS_VERSION,
     palette: THEMES.some((t) => t.id === stored.palette) ? stored.palette : 'default',

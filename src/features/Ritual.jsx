@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { addDays } from 'date-fns'
-import { X, ArrowRight, ArrowLeft, Sunrise, Moon, Copy, Check, Target, Inbox, Plus } from 'lucide-react'
+import { addDays, format } from 'date-fns'
+import { X, ArrowRight, ArrowLeft, Sunrise, Moon, Copy, Check, Target, Inbox, Plus, Send, Loader2 } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
 import { dateKey, fmtMinutes, isOverdue, sortByTime, tasksOn, totalMinutes } from '../lib/tasks'
 import { dayReport } from '../lib/report'
 import { currentProfile } from '../lib/profiles'
+import { KINDS, defaultName, sendChat, sendToAll } from '../lib/notify'
 import { readDayNote, updateDayNote } from '../work/workStore'
 import { colorOf } from '../lib/colors'
 import { cx, useDialogFocus } from '../components/ui'
@@ -154,6 +155,8 @@ function ShutdownFlow({ step, setStep, close }) {
   const tomorrow = dateKey(addDays(now, 1))
   const [note, setNote] = useState(() => readDayNote(today))
   const [copied, setCopied] = useState(false)
+  const [sending, setSending] = useState('') // hook id being sent to
+  const [sentTo, setSentTo] = useState({}) // hook id -> 'ok' | error message
   const report = useMemo(() => dayReport({ tasks, key: today, now, categories: settings.categories, note, name: currentProfile()?.name }),
     [tasks, today, now, settings.categories, note])
   const saveNote = (patch) => setNote((n) => ({ ...n, ...patch }))
@@ -161,11 +164,25 @@ function ShutdownFlow({ step, setStep, close }) {
   const copy = async () => {
     try { await navigator.clipboard.writeText(report.text); setCopied(true); setTimeout(() => setCopied(false), 2000) } catch { /* ignore */ }
   }
+  const hooks = settings.chat.hooks
+  const reportTitle = `Daily report · ${format(now, 'EEE d MMM')}`
+  const sendOne = async (h) => {
+    setSending(h.id)
+    try { await sendChat(h, reportTitle, report.text); setSentTo((s) => ({ ...s, [h.id]: 'ok' })) }
+    catch (e) { setSentTo((s) => ({ ...s, [h.id]: e.message })) }
+    finally { setSending('') }
+  }
+  // "Close the day": with automatic sending on, the report goes to every chat that hasn't had it yet.
+  const finish = () => {
+    updateDayNote(today, { blockers: note.blockers || '', tomorrow: note.tomorrow || '' }); writeState({ shutdown: today })
+    const pending = settings.chat.autoReport ? hooks.filter((h) => sentTo[h.id] !== 'ok') : []
+    if (pending.length) sendToAll(pending, reportTitle, report.text)
+  }
 
   return (
     <Frame icon={Moon} tone="bg-lav text-lav-fg" title="Shut down" steps={['What got done', 'What moves on', 'A note for tomorrow', 'Your report']}
       step={step} setStep={setStep} close={close} finishLabel="Close the day"
-      onFinish={() => { updateDayNote(today, { blockers: note.blockers || '', tomorrow: note.tomorrow || '' }); writeState({ shutdown: today }) }}>
+      onFinish={finish}>
       {step === 0 && (
         <>
           <p className="text-[13px] text-muted mb-3 tnum">
@@ -242,6 +259,19 @@ function ShutdownFlow({ step, setStep, close }) {
             <button type="button" className="btn-ghost h-8 py-0" onClick={copy}>{copied ? <><Check size={13} /> Copied</> : <><Copy size={13} /> Copy</>}</button>
           </div>
           <pre className="whitespace-pre-wrap text-[13px] font-sans leading-relaxed card p-4">{report.text}</pre>
+          {hooks.length > 0 && (
+            <div className="mt-3 grid gap-2" aria-label="Send the report to chat">
+              {hooks.map((h) => (
+                <div key={h.id} className="flex flex-wrap items-center gap-2">
+                  <button type="button" className="btn-ghost h-8 py-0" disabled={!!sending || sentTo[h.id] === 'ok'} onClick={() => sendOne(h)}>
+                    {sending === h.id ? <><Loader2 size={13} className="animate-spin" /> Sending…</> : sentTo[h.id] === 'ok' ? <><Check size={13} /> Sent to {h.name || defaultName(h.kind)}</> : <><Send size={13} /> Send to {h.name || defaultName(h.kind)}</>}
+                  </button>
+                  {sentTo[h.id] && sentTo[h.id] !== 'ok' && <span role="alert" className="text-[12px] font-semibold text-coral-fg">{sentTo[h.id]}</span>}
+                </div>
+              ))}
+              {settings.chat.autoReport && <p className="text-[12px] text-muted">When you close the day, it also goes to any chat above that hasn't had it yet.</p>}
+            </div>
+          )}
         </>
       )}
     </Frame>

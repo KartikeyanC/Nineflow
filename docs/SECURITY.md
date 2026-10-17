@@ -15,6 +15,7 @@ principles and applies them to what NineFlow actually has.
 | A working copy | The browser / desktop app on that device | That device |
 | Reminders handed over for the closed app (opt-in) | Upstash QStash, until due | Encrypted (AES-256-GCM) by `/api/reminders`; QStash holds only ciphertext |
 | Emailed tasks (opt-in) | Upstash Redis, ≤ 30 days | Encrypted with a key derived from the private address; unreadable without it |
+| Chat webhook links (Slack, Discord, Teams, ntfy, Zapier/Make; opt-in) | In the planner settings, so in the same Drive file / Supabase row as the planner | Only that account. A webhook link works like a password for its channel; `/api/notify` uses it for one request and does not store or log it |
 
 There is no NineFlow user database, no shared table of everyone's tasks, and no admin who can read them.
 The spec's tenant isolation (§1) is therefore provided by **one store per person** rather than RLS on a shared
@@ -40,7 +41,11 @@ Server functions never take an account from the request; each one works only wit
 
 The API trusts nothing about the person from the client. Limits (lengths, counts, dates) are re-checked on the
 server; the AI helpers bound every field they forward; `/api/reminders` refuses times more than 7 days ahead or
-in the past, and push subscriptions for anything but the browsers' push services.
+in the past, and push subscriptions for anything but the browsers' push services. `/api/notify` posts only to the
+chat services' own hosts (`hooks.slack.com`, `discord.com`, `*.webhook.office.com` / `*.logic.azure.com` /
+`*.powerplatform.com`, `ntfy.sh`, `hooks.zapier.com`, `hook*.make.com`, `maker.ifttt.com`), over https, on the
+default port, with no credentials in the address and no redirects followed, so it cannot be used to reach
+anything else (an open relay / SSRF); nothing from the remote reply is passed back.
 
 ## Abuse protection (spec §5)
 
@@ -48,6 +53,7 @@ in the past, and push subscriptions for anything but the browsers' push services
 |---|---|
 | AI helpers (`/api/ask`, `autofill`, `meeting-notes`, `prompt-to-tasks`) | Per IP per minute and per day, **plus a daily total for everyone** (`AI_DAILY_LIMIT`, default 2 000): a cost ceiling, like the spec's per-business limit |
 | `/api/reminders` | 20 / min per IP; at most 60 reminders added and 120 cancelled per request |
+| `/api/notify` | 12 / min and 300 / day per IP; body ≤ 30 KB, message ≤ 3 500 characters; an address outside the allowed hosts is refused (400) without any request being made |
 | `/api/inbox` | 30 / min per IP; a malformed inbox key is refused and security-logged |
 | `/api/push` (QStash) | HMAC-SHA256 signature over the raw body (current or next key), expiry checked, timing-safe; 401 + security log otherwise |
 | `/api/inbound` (Postmark) | Basic-auth webhook password, compared in constant time; 401 + security log otherwise; unknown addresses are accepted and dropped so keys can't be probed |

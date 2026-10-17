@@ -14,6 +14,7 @@ import { cleanTemplates, cleanViews, critCount } from '../lib/views'
 import { setShowEvents, useCalendarEvents, useShowEvents } from '../lib/gcalEvents'
 import { searchPlaces } from '../lib/weather'
 import { exportReportToDoc, exportTasksToSheet } from '../lib/exportGoogle'
+import { KINDS, defaultName, guessKind, sendChat } from '../lib/notify'
 import { COUNTRIES, countryFromBrowser } from '../lib/holidays'
 import { format } from 'date-fns'
 import AccountSection from '../features/Account'
@@ -21,7 +22,7 @@ import InstallApp from '../features/InstallApp'
 import { WorkspacesSection } from '../features/Workspaces'
 import { usePlanner } from '../store/PlannerContext'
 import { COLOR_IDS, colorOf } from '../lib/colors'
-import { validateBackup } from '../lib/storage'
+import { uid, validateBackup } from '../lib/storage'
 import { loadWork } from '../work/workStore'
 import { ConfirmDialog, Segmented, cx } from '../components/ui'
 import { TimeField } from '../components/TimePicker'
@@ -208,8 +209,81 @@ function ConnectionsSection({ settings, updateSettings }) {
           </label>
         )}
       </div>
+      <ChatHooks settings={settings} updateSettings={updateSettings} />
       {isConfigured() && <GoogleExport tasks={tasks} categories={settings.categories} now={now} dayKey={dashboardDate} />}
     </section>
+  )
+}
+
+// Chat webhooks (Slack, Discord, Teams, ntfy, Zapier/Make): paste a link, and the day's report can be
+// sent there (from the shutdown flow, or automatically). The link works like a password for that channel.
+function ChatHooks({ settings, updateSettings }) {
+  const { hooks, autoReport } = settings.chat
+  const [url, setUrl] = useState('')
+  const [name, setName] = useState('')
+  const [error, setError] = useState(null)
+  const [testing, setTesting] = useState('') // hook id being tested
+  const [result, setResult] = useState(null) // { id, ok, text }
+  const kind = guessKind(url)
+  const set = (patch) => updateSettings({ chat: { ...settings.chat, ...patch } })
+
+  const add = (e) => {
+    e.preventDefault(); setError(null)
+    const link = url.trim()
+    if (!kind) { setError("That isn't a link NineFlow can send to. It has to be a webhook link from Slack, Discord, Microsoft Teams, ntfy (ntfy.sh), Zapier or Make."); return }
+    if (hooks.length >= 8) { setError('You can connect up to 8 chats. Remove one first.'); return }
+    if (hooks.some((h) => h.url === link)) { setError('That link is already connected.'); return }
+    set({ hooks: [...hooks, { id: uid(), kind, name: name.trim().slice(0, 40), url: link }] })
+    setUrl(''); setName('')
+  }
+  const test = async (h) => {
+    setTesting(h.id); setResult(null)
+    try { await sendChat(h, 'NineFlow', 'This is a test message from NineFlow. Your day reports will arrive here.'); setResult({ id: h.id, ok: true, text: 'Sent. Check the channel.' }) }
+    catch (err) { setResult({ id: h.id, ok: false, text: err.message }) }
+    finally { setTesting('') }
+  }
+
+  return (
+    <div className="space-y-3 pt-4 border-t border-line">
+      <div>
+        <p className="text-sm font-semibold">Send my report to chat</p>
+        <p className="text-xs text-muted mt-0.5">Slack, Discord, Microsoft Teams, ntfy, or Zapier and Make. Paste the webhook link from the service. The link works like a password for that channel, so keep it private.</p>
+      </div>
+
+      {hooks.length > 0 && (
+        <ul className="rounded-2xl border border-line divide-y divide-line overflow-hidden" aria-label="Connected chats">
+          {hooks.map((h) => (
+            <li key={h.id} className="px-3.5 py-2.5 flex flex-wrap items-center gap-x-3 gap-y-1.5">
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold truncate">{h.name || KINDS[h.kind].label}{h.name && <span className="text-faint font-medium"> · {KINDS[h.kind].label}</span>}</p>
+                {result?.id === h.id && <p role="status" className={cx('text-[12px] font-semibold', result.ok ? 'text-mint-fg' : 'text-coral-fg')}>{result.text}</p>}
+              </div>
+              <button type="button" className="btn-ghost h-8 py-0 px-3" disabled={!!testing} onClick={() => test(h)}>{testing === h.id ? 'Sending…' : 'Send a test'}</button>
+              <button type="button" className="btn-ghost h-8 py-0 px-3" aria-label={`Remove ${h.name || defaultName(h.kind)}`} onClick={() => set({ hooks: hooks.filter((x) => x.id !== h.id) })}><Trash2 size={13} /></button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <form className="grid gap-2 max-w-xl" onSubmit={add}>
+        <input className="input" type="url" inputMode="url" autoComplete="off" spellCheck={false} placeholder="Paste a webhook link" aria-label="Webhook link" value={url} onChange={(e) => { setUrl(e.target.value); setError(null) }} />
+        {url.trim() && (kind
+          ? <p className="text-[12px] font-semibold text-mint-fg">That's a {KINDS[kind].label} link.</p>
+          : <p className="text-[12px] text-muted">Not recognised yet. Paste the whole link.</p>)}
+        <div className="flex flex-wrap gap-2">
+          <input className="input flex-1 min-w-[160px] max-w-[260px]" placeholder="Name (optional)" aria-label="Name" maxLength={40} value={name} onChange={(e) => setName(e.target.value)} />
+          <button type="submit" className="btn-black" disabled={!url.trim()}><Plus size={14} /> Connect</button>
+        </div>
+        {kind && <p className="text-[12px] text-muted">{KINDS[kind].help}</p>}
+        {error && <p role="alert" className="text-[13px] text-coral-fg font-semibold">{error}</p>}
+      </form>
+
+      {hooks.length > 0 && (
+        <Row label="Send automatically" hint="When you finish “Shut down”, the day's report goes to every chat above. Off, you send it yourself from the report step.">
+          <Segmented size="sm" value={autoReport ? 'on' : 'off'} onChange={(v) => set({ autoReport: v === 'on' })} options={[{ value: 'on', label: 'On' }, { value: 'off', label: 'Off' }]} />
+        </Row>
+      )}
+    </div>
   )
 }
 
