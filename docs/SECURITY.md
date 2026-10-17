@@ -15,6 +15,7 @@ principles and applies them to what NineFlow actually has.
 | A working copy | The browser / desktop app on that device | That device |
 | Reminders handed over for the closed app (opt-in) | Upstash QStash, until due | Encrypted (AES-256-GCM) by `/api/reminders`; QStash holds only ciphertext |
 | Emailed tasks (opt-in) | Upstash Redis, ≤ 30 days | Encrypted with a key derived from the private address; unreadable without it |
+| Tool tokens (Todoist, Trello, GitHub, Clockify, Toggl, Notion, Telegram; opt-in) | This device only: `localStorage` under `nineflow:conn:<account>`, outside the `daily-planner:<account>:` namespace that `lib/cloud.js` syncs | Whoever uses this browser profile. Each token goes only to its own service (the browser calls them directly; Toggl, which blocks browsers, passes through `/api/toggl`, which neither stores nor logs it). "Delete everything" removes them |
 | Chat webhook links (Slack, Discord, Teams, ntfy, Zapier/Make; opt-in) | In the planner settings, so in the same Drive file / Supabase row as the planner | Only that account. A webhook link works like a password for its channel; `/api/notify` uses it for one request and does not store or log it |
 
 There is no NineFlow user database, no shared table of everyone's tasks, and no admin who can read them.
@@ -45,7 +46,9 @@ in the past, and push subscriptions for anything but the browsers' push services
 chat services' own hosts (`hooks.slack.com`, `discord.com`, `*.webhook.office.com` / `*.logic.azure.com` /
 `*.powerplatform.com`, `ntfy.sh`, `hooks.zapier.com`, `hook*.make.com`, `maker.ifttt.com`), over https, on the
 default port, with no credentials in the address and no redirects followed, so it cannot be used to reach
-anything else (an open relay / SSRF); nothing from the remote reply is passed back.
+anything else (an open relay / SSRF); nothing from the remote reply is passed back. `/api/toggl` is not a relay at
+all: the host (`api.track.toggl.com`) and both paths are fixed, and each entry is rebuilt from validated fields
+(a real start and stop, at most a day long, not in the future, at most 40 per request).
 
 ## Abuse protection (spec §5)
 
@@ -53,6 +56,7 @@ anything else (an open relay / SSRF); nothing from the remote reply is passed ba
 |---|---|
 | AI helpers (`/api/ask`, `autofill`, `meeting-notes`, `prompt-to-tasks`) | Per IP per minute and per day, **plus a daily total for everyone** (`AI_DAILY_LIMIT`, default 2 000): a cost ceiling, like the spec's per-business limit |
 | `/api/reminders` | 20 / min per IP; at most 60 reminders added and 120 cancelled per request |
+| `/api/toggl` | 10 / min and 120 / day per IP; body ≤ 40 KB; a token that isn't 16–80 plain characters is refused before any request is made |
 | `/api/notify` | 12 / min and 300 / day per IP; body ≤ 30 KB, message ≤ 3 500 characters; an address outside the allowed hosts is refused (400) without any request being made |
 | `/api/inbox` | 30 / min per IP; a malformed inbox key is refused and security-logged |
 | `/api/push` (QStash) | HMAC-SHA256 signature over the raw body (current or next key), expiry checked, timing-safe; 401 + security log otherwise |

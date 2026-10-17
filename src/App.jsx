@@ -16,6 +16,7 @@ import FocusMode from './components/FocusMode'
 import PipQuickList from './components/PipQuickList'
 import CalendarToast from './components/CalendarToast'
 import CalendarSync from './features/CalendarSync'
+import TelegramInbox from './features/TelegramInbox'
 import Notices from './features/Notices'
 import Ritual from './features/Ritual'
 import WelcomeBack from './features/WelcomeBack'
@@ -97,6 +98,7 @@ function Shell() {
       <Notices />
       <Tooltips />
       <CalendarSync />
+      <TelegramInbox />
       <Ritual />
       <WelcomeBack />
       <Interrupt />

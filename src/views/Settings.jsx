@@ -15,6 +15,7 @@ import { setShowEvents, useCalendarEvents, useShowEvents } from '../lib/gcalEven
 import { searchPlaces } from '../lib/weather'
 import { exportReportToDoc, exportTasksToSheet } from '../lib/exportGoogle'
 import { KINDS, defaultName, guessKind, sendChat } from '../lib/notify'
+import ToolConnections from '../features/ToolConnections'
 import { COUNTRIES, countryFromBrowser } from '../lib/holidays'
 import { format } from 'date-fns'
 import AccountSection from '../features/Account'
@@ -210,6 +211,7 @@ function ConnectionsSection({ settings, updateSettings }) {
         )}
       </div>
       <ChatHooks settings={settings} updateSettings={updateSettings} />
+      <ToolConnections />
       {isConfigured() && <GoogleExport tasks={tasks} categories={settings.categories} now={now} dayKey={dashboardDate} />}
     </section>
   )

@@ -2,11 +2,15 @@
 // Settings. The message goes through the site's /api/notify, which only talks to the services below
 // (see api/notify.js for why). The webhook links are saved with the planner settings, so they
 // follow the person to their other devices.
+import { getConn } from './connections'
+import { sendTelegram } from './telegram'
+
 export const KINDS = {
   slack: { label: 'Slack', help: 'In Slack: Apps → Incoming Webhooks → Add to a channel, then copy the Webhook URL.' },
   discord: { label: 'Discord', help: 'In Discord: Channel settings → Integrations → Webhooks → New Webhook → Copy Webhook URL.' },
   teams: { label: 'Microsoft Teams', help: 'In Teams: the channel’s ••• menu → Workflows → “Post to a channel when a webhook request is received”, then copy its link.' },
   ntfy: { label: 'ntfy', help: 'Pick a private topic name and paste https://ntfy.sh/your-topic. Anyone who knows the topic can read it, so make it hard to guess.' },
+  telegram: { label: 'Telegram', help: '' }, // set up under “Your tools”: it uses your own bot, kept on this device
   webhook: { label: 'Zapier / Make', help: 'In Zapier: a “Webhooks by Zapier → Catch Hook” trigger. In Make: a “Custom webhook”. Paste its link.' },
 }
 
@@ -33,6 +37,11 @@ const base = () => (import.meta.env.VITE_API_BASE || '').replace(/\/$/, '')
 
 // Sends one message. Throws an Error with a message fit to show.
 export async function sendChat(hook, title, text) {
+  if (hook.kind === 'telegram') { // straight from the app, with the bot saved on this device
+    const conn = getConn('telegram')
+    if (!conn?.chatId) throw new Error('Telegram is not linked on this device. Connect it under Your tools.')
+    return sendTelegram(conn, title, text)
+  }
   const root = base()
   if (!root && typeof location !== 'undefined' && location.protocol === 'app:') throw new Error('Sending to chat needs the NineFlow site. Set VITE_API_BASE for the desktop app.')
   let res

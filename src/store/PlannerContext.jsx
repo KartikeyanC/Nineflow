@@ -10,6 +10,7 @@ import { dueReminders, nagDue, reminderSchedule } from '../lib/taskMeta'
 import { onPushOpenTask, pushEnabled, syncPush } from '../lib/webPush'
 import { confirmInbox, emailsToTasks, fetchInbox, inboxAvailable } from '../lib/emailInbox'
 import { parseQuickAdd } from '../lib/nlp'
+import { forgetAllConnections } from '../lib/connections'
 import { busyFor } from '../lib/gcalEvents'
 import { baseOfColumn, cleanColumns, columnOf, isOriginal } from '../lib/columns'
 import { currentProfileId } from '../lib/profiles'
@@ -294,6 +295,7 @@ export function PlannerProvider({ children }) {
     setHabits([])
     setSelectedId(null)
     saveWork(emptyWork())
+    forgetAllConnections() // the tokens for Todoist, Notion, Telegram and the rest go with it
     try { window.dispatchEvent(new StorageEvent('storage', { key: workKey() })) } catch { /* ignore */ }
   }, [])
 

@@ -35,7 +35,7 @@ export function csp(hashes, { connect = [], frameAncestors = "'none'" } = {}) {
     "style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style",
     "img-src 'self' data: blob: https://*.googleusercontent.com",
     "font-src 'self' data:",
-    `connect-src 'self' https://www.googleapis.com https://oauth2.googleapis.com https://accounts.google.com/gsi/ https://*.supabase.co wss://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://date.nager.at ${connect.join(' ')}`.trim(),
+    `connect-src 'self' https://www.googleapis.com https://oauth2.googleapis.com https://accounts.google.com/gsi/ https://*.supabase.co wss://*.supabase.co https://api.open-meteo.com https://geocoding-api.open-meteo.com https://date.nager.at https://api.todoist.com https://api.trello.com https://api.github.com https://api.clockify.me https://api.notion.com https://api.telegram.org ${connect.join(' ')}`.trim(),
     'frame-src https://accounts.google.com/gsi/',
     "worker-src 'self'",
     "manifest-src 'self'",

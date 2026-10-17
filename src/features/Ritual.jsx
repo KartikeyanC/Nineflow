@@ -6,6 +6,7 @@ import { dateKey, fmtMinutes, isOverdue, sortByTime, tasksOn, totalMinutes } fro
 import { dayReport } from '../lib/report'
 import { currentProfile } from '../lib/profiles'
 import { KINDS, defaultName, sendChat, sendToAll } from '../lib/notify'
+import { useConnections } from '../lib/connections'
 import { readDayNote, updateDayNote } from '../work/workStore'
 import { colorOf } from '../lib/colors'
 import { cx, useDialogFocus } from '../components/ui'
@@ -164,7 +165,8 @@ function ShutdownFlow({ step, setStep, close }) {
   const copy = async () => {
     try { await navigator.clipboard.writeText(report.text); setCopied(true); setTimeout(() => setCopied(false), 2000) } catch { /* ignore */ }
   }
-  const hooks = settings.chat.hooks
+  const conns = useConnections()
+  const hooks = [...settings.chat.hooks, ...(conns.telegram?.chatId ? [{ id: 'telegram', kind: 'telegram', name: 'Telegram', url: '' }] : [])]
   const reportTitle = `Daily report · ${format(now, 'EEE d MMM')}`
   const sendOne = async (h) => {
     setSending(h.id)
