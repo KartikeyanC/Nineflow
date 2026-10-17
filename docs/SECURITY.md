@@ -15,6 +15,8 @@ principles and applies them to what NineFlow actually has.
 | A working copy | The browser / desktop app on that device | That device |
 | Reminders handed over for the closed app (opt-in) | Upstash QStash, until due | Encrypted (AES-256-GCM) by `/api/reminders`; QStash holds only ciphertext |
 | Emailed tasks (opt-in) | Upstash Redis, ≤ 30 days | Encrypted with a key derived from the private address; unreadable without it |
+| The calendar subscription link's file (opt-in) | Upstash Redis, ≤ 90 days (the clock restarts on every read or update) | Encrypted (AES-256-GCM) with a key derived from the link's secret, under a name also derived from it: unreadable without the link. The file passes through `/api/feed` in the clear while it is stored and served, so treat the link as a password |
+| Microsoft sign-in (Outlook, To Do; opt-in) | Tokens on this device only (same place as the tool tokens below) | Whoever uses this browser profile. PKCE sign-in, no client secret anywhere; "Delete everything" removes them |
 | Tool tokens (Todoist, Trello, GitHub, Clockify, Toggl, Notion, Telegram; opt-in) | This device only: `localStorage` under `nineflow:conn:<account>`, outside the `daily-planner:<account>:` namespace that `lib/cloud.js` syncs | Whoever uses this browser profile. Each token goes only to its own service (the browser calls them directly; Toggl, which blocks browsers, passes through `/api/toggl`, which neither stores nor logs it). "Delete everything" removes them |
 | Chat webhook links (Slack, Discord, Teams, ntfy, Zapier/Make; opt-in) | In the planner settings, so in the same Drive file / Supabase row as the planner | Only that account. A webhook link works like a password for its channel; `/api/notify` uses it for one request and does not store or log it |
 
@@ -56,6 +58,7 @@ all: the host (`api.track.toggl.com`) and both paths are fixed, and each entry i
 |---|---|
 | AI helpers (`/api/ask`, `autofill`, `meeting-notes`, `prompt-to-tasks`) | Per IP per minute and per day, **plus a daily total for everyone** (`AI_DAILY_LIMIT`, default 2 000): a cost ceiling, like the spec's per-business limit |
 | `/api/reminders` | 20 / min per IP; at most 60 reminders added and 120 cancelled per request |
+| `/api/feed` | Reads 60 / min per IP; writes 20 / min and 600 / day per IP; file ≤ 400 KB and must start with `BEGIN:VCALENDAR`; the secret must be 32–48 lowercase letters and digits, otherwise 404 |
 | `/api/toggl` | 10 / min and 120 / day per IP; body ≤ 40 KB; a token that isn't 16–80 plain characters is refused before any request is made |
 | `/api/notify` | 12 / min and 300 / day per IP; body ≤ 30 KB, message ≤ 3 500 characters; an address outside the allowed hosts is refused (400) without any request being made |
 | `/api/inbox` | 30 / min per IP; a malformed inbox key is refused and security-logged |

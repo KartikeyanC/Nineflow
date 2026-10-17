@@ -23,6 +23,7 @@ There's no server. The browser talks to Google directly, so you only need an **O
 4. Add these **scopes**:
    - `openid`, `.../auth/userinfo.email`, `.../auth/userinfo.profile`
    - `.../auth/drive.file`: the app can only see the files it creates
+   - `.../auth/tasks` and `.../auth/calendar.calendarlist.readonly`: only for the optional **Google Tasks** and **My other calendars** features (also asked for separately, only when used). See `docs/CONNECTIONS_SETUP.md` for those and the other connections.
    - `.../auth/calendar.events`: only for the optional **Connect Google Calendar** button in Settings, which sends tasks to the person's primary calendar. It is requested separately, only when someone presses that button. You also need to enable the **Google Calendar API** (**APIs & Services → Library → Google Calendar API → Enable**).
 5. While the app is in **Testing**, add each person who will sign in under **Test users**. Only test users can sign in until you publish the app.
 

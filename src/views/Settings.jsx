@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react'
-import { Plus, Trash2, Download, Upload, Sparkles, AlertTriangle, CalendarPlus, CalendarCheck, Loader2, RefreshCw } from 'lucide-react'
+import { Plus, Trash2, Download, Upload, Sparkles, AlertTriangle, CalendarPlus, CalendarCheck, Check, Loader2, RefreshCw } from 'lucide-react'
 import { downloadIcs } from '../lib/calendar'
 import { THEMES, themeId } from '../lib/themes'
 import { CLIMATES, detectClimate } from '../lib/climate'
@@ -7,15 +7,16 @@ import { disablePush, enablePush, pushEnabled, pushSupported } from '../lib/webP
 import { reminderSchedule } from '../lib/taskMeta'
 import { inboxAddress, inboxAvailable, newInboxKey } from '../lib/emailInbox'
 import { connectCalendar, disconnectCalendar, syncNow, syncedEvents, useCalendarOn, useCalendarStatus } from '../features/CalendarSync'
-import { isConfigured } from '../lib/google'
+import { CALENDARS_SCOPE, ensureExtraToken, isConfigured } from '../lib/google'
 import { currentProfile } from '../lib/profiles'
 import ColumnsEditor from '../components/ColumnsEditor'
 import { cleanTemplates, cleanViews, critCount } from '../lib/views'
-import { setShowEvents, useCalendarEvents, useShowEvents } from '../lib/gcalEvents'
+import { listCalendars, loadRange, parseCals, setOtherCalendars, setShowEvents, useCalendarEvents, useOtherCalendarsRaw, useShowEvents } from '../lib/gcalEvents'
 import { searchPlaces } from '../lib/weather'
 import { exportReportToDoc, exportTasksToSheet } from '../lib/exportGoogle'
 import { KINDS, defaultName, guessKind, sendChat } from '../lib/notify'
 import ToolConnections from '../features/ToolConnections'
+import { feedAvailable, feedUrl, newFeedToken, removeFeed, useFeedStatus } from '../lib/calFeed'
 import { COUNTRIES, countryFromBrowser } from '../lib/holidays'
 import { format } from 'date-fns'
 import AccountSection from '../features/Account'
@@ -142,6 +143,7 @@ function CalendarConnect() {
           <Segmented size="sm" value={showEvents ? 'on' : 'off'} onChange={(v) => setShowEvents(v === 'on')} options={[{ value: 'on', label: 'On' }, { value: 'off', label: 'Off' }]} />
         </div>
       )}
+      {on && showEvents && <OtherCalendars needsAuth={shown.otherNeedsAuth} />}
       {st.message && !on && <p className="mt-2 text-[12px] text-peach-fg font-semibold">{st.message}</p>}
       {error && <p role="alert" className="mt-2 text-[13px] text-coral-fg font-semibold">{error}</p>}
     </div>
@@ -211,6 +213,7 @@ function ConnectionsSection({ settings, updateSettings }) {
         )}
       </div>
       <ChatHooks settings={settings} updateSettings={updateSettings} />
+      <CalendarLink settings={settings} updateSettings={updateSettings} />
       <ToolConnections />
       {isConfigured() && <GoogleExport tasks={tasks} categories={settings.categories} now={now} dayKey={dashboardDate} />}
     </section>
@@ -289,6 +292,63 @@ function ChatHooks({ settings, updateSettings }) {
   )
 }
 
+// The calendar subscription link: any calendar app can subscribe to it, and it stays in step with the
+// planner (api/feed.js keeps an encrypted copy of the calendar file for it).
+function CalendarLink({ settings, updateSettings }) {
+  const token = settings.feed.token
+  const status = useFeedStatus()
+  const [busy, setBusy] = useState(false)
+  const [copied, setCopied] = useState(false)
+  const [error, setError] = useState(null)
+  const available = feedAvailable()
+  const url = token ? feedUrl(token) : ''
+
+  const create = () => { setError(null); updateSettings({ feed: { token: newFeedToken() } }) }
+  const stop = async (next) => {
+    setBusy(true); setError(null)
+    try { await removeFeed(token) } catch (e) { setError(e.message) }
+    updateSettings({ feed: { token: next } }); setBusy(false)
+  }
+  const copy = async () => {
+    try { await navigator.clipboard.writeText(url); setCopied(true); setTimeout(() => setCopied(false), 2000) } catch { /* the field is selectable */ }
+  }
+  const line = status.state === 'saving' ? 'Updating…'
+    : status.state === 'error' ? status.message
+    : status.state === 'ok' && status.at ? `Up to date · ${format(new Date(status.at), 'p')}`
+    : 'Updates a moment after you open the planner.'
+
+  return (
+    <div className="space-y-3 pt-4 border-t border-line">
+      <div>
+        <p className="text-sm font-semibold">Calendar link for any calendar app</p>
+        <p className="text-xs text-muted mt-0.5">A private link that Google Calendar, Outlook or Apple Calendar can subscribe to, so your tasks show up there and stay up to date. Unlike the .ics download, it keeps itself current.</p>
+      </div>
+      {!available && <p className="text-[13px] text-muted">This needs the NineFlow site. In the desktop app, set VITE_API_BASE to your site's address.</p>}
+      {available && !token && <button type="button" className="btn-black" onClick={create}>Create my calendar link</button>}
+      {available && token && (
+        <div className="space-y-2.5 max-w-xl">
+          <div className="flex flex-wrap gap-2">
+            <input className="input flex-1 min-w-[220px] text-[12px]" readOnly value={url} aria-label="Your calendar link" onFocus={(e) => e.target.select()} />
+            <button type="button" className="btn-ghost" onClick={copy}>{copied ? <><Check size={14} /> Copied</> : 'Copy'}</button>
+          </div>
+          <p role="status" className={cx('text-[12px] font-semibold', status.state === 'error' ? 'text-coral-fg' : 'text-mint-fg')}>{line}</p>
+          <ul className="text-[12px] text-muted space-y-1 list-disc pl-4">
+            <li><b className="text-ink">Google Calendar:</b> Other calendars (+) → From URL → paste the link. Google refreshes it every few hours.</li>
+            <li><b className="text-ink">Outlook:</b> Add calendar → Subscribe from web → paste the link.</li>
+            <li><b className="text-ink">Apple Calendar:</b> File → New Calendar Subscription → paste the link.</li>
+          </ul>
+          <p className="text-[12px] text-peach-fg font-semibold">Anyone with this link can see your task titles and times. Don't share it. If it gets out, make a new link.</p>
+          <div className="flex flex-wrap gap-2">
+            <button type="button" className="btn-ghost h-8 py-0 px-3" disabled={busy} onClick={() => stop(newFeedToken())}>Make a new link</button>
+            <button type="button" className="btn-ghost h-8 py-0 px-3" disabled={busy} onClick={() => stop('')}>Turn off</button>
+          </div>
+          {error && <p role="alert" className="text-[13px] text-coral-fg font-semibold">{error}</p>}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // One-off copies into the person's own Google Drive (Daily Planner folder), as a Google Sheet or Google Doc.
 function GoogleExport({ tasks, categories, now, dayKey }) {
   const [busy, setBusy] = useState('')
@@ -319,6 +379,71 @@ function GoogleExport({ tasks, categories, now, dayKey }) {
       </div>
       {done && <p role="status" className="text-[13px] font-semibold text-mint-fg">Saved “{done.label}”. {done.url && <a href={done.url} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">Open it</a>}</p>}
       {error && <p role="alert" className="text-[13px] text-coral-fg font-semibold">{error}</p>}
+    </div>
+  )
+}
+
+// "Show my other calendars": work, family and shared calendars next to the primary one. Seeing the list of
+// calendars is a separate Google permission, asked for here and not before.
+function OtherCalendars({ needsAuth }) {
+  const chosen = parseCals(useOtherCalendarsRaw())
+  const [choices, setChoices] = useState(null) // every calendar except the primary, while the picker is open
+  const [picked, setPicked] = useState(new Set())
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState(null)
+
+  const open = async () => {
+    setError(null); setBusy(true)
+    try {
+      const token = await ensureExtraToken('calendars', CALENDARS_SCOPE)
+      const all = (await listCalendars(token)).filter((c) => !c.primary)
+      setChoices(all); setPicked(new Set(chosen.map((c) => c.id)))
+    } catch (e) { setError(e.message || 'Could not read your calendars.') } finally { setBusy(false) }
+  }
+  const save = () => {
+    setOtherCalendars(choices.filter((c) => picked.has(c.id)).slice(0, 8).map((c) => ({ id: c.id, name: c.name })))
+    setChoices(null)
+    loadRange(format(new Date(), 'yyyy-MM-dd'), format(new Date(), 'yyyy-MM-dd'), { force: true })
+  }
+  const reconnect = async () => {
+    setError(null); setBusy(true)
+    try { await ensureExtraToken('calendars', CALENDARS_SCOPE); loadRange(format(new Date(), 'yyyy-MM-dd'), format(new Date(), 'yyyy-MM-dd'), { force: true }) }
+    catch (e) { setError(e.message || 'Could not reconnect.') } finally { setBusy(false) }
+  }
+
+  return (
+    <div className="mt-4 pt-3 border-t border-line">
+      <p className="text-sm font-semibold">My other calendars</p>
+      <p className="text-[12px] text-muted">Work, family or shared calendars, shown with the primary one and avoided by Plan my day. Up to 8.</p>
+      {!choices && (
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <button type="button" className="btn-ghost h-8 py-0 px-3" disabled={busy} onClick={open}>{busy ? 'Opening…' : chosen.length ? 'Change calendars' : 'Choose calendars'}</button>
+          {chosen.length > 0 && <span className="text-[12px] font-semibold text-mint-fg">{chosen.map((c) => c.name).join(', ')}</span>}
+          {chosen.length > 0 && needsAuth && <button type="button" className="btn-black h-8 py-0 px-3" disabled={busy} onClick={reconnect}>Reconnect</button>}
+        </div>
+      )}
+      {choices && (choices.length === 0 ? (
+        <p className="mt-2 text-[13px] text-muted">You have no other calendars. <button type="button" className="underline underline-offset-2" onClick={() => setChoices(null)}>Close</button></p>
+      ) : (
+        <div className="mt-2 space-y-2 max-w-md">
+          <ul className="rounded-2xl border border-line divide-y divide-line overflow-hidden" aria-label="Your calendars">
+            {choices.map((c) => (
+              <li key={c.id}>
+                <label className="flex items-center gap-3 px-3.5 py-2 text-sm cursor-pointer hover:bg-page">
+                  <input type="checkbox" className="h-4 w-4 accent-[rgb(var(--accent))]" checked={picked.has(c.id)}
+                    onChange={() => setPicked((p) => { const n = new Set(p); n.has(c.id) ? n.delete(c.id) : n.add(c.id); return n })} />
+                  <span className="truncate">{c.name}</span>
+                </label>
+              </li>
+            ))}
+          </ul>
+          <div className="flex gap-2">
+            <button type="button" className="btn-black h-8 py-0 px-3" onClick={save}>Save</button>
+            <button type="button" className="btn-ghost h-8 py-0 px-3" onClick={() => setChoices(null)}>Cancel</button>
+          </div>
+        </div>
+      ))}
+      {error && <p role="alert" className="mt-2 text-[13px] text-coral-fg font-semibold">{error}</p>}
     </div>
   )
 }

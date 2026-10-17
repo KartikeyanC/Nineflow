@@ -25,6 +25,7 @@ import { BrandMark, Wordmark } from '../components/Brand'
 import { WorkspaceMenu } from '../features/Workspaces'
 import CalendarSync from '../features/CalendarSync'
 import TelegramInbox from '../features/TelegramInbox'
+import CalendarFeed from '../features/CalendarFeed'
 import Notices from '../features/Notices'
 import Ritual from '../features/Ritual'
 import WelcomeBack from '../features/WelcomeBack'
@@ -106,6 +107,7 @@ function Shell() {
       <Tooltips />
       <CalendarSync />
       <TelegramInbox />
+      <CalendarFeed />
       <Ritual />
       <WelcomeBack />
       <Interrupt />

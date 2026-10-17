@@ -93,6 +93,58 @@ export async function requestCalendarToken({ hint } = {}) {
   })
 }
 
+// ---- other permissions, asked for only when a feature needs them (never at sign-in) ------------------
+// Google Tasks, and the list of the person's calendars (for "show my other calendars"). Each is its own
+// token in the browser (the desktop app's single token carries everything granted), kept for the
+// browser session like the Calendar one, and asked for again about once an hour.
+export const TASKS_SCOPE = 'https://www.googleapis.com/auth/tasks'
+export const CALENDARS_SCOPE = `${CALENDAR_SCOPE} https://www.googleapis.com/auth/calendar.calendarlist.readonly`
+const EXTRA_PREFIX = 'daily-planner:g-token:'
+
+export function getExtraToken(name) {
+  if (desktop) return getToken()
+  try {
+    const t = JSON.parse(sessionStorage.getItem(EXTRA_PREFIX + name) || 'null')
+    return t && t.expiresAt - 60_000 > Date.now() ? t.token : null
+  } catch { return null }
+}
+export function clearExtraTokens() {
+  try { for (const k of Object.keys(sessionStorage)) if (k.startsWith(EXTRA_PREFIX)) sessionStorage.removeItem(k) } catch { /* ignore */ }
+}
+
+// Google's window for `scope` (run from a click). `name` is where the browser keeps the token.
+export async function requestExtraToken(name, scope, { hint } = {}) {
+  if (desktop) {
+    const r = await desktop.getToken({ interactive: true, scope, hint })
+    if (!r.ok) throw new SignInError(r.code, r.message)
+    saveToken(r.token.access_token, r.token.expires_in)
+    return r.token.access_token
+  }
+  if (!CLIENT_ID) throw new SignInError('not_configured', 'Google sign-in is not set up yet (VITE_GOOGLE_CLIENT_ID is missing).')
+  const google = await loadGis().catch((e) => { throw new SignInError('offline', e.message) })
+  return new Promise((resolve, reject) => {
+    const client = google.accounts.oauth2.initTokenClient({
+      client_id: CLIENT_ID,
+      scope,
+      callback: (r) => {
+        if (r.error) return reject(new SignInError(r.error, r.error_description || r.error))
+        if (!google.accounts.oauth2.hasGrantedAllScopes(r, ...scope.split(' '))) {
+          return reject(new SignInError('not_granted', 'That access was not allowed. Tick the box in the Google window to connect.'))
+        }
+        try { sessionStorage.setItem(EXTRA_PREFIX + name, JSON.stringify({ token: r.access_token, expiresAt: Date.now() + (Number(r.expires_in) || 3600) * 1000 })) } catch { /* ignore */ }
+        resolve(r.access_token)
+      },
+      error_callback: (e) => reject(new SignInError(e?.type || 'unknown', e?.type === 'popup_closed' ? 'The Google window was closed before connecting.' : e?.message || 'Google could not connect.')),
+    })
+    client.requestAccessToken({ prompt: '', ...(hint ? { hint, login_hint: hint } : {}) })
+  })
+}
+
+// A valid token for `name`, asking in Google's window only when there isn't one (so call it from a click).
+export async function ensureExtraToken(name, scope) {
+  return getExtraToken(name) || requestExtraToken(name, scope, { hint: rememberedAccount()?.email })
+}
+
 if (desktop) {
   const keep = (t) => (t ? saveToken(t.access_token, t.expires_in) : clearToken())
   if (desktop.initialToken) keep(desktop.initialToken)
@@ -162,6 +214,7 @@ export async function revokeToken() {
   const t = getToken()
   clearToken()
   clearCalendarToken()
+  clearExtraTokens()
   if (!t) return
   try {
     const google = await loadGis()

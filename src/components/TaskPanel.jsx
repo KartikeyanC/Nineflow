@@ -1,8 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { format, parseISO } from 'date-fns'
-import { Activity, CalendarCheck, CalendarDays, Clock, Timer, Tag, Flag, Trash2, X, Repeat, ArrowRight, CalendarPlus, Layers, Bell, Hash, Columns3, Video } from 'lucide-react'
+import { Activity, CalendarCheck, CalendarDays, Clock, Timer, Tag, Flag, Trash2, X, Repeat, ArrowRight, CalendarPlus, Layers, Bell, Hash, Columns3, Video, Paperclip } from 'lucide-react'
 import { googleCalendarUrl } from '../lib/calendar'
 import { meetLinkFor } from '../lib/gcal'
+import { pickDriveFiles, pickerAvailable } from '../lib/picker'
+import { MAX_FILES, cleanFiles } from '../lib/taskFiles'
 import { useCalendarOn } from '../features/CalendarSync'
 import { currentProfileId } from '../lib/profiles'
 import { cleanColumns, columnOf } from '../lib/columns'
@@ -190,6 +192,7 @@ export default function TaskPanel() {
             <Row icon={Hash} label="Tags" top>
               <TagsField task={task} />
             </Row>
+            <FilesRow task={task} onChange={(files) => updateTask(task.id, { files })} />
             {calendarOn && task.date && <MeetRow task={task} onChange={(meet) => updateTask(task.id, { meet })} />}
             {otherWorkspaces.length > 0 && focus?.taskId !== task.id && (
               <Row icon={Layers} label="Workspace">
@@ -269,6 +272,43 @@ export default function TaskPanel() {
         {park && <ParkDialog task={task} mode={park} onClose={() => setPark(null)} />}
       </aside>
     </div>
+  )
+}
+
+// Google Drive files linked to the task, chosen in Google's own picker (lib/picker.js). A name and a link are
+// kept on the task; nothing is copied. The button needs the picker set up for this site; files already attached
+// still show (and can be removed) without it.
+function FilesRow({ task, onChange }) {
+  const files = task.files || []
+  const canPick = pickerAvailable()
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  if (!files.length && !canPick) return null
+  const add = async () => {
+    setError(''); setBusy(true)
+    try {
+      const picked = await pickDriveFiles()
+      onChange(cleanFiles([...files, ...picked.filter((p) => !files.some((f) => f.id === p.id))]))
+    } catch (e) { setError(e.message || 'Could not open Google Drive.') } finally { setBusy(false) }
+  }
+  return (
+    <Row icon={Paperclip} label="Files" top>
+      <div className="min-w-0 flex-1">
+        {files.length > 0 && (
+          <ul className="mb-2 space-y-1" aria-label="Attached files">
+            {files.map((f) => (
+              <li key={f.id} className="flex items-center gap-2 min-w-0">
+                {f.icon ? <img src={f.icon} alt="" width="16" height="16" className="shrink-0" /> : <Paperclip size={13} className="shrink-0 text-faint" aria-hidden="true" />}
+                <a href={f.url} target="_blank" rel="noopener noreferrer" className="min-w-0 truncate text-sm font-semibold text-lav-fg hover:underline">{f.name}</a>
+                <button type="button" aria-label={`Remove ${f.name}`} onClick={() => onChange(files.filter((x) => x.id !== f.id))} className="ml-auto shrink-0 h-6 w-6 rounded-full inline-flex items-center justify-center text-faint hover:bg-subtle hover:text-ink"><X size={12} /></button>
+              </li>
+            ))}
+          </ul>
+        )}
+        {canPick && files.length < MAX_FILES && <button type="button" className="btn-ghost h-8 py-0 px-3 text-xs" disabled={busy} onClick={add}>{busy ? 'Opening…' : 'Attach from Google Drive'}</button>}
+        {error && <p role="alert" className="mt-1.5 text-[12px] font-semibold text-coral-fg">{error}</p>}
+      </div>
+    </Row>
   )
 }
 

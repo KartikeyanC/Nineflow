@@ -68,6 +68,7 @@ export function createTask(fields = {}) {
     column: null, // a custom Board column id (see lib/columns.js), or null: the original column of its status
     reminders: null, // null = the Settings default; [] = none; [10, 1440] = minutes before the start
     nagEvery: null, // keep reminding after the start: null = the Settings default; 0 = once; 5/10/15/30 = every N minutes
+    files: [], // Drive files attached to the task: [{ id, name, url, icon }] (lib/taskFiles.js)
     tags: [], // ['client-a', 'q4']: free labels, any number per task (up to 6)
     seriesId: null,
     recurrence: null, // { freq, until, skip } | null

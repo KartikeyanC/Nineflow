@@ -2,6 +2,7 @@
 // Every view and statistic is derived from `tasks`; nothing is stored twice.
 
 import { storageKey } from './profiles'
+import { cleanFiles } from './taskFiles'
 import { cleanTags } from './taskMeta'
 import { THEMES } from './themes'
 import { COLUMNS_VERSION, DEFAULT_COLUMNS, LEGACY_REVIEW_ID, cleanColumns, migrateColumns } from './columns'
@@ -38,6 +39,7 @@ export const DEFAULT_SETTINGS = {
   sidebarMin: false, // keep the sidebar an icon rail even where its labels would fit (see lib/sidebarRail.js)
   weather: { on: false, place: null }, // today's weather on the Dashboard (lib/weather.js); place: { name, region, country, lat, lon }
   holidays: { on: false, country: '' }, // public holidays on Week and Month (lib/holidays.js); country: ISO code, '' = from the browser
+  feed: { token: '' }, // the calendar subscription link (lib/calFeed.js): its secret, '' = off
   chat: { hooks: [], autoReport: false }, // chat webhooks (lib/notify.js): [{ id, kind, name, url }]; autoReport sends the day's report when you close the day
 }
 
@@ -137,6 +139,7 @@ export function loadSettings() {
     weather: { ...DEFAULT_SETTINGS.weather, ...(stored.weather || {}) },
     holidays: { ...DEFAULT_SETTINGS.holidays, ...(stored.holidays || {}) },
     chat: cleanChat(stored.chat),
+    feed: { token: typeof stored.feed?.token === 'string' && /^[a-z0-9]{32,48}$/.test(stored.feed.token) ? stored.feed.token : '' },
     columns: stored.columnsV === COLUMNS_VERSION ? cleanColumns(stored.columns) : migrateColumns(cleanColumns(stored.columns)),
     columnsV: COLUMNS_VERSION,
     palette: THEMES.some((t) => t.id === stored.palette) ? stored.palette : 'default',
@@ -199,6 +202,7 @@ function normalizeTask(t) {
     interruption: t.interruption && typeof t.interruption === 'object' ? t.interruption : null,
     trail: Array.isArray(t.trail) ? t.trail.filter((e) => e && /^\d{4}-\d{2}-\d{2}$/.test(e.date || '') && ['todo', 'working', 'review', 'completed'].includes(e.status)).slice(-60).map((e) => ({ date: e.date, status: e.status, column: typeof e.column === 'string' ? e.column : null })) : [],
     hold: t.hold && typeof t.hold === 'object' ? { reason: String(t.hold.reason || 'Not now').slice(0, 120), since: typeof t.hold.since === 'string' ? t.hold.since : null, until: /^\d{4}-\d{2}-\d{2}$/.test(t.hold.until || '') ? t.hold.until : null } : null,
+    files: cleanFiles(t.files), // Drive files attached to the task (lib/taskFiles.js)
     meet: t.meet === true, // add a Google Meet link to its calendar event (lib/gcal.js)
     dropped: t.dropped && typeof t.dropped === 'object' ? { reason: String(t.dropped.reason || 'Let go').slice(0, 120), at: typeof t.dropped.at === 'string' ? t.dropped.at : new Date().toISOString() } : null,
   }

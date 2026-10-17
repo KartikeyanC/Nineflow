@@ -6,6 +6,8 @@
 // The id is fixed, so importing again skips what is already in the planner.
 import { format } from 'date-fns'
 import { cleanTag } from './taskMeta'
+import { googleTaskCandidates } from './gtasks'
+import { msTodoCandidates } from './microsoft'
 
 const clip = (s, n) => String(s ?? '').slice(0, n)
 const tagsOf = (source, names) => [...new Set([source, ...(names || []).map(cleanTag).filter(Boolean)])].slice(0, 6)
@@ -110,4 +112,6 @@ export const IMPORTERS = {
   todoist: { label: 'Todoist', load: (c) => todoistTasks(c.token), what: 'open tasks' },
   trello: { label: 'Trello', load: (c) => trelloCards(c), what: 'open cards assigned to you' },
   github: { label: 'GitHub', load: (c) => githubIssues(c.token), what: 'issues and pull requests assigned to you' },
+  gtasks: { label: 'Google Tasks', load: () => googleTaskCandidates(), what: 'open tasks' },
+  mstodo: { label: 'Microsoft To Do', load: () => msTodoCandidates(), what: 'open tasks' },
 }

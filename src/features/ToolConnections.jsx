@@ -7,6 +7,9 @@ import { testGithub, testTodoist, testTrello } from '../lib/importers'
 import { pending, sendToClockify, sendToToggl, sessionsForDay, testClockify, testToggl } from '../lib/timeSync'
 import { databaseIdFrom, sendTasksToNotion, testNotion } from '../lib/notion'
 import { findChat, testTelegram } from '../lib/telegram'
+import { TASKS_SCOPE, ensureExtraToken, isConfigured, rememberedAccount } from '../lib/google'
+import { sendTasksToGoogleTasks, testGoogleTasks } from '../lib/gtasks'
+import { connectMicrosoft, microsoftAvailable, sendTasksToOutlook } from '../lib/microsoft'
 import { fmtMinutes, tasksOn } from '../lib/tasks'
 import ImportDialog from '../components/ImportDialog'
 import { Segmented, cx } from '../components/ui'
@@ -14,6 +17,16 @@ import { Segmented, cx } from '../components/ui'
 // Settings → Connections → "Your tools": the services that need the person's own token. The token is
 // checked with the service before it is saved, and is saved on this device only (lib/connections.js).
 const SERVICES = [
+  {
+    // Signs in with Google (no token to paste): the "tasks" permission is asked for here, not at sign-in.
+    id: 'gtasks', label: 'Google Tasks', blurb: 'Import your open tasks, or send a day’s tasks to your list.', google: true, fields: [],
+    connect: async () => { await ensureExtraToken('tasks', TASKS_SCOPE); return { conn: {}, label: await testGoogleTasks() } },
+  },
+  {
+    // Microsoft's own sign-in window (no token to paste). Web only, and needs the site's Azure app (lib/microsoft.js).
+    id: 'microsoft', label: 'Microsoft Outlook and To Do', blurb: 'Import your To Do tasks, or send a day’s tasks to your Outlook calendar.', microsoft: true, fields: [],
+    connect: connectMicrosoft,
+  },
   {
     id: 'todoist', label: 'Todoist', blurb: 'Import your open tasks.',
     fields: [{ key: 'token', label: 'API token' }],
@@ -64,6 +77,9 @@ const SERVICES = [
 
 export default function ToolConnections() {
   const conns = useConnections()
+  // Google's own services need a Google sign-in (not an email account) and the site's Google client set up.
+  const googleOk = isConfigured() && rememberedAccount()?.provider !== 'email'
+  const shown = SERVICES.filter((s) => (!s.google || googleOk) && (!s.microsoft || microsoftAvailable()))
   return (
     <div className="space-y-3 pt-4 border-t border-line">
       <div>
@@ -71,7 +87,7 @@ export default function ToolConnections() {
         <p className="text-xs text-muted mt-0.5">Connect with your own token. It is checked, then saved on this device only. It does not sync to your other devices or your Drive, so enter it again where you want it.</p>
       </div>
       <ul className="rounded-2xl border border-line divide-y divide-line" aria-label="Tools">
-        {SERVICES.map((s) => <li key={s.id}><Tool svc={s} conn={conns[s.id] || null} /></li>)}
+        {shown.map((s) => <li key={s.id}><Tool svc={s} conn={conns[s.id] || null} /></li>)}
       </ul>
     </div>
   )
@@ -86,7 +102,7 @@ function Tool({ svc, conn }) {
 
   const ready = svc.fields.every((f) => (values[f.key] || '').trim())
   const connect = async (e) => {
-    e.preventDefault(); setNote(null); setBusy('connect')
+    e?.preventDefault(); setNote(null); setBusy('connect')
     try {
       const clean = Object.fromEntries(svc.fields.map((f) => [f.key, (values[f.key] || '').trim()]))
       const { conn: saved, label } = await svc.connect(clean)
@@ -105,7 +121,9 @@ function Tool({ svc, conn }) {
         </div>
         {conn
           ? <button type="button" className="btn-ghost h-8 py-0 px-3" aria-label={`Disconnect ${svc.label}`} onClick={disconnect}>Disconnect</button>
-          : <button type="button" className="btn-ghost h-8 py-0 px-3" aria-expanded={open} onClick={() => setOpen((o) => !o)}>{open ? 'Cancel' : 'Connect'}</button>}
+          : svc.fields.length === 0
+            ? <button type="button" className="btn-ghost h-8 py-0 px-3" disabled={!!busy} onClick={() => connect()}>{busy === 'connect' ? <><Loader2 size={13} className="animate-spin" /> Connecting…</> : svc.microsoft ? 'Connect with Microsoft' : 'Connect with Google'}</button>
+            : <button type="button" className="btn-ghost h-8 py-0 px-3" aria-expanded={open} onClick={() => setOpen((o) => !o)}>{open ? 'Cancel' : 'Connect'}</button>}
       </div>
 
       {!conn && open && (
@@ -122,15 +140,23 @@ function Tool({ svc, conn }) {
         </form>
       )}
 
-      {conn && ['todoist', 'trello', 'github'].includes(svc.id) && (
-        <div className="mt-2.5"><button type="button" className="btn-ghost h-8 py-0 px-3" onClick={() => setImporting(true)}><Download size={13} /> Import from {svc.label}…</button></div>
+      {conn && ['todoist', 'trello', 'github', 'gtasks', 'microsoft'].includes(svc.id) && (
+        <div className="mt-2.5 flex flex-wrap gap-2">
+          <button type="button" className="btn-ghost h-8 py-0 px-3" onClick={async () => {
+            setNote(null)
+            if (svc.google) { try { await ensureExtraToken('tasks', TASKS_SCOPE) } catch (e) { setNote({ ok: false, text: e.message }); return } }
+            setImporting(true)
+          }}><Download size={13} /> Import from {svc.microsoft ? 'Microsoft To Do' : svc.label}…</button>
+        </div>
       )}
+      {conn && svc.id === 'gtasks' && <GoogleTasksSend setNote={setNote} />}
+      {conn && svc.id === 'microsoft' && <OutlookSend setNote={setNote} />}
       {conn && ['clockify', 'toggl'].includes(svc.id) && <TimeSend svc={svc} conn={conn} setNote={setNote} />}
       {conn && svc.id === 'notion' && <NotionSend conn={conn} setNote={setNote} />}
       {conn && svc.id === 'telegram' && <TelegramSetup conn={conn} setNote={setNote} />}
 
       {note && <p role={note.ok ? 'status' : 'alert'} className={cx('mt-2 text-[13px] font-semibold', note.ok ? 'text-mint-fg' : 'text-coral-fg')}>{note.text}</p>}
-      {importing && <ImportDialog service={svc.id} onClose={() => setImporting(false)} />}
+      {importing && <ImportDialog service={svc.microsoft ? 'mstodo' : svc.id} onClose={() => setImporting(false)} />}
     </div>
   )
 }
@@ -156,6 +182,53 @@ function TimeSend({ svc, conn, setNote }) {
         {busy ? <><Loader2 size={13} className="animate-spin" /> Sending…</> : <><Send size={13} /> Send {dayLabel(dashboardDate)}’s time</>}
       </button>
       <span className="text-[12px] text-muted tnum">{list.length ? `${list.length} session${list.length === 1 ? '' : 's'} · ${fmtMinutes(minutes)} not sent yet` : all.length ? 'All of this day is already sent.' : 'No finished focus sessions on this day.'}</span>
+    </div>
+  )
+}
+
+function OutlookSend({ setNote }) {
+  const { tasks, dashboardDate } = usePlanner()
+  const [busy, setBusy] = useState(false)
+  const day = tasksOn(tasks, dashboardDate)
+  const fresh = day.filter((t) => !wasSent('outlook', t.id))
+  const send = async () => {
+    setNote(null); setBusy(true)
+    try {
+      const r = await sendTasksToOutlook(day)
+      const text = `Added ${r.sent} event${r.sent === 1 ? '' : 's'} to your Outlook calendar${r.skipped ? ` (${r.skipped} already there)` : ''}.`
+      setNote(r.error ? { ok: false, text: `${r.sent ? `${text} ` : ''}${r.error.message}` } : { ok: true, text })
+    } catch (e) { setNote({ ok: false, text: e.message }) } finally { setBusy(false) }
+  }
+  return (
+    <div className="mt-2 flex flex-wrap items-center gap-2">
+      <button type="button" className="btn-ghost h-8 py-0 px-3" disabled={busy || !fresh.length} onClick={send}>
+        {busy ? <><Loader2 size={13} className="animate-spin" /> Sending…</> : <><Send size={13} /> Send {dayLabel(dashboardDate)}’s tasks to Outlook</>}
+      </button>
+      <span className="text-[12px] text-muted tnum">{fresh.length ? `${fresh.length} task${fresh.length === 1 ? '' : 's'} not sent yet (a one-time copy; later edits aren’t sent)` : day.length ? 'All of this day is already sent.' : 'No tasks on this day.'}</span>
+    </div>
+  )
+}
+
+function GoogleTasksSend({ setNote }) {
+  const { tasks, dashboardDate } = usePlanner()
+  const [busy, setBusy] = useState(false)
+  const day = tasksOn(tasks, dashboardDate)
+  const fresh = day.filter((t) => !wasSent('gtasks', t.id))
+  const send = async () => {
+    setNote(null); setBusy(true)
+    try {
+      await ensureExtraToken('tasks', TASKS_SCOPE)
+      const r = await sendTasksToGoogleTasks(day)
+      const text = `Added ${r.sent} task${r.sent === 1 ? '' : 's'} to your Google Tasks list${r.skipped ? ` (${r.skipped} already there)` : ''}.`
+      setNote(r.error ? { ok: false, text: `${r.sent ? `${text} ` : ''}${r.error.message}` } : { ok: true, text })
+    } catch (e) { setNote({ ok: false, text: e.message }) } finally { setBusy(false) }
+  }
+  return (
+    <div className="mt-2 flex flex-wrap items-center gap-2">
+      <button type="button" className="btn-ghost h-8 py-0 px-3" disabled={busy || !fresh.length} onClick={send}>
+        {busy ? <><Loader2 size={13} className="animate-spin" /> Sending…</> : <><Send size={13} /> Send {dayLabel(dashboardDate)}’s tasks</>}
+      </button>
+      <span className="text-[12px] text-muted tnum">{fresh.length ? `${fresh.length} task${fresh.length === 1 ? '' : 's'} not sent yet (as all-day tasks: Google Tasks keeps no times)` : day.length ? 'All of this day is already sent.' : 'No tasks on this day.'}</span>
     </div>
   )
 }

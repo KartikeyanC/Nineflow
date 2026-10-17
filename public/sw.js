@@ -34,6 +34,9 @@ self.addEventListener('fetch', (event) => {
   if (req.method !== 'GET') return
   const url = new URL(req.url)
   if (url.origin !== self.location.origin) return
+  // Never keep a copy of these: the Microsoft sign-in return page (its address holds a one-time code) and
+  // /api/ links opened in a tab (the calendar link).
+  if (url.pathname === '/ms-callback.html' || url.pathname.startsWith('/api/')) return
 
   if (req.mode === 'navigate') {
     event.respondWith(
