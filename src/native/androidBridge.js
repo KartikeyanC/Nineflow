@@ -244,6 +244,16 @@ export function installAndroidBridge() {
     reminders: { set: setReminders, onOpenTask },
     onToken: (fn) => { listeners.add(fn); return () => listeners.delete(fn) },
   }
+  // The Back button: close whatever is open (every sheet and panel closes on Escape), otherwise let the
+  // planner go back to Home (src/App.jsx), and only leave the app from Home.
+  CapApp.addListener('backButton', () => {
+    const open = [...document.querySelectorAll('[role=dialog]')].some((d) => d.getBoundingClientRect().width > 0)
+    // Sent from the focused element so it bubbles past listeners on the page and on the window alike.
+    if (open) { (document.activeElement || document.body).dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); return }
+    const ev = new CustomEvent('nineflow:back', { cancelable: true })
+    window.dispatchEvent(ev)
+    if (!ev.defaultPrevented) CapApp.exitApp().catch(() => {})
+  }).catch(() => {})
   // Renew when the app comes back to the front (the timer may not have run while it was in the background).
   schedule()
   CapApp.addListener('appStateChange', ({ isActive }) => {

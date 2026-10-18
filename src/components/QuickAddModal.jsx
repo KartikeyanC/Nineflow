@@ -149,7 +149,7 @@ export default function QuickAddModal() {
         <div className="flex items-center gap-2">
           <input
             autoFocus
-            className="flex-1 min-w-0 bg-transparent outline-none h-display text-2xl placeholder:text-faint placeholder:font-semibold"
+            className="flex-1 min-w-0 bg-transparent outline-none h-display text-2xl max-sm:text-xl placeholder:text-faint placeholder:font-semibold"
             placeholder="What do you want to get done?"
             value={draft.title}
             onChange={(e) => set({ title: e.target.value }, false)}
@@ -158,7 +158,7 @@ export default function QuickAddModal() {
             <button type="button" onClick={listening ? stopListening : startListening}
               title={listening ? 'Stop listening' : 'Say a task, e.g. "call mom tomorrow 3pm"'}
               aria-label={listening ? 'Stop voice input' : 'Add by voice'}
-              className={cx('shrink-0 h-9 w-9 rounded-full flex items-center justify-center transition',
+              className={cx('shrink-0 h-9 w-9 max-sm:h-11 max-sm:w-11 rounded-full flex items-center justify-center transition',
                 listening ? 'bg-brand text-white animate-pulse' : 'bg-page text-muted hover:text-ink')}>
               {listening ? <MicOff size={16} /> : <Mic size={16} />}
             </button>
@@ -183,7 +183,7 @@ export default function QuickAddModal() {
         )}
 
         {/* Parsed tokens */}
-        <div className="mt-2 min-h-[22px] flex flex-wrap items-center gap-1.5">
+        <div className="mt-2 min-h-[22px] flex flex-wrap items-center gap-1.5 max-sm:flex-nowrap max-sm:overflow-x-auto max-sm:-mx-1 max-sm:px-1 max-sm:pb-1">
           {parsed.tokens.length === 0 ? (
             draft.title.trim() ? (
               <span className="inline-flex items-center gap-1 text-[11px] text-faint">
@@ -194,7 +194,7 @@ export default function QuickAddModal() {
                 <span className="inline-flex items-center gap-1 text-[11px] text-faint mr-0.5"><Sparkles size={11} /> Try</span>
                 {EXAMPLES.map((ex) => (
                   <button key={ex} type="button" onClick={() => set({ title: ex }, false)}
-                    className="pill bg-page text-muted border border-line hover:text-ink hover:border-faint transition">{ex}</button>
+                    className="pill bg-page text-muted border border-line hover:text-ink hover:border-faint transition max-sm:shrink-0 max-sm:whitespace-nowrap">{ex}</button>
                 ))}
               </>
             )
@@ -271,12 +271,12 @@ export default function QuickAddModal() {
           <Target size={13} /> Planning an exam or project? Plan a goal instead
         </button>
 
-        <div className="flex items-center justify-between mt-3">
+        <div className="flex items-center justify-between mt-3 max-sm:mt-4">
           <span className="text-xs text-faint">
             {draft.status !== 'todo' && <span className="pill bg-page text-muted mr-2">adds to {STATUS_LABEL[draft.status]}</span>}
-            Esc to close
+            <span className="max-sm:hidden">Esc to close</span>
           </span>
-          <button type="submit" className={cx('btn-black', !cleanTitle && 'opacity-40')} disabled={!cleanTitle}>
+          <button type="submit" className={cx('btn-black max-sm:h-12 max-sm:flex-1 max-sm:text-base', !cleanTitle && 'opacity-40')} disabled={!cleanTitle}>
             Add task <CornerDownLeft size={14} />
           </button>
         </div>

@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { usePhone } from '../lib/usePhone'
 import {
   DndContext, DragOverlay, KeyboardSensor, MeasuringStrategy, MouseSensor, TouchSensor, defaultDropAnimationSideEffects,
   pointerWithin, rectIntersection, useDroppable, useSensor, useSensors,
@@ -249,25 +250,54 @@ export default function Board() {
 
   const activeTask = activeId ? taskById.get(activeId) : null
 
+  // Phones show one column at a time, chosen with the tabs (or a swipe), because columns side by side don't fit.
+  const phone = usePhone()
+  const [phoneCol, setPhoneCol] = useState(null)
+  const activeCol = cols.some((c) => c.id === phoneCol) ? phoneCol : cols[0]?.id
+  const swipe = useRef(null)
+  const tabsRef = useRef(null)
+  // Keep the chosen tab in view when it is picked by a swipe (or is off to the right).
+  useEffect(() => {
+    if (!phone) return
+    tabsRef.current?.querySelector('[aria-selected="true"]')?.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' })
+  }, [phone, activeCol])
+  const stepCol = (dir) => {
+    const i = cols.findIndex((c) => c.id === activeCol)
+    const next = cols[i + dir]
+    if (next) setPhoneCol(next.id)
+  }
+  const onTouchStart = (e) => { swipe.current = activeId ? null : { x: e.touches[0].clientX, y: e.touches[0].clientY } }
+  const onTouchEnd = (e) => {
+    const s = swipe.current
+    swipe.current = null
+    if (!s || !e.changedTouches[0]) return
+    const dx = e.changedTouches[0].clientX - s.x
+    const dy = e.changedTouches[0].clientY - s.y
+    if (Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy) * 2) stepCol(dx < 0 ? 1 : -1)
+  }
+
   return (
     <div className="animate-view-in h-full flex flex-col">
-      <header className="[container-type:inline-size] flex flex-wrap items-center gap-x-4 gap-y-3 mb-6">
-        <h1 className="h-display text-3xl shrink-0">Board</h1>
+      <header className="[container-type:inline-size] flex flex-wrap items-center gap-x-4 gap-y-3 mb-6 max-sm:gap-x-2 max-sm:gap-y-2.5 max-sm:mb-4">
+        <h1 className="h-display text-3xl shrink-0 max-sm:order-1 max-sm:flex-1 max-sm:text-2xl">Board</h1>
         {/* Everything else shares the title's row; it only wraps (right-aligned) when there truly is no room. */}
-        <div className="flex flex-wrap items-center justify-end gap-2 basis-full sm:basis-0 sm:flex-1 min-w-0">
-          <DayNav value={dashboardDate} onChange={goDay} backLabel="Today" compact />
+        <div className="flex flex-wrap items-center justify-end gap-2 basis-full sm:basis-0 sm:flex-1 min-w-0 max-sm:contents">
+          {/* Phones: the day navigator takes a full row of its own, under the title. */}
+          <div className="contents max-sm:flex max-sm:order-3 max-sm:basis-full max-sm:items-center max-sm:gap-2">
+            <DayNav value={dashboardDate} onChange={goDay} backLabel="Today" compact block />
+          </div>
           <button type="button" onClick={() => setScope((s) => (s === 'all' ? 'day' : 'all'))} aria-pressed={scope === 'all'}
             data-tip="All days" data-tip-hint={scope === 'all' ? 'Showing every task. Pick a day to go back to one day.' : 'Show every task, whatever its day (including undated ones)'}
             aria-label="All days"
-            className={cx('h-9 px-3 rounded-full border text-[13px] font-semibold inline-flex items-center gap-1.5 transition',
+            className={cx('h-9 px-3 rounded-full border text-[13px] font-semibold inline-flex items-center gap-1.5 transition max-sm:order-5 max-sm:h-10 max-sm:w-10 max-sm:px-0 max-sm:justify-center',
               scope === 'all' ? 'bg-brand text-white border-transparent' : 'bg-card border-line text-muted hover:text-ink')}>
             <CalendarDays size={14} /><span className={LABEL}>All days</span>
           </button>
-          <label className="relative min-w-[8rem] flex-1 sm:basis-32 sm:min-w-[6rem] sm:max-w-[11rem]">
+          <label className="relative min-w-[8rem] flex-1 sm:basis-32 sm:min-w-[6rem] sm:max-w-[11rem] max-sm:order-4 max-sm:basis-0 max-sm:min-w-0">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-faint" />
-            <input className="input pl-8 w-full bg-card" placeholder="Search tasks" value={query} onChange={(e) => setQuery(e.target.value)} />
+            <input className="input pl-8 w-full bg-card max-sm:h-10" placeholder="Search tasks" value={query} onChange={(e) => setQuery(e.target.value)} />
           </label>
-          <select className="input w-auto min-w-[6.5rem] max-w-[9.5rem] shrink bg-card" value={viewId} aria-label="Saved views" onChange={(e) => applyView(e.target.value)}>
+          <select className={cx('input w-auto min-w-[6.5rem] max-w-[9.5rem] shrink bg-card max-sm:order-8 max-sm:basis-full max-sm:max-w-none max-sm:h-10', views.length === 0 && 'max-sm:hidden')} value={viewId} aria-label="Saved views" onChange={(e) => applyView(e.target.value)}>
             <option value="">All tasks</option>
             {views.length > 0 && (
               <optgroup label="Saved views">
@@ -277,25 +307,25 @@ export default function Board() {
           </select>
           <button type="button" onClick={() => setShowFilters((v) => !v)} aria-expanded={showFilters} aria-controls="board-filters"
             aria-label="Filters" data-tip="Filters" data-tip-hint="By when, category, priority or tag"
-            className={cx('h-9 px-3 rounded-full border text-[13px] font-semibold inline-flex items-center gap-1.5 transition',
+            className={cx('h-9 px-3 rounded-full border text-[13px] font-semibold inline-flex items-center gap-1.5 transition max-sm:order-6 max-sm:h-10 max-sm:min-w-10 max-sm:justify-center',
               showFilters || activeFilters ? 'bg-brand text-white border-transparent' : 'bg-card border-line text-muted hover:text-ink')}>
             <SlidersHorizontal size={14} /><span className={LABEL}>Filters</span>{activeFilters > 0 && <span className="h-5 min-w-5 px-1 rounded-full bg-page text-ink text-[11px] font-bold inline-flex items-center justify-center">{activeFilters}</span>}
           </button>
           {mode === 'board' && (
             <button type="button" onClick={() => setEditingColumns(true)} data-tip="Columns" data-tip-hint="Add, rename and reorder the Board's columns" aria-label="Columns"
-              className="h-9 px-3 rounded-full border border-line bg-card text-[13px] font-semibold text-muted hover:text-ink inline-flex items-center gap-1.5 transition">
+              className="h-9 px-3 rounded-full border border-line bg-card text-[13px] font-semibold text-muted hover:text-ink inline-flex items-center gap-1.5 transition max-sm:order-7 max-sm:h-10 max-sm:w-10 max-sm:px-0 max-sm:justify-center">
               <Columns3 size={14} /><span className={LABEL}>Columns</span>
             </button>
           )}
           {otherWorkspaces.length > 0 && mode === 'board' && (
             <button type="button" onClick={() => (selecting ? stopSelecting() : setSelecting(true))} aria-pressed={selecting}
               data-tip="Select" data-tip-hint="Choose several tasks to move to another workspace" aria-label="Select"
-              className={cx('h-9 px-3 rounded-full border text-[13px] font-semibold inline-flex items-center gap-1.5 transition',
+              className={cx('h-9 px-3 rounded-full border text-[13px] font-semibold inline-flex items-center gap-1.5 transition max-sm:order-7 max-sm:h-10 max-sm:w-10 max-sm:px-0 max-sm:justify-center',
                 selecting ? 'bg-brand text-white border-transparent' : 'bg-card border-line text-muted hover:text-ink')}>
               <CheckSquare size={14} /><span className={LABEL}>Select</span>
             </button>
           )}
-          <div className="inline-flex rounded-full border border-line bg-card p-1 gap-0.5">
+          <div className="inline-flex rounded-full border border-line bg-card p-1 gap-0.5 max-sm:order-2">
             {[{ id: 'list', icon: List, label: 'List view' }, { id: 'board', icon: LayoutGrid, label: 'Board view' }].map((m) => (
               <button key={m.id} type="button" data-tip={m.label} aria-label={m.label} onClick={() => setMode(m.id)}
                 className={cx('h-7 w-7 rounded-full inline-flex items-center justify-center transition',
@@ -306,7 +336,7 @@ export default function Board() {
           </div>
         </div>
         {/* The hint is too long to sit beside the controls, so it gets the line under them. */}
-        <p className="basis-full -mt-1 text-sm text-muted">Drag cards between columns. Moving a card to Working starts tracking its time.</p>
+        <p className="basis-full -mt-1 text-sm text-muted max-sm:hidden">Drag cards between columns. Moving a card to Working starts tracking its time.</p>
       </header>
 
       {showFilters && (
@@ -365,9 +395,24 @@ export default function Board() {
       ) : (
         <DndContext sensors={sensors} collisionDetection={collisionDetection} measuring={MEASURING}
           onDragStart={onDragStart} onDragOver={onDragOver} onDragEnd={onDragEnd} onDragCancel={cancelDrag}>
-          {/* Phones: one column per screen, swipe between them. */}
-          <div className="flex md:grid gap-4 flex-1 min-h-0 overflow-x-auto snap-x snap-mandatory -mx-3 px-3 md:mx-0 md:px-0 md:[grid-template-columns:repeat(var(--cols),minmax(250px,1fr))]"
-            style={{ '--cols': cols.length }}>
+          {/* Phones: tabs choose the column (a swipe moves between them), and only that column is shown. */}
+          {phone && (
+            <div ref={tabsRef} role="tablist" aria-label="Board columns" className="sm:hidden -mx-3 px-3 mb-3 flex gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {cols.map((col) => {
+                const on = col.id === activeCol
+                return (
+                  <button key={col.id} type="button" role="tab" aria-selected={on} onClick={() => setPhoneCol(col.id)}
+                    className={cx('shrink-0 h-10 pl-4 pr-3 rounded-full text-sm font-semibold inline-flex items-center gap-2 transition active:scale-95',
+                      on ? 'bg-brand text-white shadow-sm' : 'bg-card border border-line text-muted')}>
+                    {col.name}
+                    <span className={cx('h-5 min-w-5 px-1.5 rounded-full text-[11px] font-bold inline-flex items-center justify-center tnum', on ? 'bg-white/25 text-white' : 'bg-page text-ink')}>{idLists[col.id].length}</span>
+                  </button>
+                )
+              })}
+            </div>
+          )}
+          <div className="flex md:grid gap-4 flex-1 min-h-0 overflow-x-auto snap-x snap-mandatory -mx-3 px-3 md:mx-0 md:px-0 md:[grid-template-columns:repeat(var(--cols),minmax(250px,1fr))] max-sm:block max-sm:overflow-x-visible max-sm:mx-0 max-sm:px-0"
+            style={{ '--cols': cols.length }} onTouchStart={phone ? onTouchStart : undefined} onTouchEnd={phone ? onTouchEnd : undefined}>
             {cols.map((col) => {
               const s = col.id
               const done = col.base === 'completed'
@@ -383,6 +428,7 @@ export default function Board() {
                   onPick={togglePick}
                   highlighted={activeId != null && overColumn === s}
                   onAdd={() => quickAddFor(col)}
+                  hiddenOnPhone={phone && col.id !== activeCol}
                   show={shownOf(col)}
                   onShow={(v) => setShow(col.id, v)}
                   parked={parkedOf(col)}
@@ -433,17 +479,20 @@ export default function Board() {
   )
 }
 
-function Column({ col, ids, taskById, activeId, selecting, picked, onPick, highlighted, onAdd, menu, footer, show = 'active', onShow, parked, frozen = [] }) {
+function Column({ col, ids, taskById, activeId, selecting, picked, onPick, highlighted, onAdd, hiddenOnPhone, menu, footer, show = 'active', onShow, parked, frozen = [] }) {
   const status = col.id
   const { setNodeRef } = useDroppable({ id: status })
   const c = styleOf(col)
   return (
     <section ref={setNodeRef}
-      className={cx('[container-type:inline-size] rounded-card p-3 flex flex-col min-h-[360px] transition-shadow duration-200 min-w-[86vw] md:min-w-0 snap-center', c.panel, highlighted && 'ring-2 ring-inset ring-current/25', c.text)}>
+      className={cx('[container-type:inline-size] rounded-card p-3 flex flex-col min-h-[360px] transition-shadow duration-200 min-w-[86vw] md:min-w-0 snap-center',
+        // Phones: one flat column on the page (no tinted box); the others are hidden behind their tab.
+        'max-sm:min-w-0 max-sm:w-full max-sm:p-0 max-sm:min-h-0 max-sm:bg-transparent max-sm:rounded-none',
+        hiddenOnPhone && 'max-sm:hidden', c.panel, highlighted && 'ring-2 ring-inset ring-current/25', c.text)}>
       {/* The name never gets cut: the chips sit next to it, or on their own line below it in a narrow column */}
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 px-1 mb-3">
-        <span className="h-6 min-w-6 px-1.5 rounded-full bg-card text-ink text-xs font-bold inline-flex items-center justify-center shadow-soft">{ids.length}</span>
-        <h2 className={cx('font-bold text-sm whitespace-nowrap', c.text)}>
+        <span className="h-6 min-w-6 px-1.5 rounded-full bg-card text-ink text-xs font-bold inline-flex items-center justify-center shadow-soft max-sm:hidden">{ids.length}</span>
+        <h2 className={cx('font-bold text-sm whitespace-nowrap max-sm:hidden', c.text)}>
           {show === 'active' ? col.name : <button type="button" onClick={() => onShow('active')} title="Back to the tasks" className="hover:underline">{col.name}</button>}
         </h2>
         <div className="ml-auto flex items-center gap-0.5 order-2">

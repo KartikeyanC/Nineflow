@@ -8,7 +8,8 @@ import { carriedLabel, daysOnPlan, dueLabel, fmtMinutes, isOverdue, startDayOf, 
 import { format, parseISO } from 'date-fns'
 import { describe } from '../lib/recurrence'
 import RequiredBadge from './RequiredBadge'
-import { CARD_STYLE, STATUS_CARD_COLOR } from '../lib/columns'
+import { CARD_STYLE, STATUS_CARD_COLOR, cleanColumns, columnOf } from '../lib/columns'
+import { usePhone } from '../lib/usePhone'
 import { CategoryTag, CheckCircle, Menu, PriorityPill, cx } from './ui'
 
 // In dark mode a card takes the colour of the column it sits in (see CARD_STYLE).
@@ -19,7 +20,12 @@ import { CategoryTag, CheckCircle, Menu, PriorityPill, cx } from './ui'
 // `select` ({ picked, onToggle }) puts it in "choose tasks" mode: tapping picks
 // the card instead of opening it, and the done circle becomes a pick circle.
 export default function TaskCard({ task, tone, dragging = false, handleProps, style, innerRef, select }) {
-  const { categoryById, toggleComplete, setSelectedId, updateTask, now } = usePlanner()
+  const { categoryById, toggleComplete, setSelectedId, updateTask, moveTask, settings, now } = usePlanner()
+  const phone = usePhone()
+  // Phones show one column at a time, so a card can't be dragged across: its menu moves it instead.
+  const cols = cleanColumns(settings.columns)
+  const here = columnOf(task, cols)
+  const moves = phone ? [...cols.filter((c) => c.id !== here).map((c) => ({ label: `Move to ${c.name}`, icon: ArrowRight, onSelect: () => moveTask(task.id, c.id) })), 'divider'] : []
   const [leaving, setLeaving] = useState(false)
   const [park, setPark] = useState(null) // 'pause' | 'drop'
   const done = task.status === 'completed'
@@ -79,11 +85,12 @@ export default function TaskCard({ task, tone, dragging = false, handleProps, st
                 <span className="shrink-0 -my-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity"
                   onClick={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
                   <Menu items={[
+                    ...moves,
                     { label: 'Pause…', icon: PauseCircle, onSelect: () => setPark('pause') },
                     { label: 'Drop…', icon: XCircle, danger: true, onSelect: () => setPark('drop') },
                   ]} trigger={({ toggle, open }) => (
                     <button type="button" onClick={toggle} aria-label={`More for ${task.title || 'this task'}`} title="Pause or drop"
-                      className={cx('h-6 w-6 rounded-full inline-flex items-center justify-center text-faint hover:text-ink hover:bg-page transition', open && 'bg-page text-ink')}>
+                      className={cx('tap-target h-6 w-6 rounded-full inline-flex items-center justify-center text-faint hover:text-ink hover:bg-page transition', open && 'bg-page text-ink')}>
                       <MoreHorizontal size={15} />
                     </button>
                   )} />

@@ -10,6 +10,7 @@ import {
 import { loadSettings, saveSettings, saveTasks, saveHabits, markOnboarded, isOnboarded, DEFAULT_CATEGORIES } from '../lib/storage'
 import { loadWork, saveWork, SATURDAY_RULES } from '../work/workStore'
 import { generateSample } from '../lib/sample'
+import { isNativeApp } from '../lib/platform'
 import { isConfigured, isDesktop, rememberedAccount, rememberAccount, signInWithGoogle, lastAccount, forgetLastAccount } from '../lib/google'
 import * as supa from '../lib/supabase'
 import { mockEnabled as supaMockEnabled, mockCodeFor } from '../lib/supabaseMock'
@@ -684,7 +685,7 @@ function Import({ onFresh }) {
             <button key={p.id} type="button" onClick={() => { setError(null); setPin(''); if (p.pin) setPicked(p); else bring(p) }}
               className={cx('group flex items-center gap-4 rounded-2xl border-2 p-3 text-left transition hover:-translate-y-0.5 hover:shadow-lift', picked?.id === p.id ? 'border-ink bg-page' : 'border-line')}>
               <span className={cx('h-12 w-12 rounded-2xl flex items-center justify-center font-black text-lg', c.bg, c.text)}>{p.id === '__legacy' ? <FolderInput size={20} /> : initials(p.name)}</span>
-              <span className="min-w-0 flex-1"><span className="block font-bold truncate">{p.name}</span><span className="block text-sm text-muted truncate">{p.email || 'Saved in this browser'}</span></span>
+              <span className="min-w-0 flex-1"><span className="block font-bold truncate">{p.name}</span><span className="block text-sm text-muted truncate">{p.email || (isNativeApp() ? 'Saved on this phone' : 'Saved in this browser')}</span></span>
               <span className="h-9 w-9 rounded-full flex items-center justify-center bg-page text-faint group-hover:text-ink">{p.pin ? <KeyRound size={15} /> : <ArrowRight size={16} />}</span>
             </button>
           )

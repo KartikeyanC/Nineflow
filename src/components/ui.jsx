@@ -67,7 +67,7 @@ export function CheckCircle({ checked, onToggle, size = 'md', className }) {
         onToggle?.()
       }}
       className={cx(
-        'shrink-0 rounded-full border-2 flex items-center justify-center transition-colors',
+        'tap-target shrink-0 rounded-full border-2 flex items-center justify-center transition-colors',
         dim,
         checked
           ? 'bg-mint-fg border-mint-fg text-white animate-pop'
@@ -129,19 +129,21 @@ export function Modal({ open, onClose, children, title, width = 'max-w-lg' }) {
   if (!open) return null
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center pt-[12vh] px-4 bg-ink/30 backdrop-blur-sm animate-fade-in"
+      className="fixed inset-0 z-50 flex items-start justify-center pt-[12vh] px-4 bg-ink/30 backdrop-blur-sm animate-fade-in max-sm:items-end max-sm:pt-0 max-sm:px-0"
       onMouseDown={onClose}
     >
+      {/* Phones: a bottom sheet (rounded top, slides up, scrolls inside, clear of the gesture bar). */}
       <div
         ref={ref}
         tabIndex={-1}
-        className={cx('card w-full shadow-modal animate-modal-in p-6 outline-none', width)}
+        className={cx('card w-full shadow-modal animate-modal-in p-6 outline-none max-sm:max-w-none max-sm:rounded-b-none max-sm:rounded-t-3xl max-sm:border-0 max-sm:p-5 max-sm:pb-[max(1.25rem,env(safe-area-inset-bottom))] max-sm:max-h-[92dvh] max-sm:overflow-y-auto max-sm:animate-sheet-in', width)}
         onMouseDown={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
         aria-labelledby={title ? 'modal-title' : undefined}
         aria-label={title ? undefined : 'Dialog'}
       >
+        <div className="sm:hidden mx-auto -mt-1 mb-3 h-1 w-10 rounded-full bg-line" aria-hidden="true" />
         {title && (
           <div className="flex items-center justify-between mb-4">
             <h2 id="modal-title" className="h-display text-lg">{title}</h2>

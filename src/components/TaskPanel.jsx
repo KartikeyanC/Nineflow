@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { format, parseISO } from 'date-fns'
-import { Activity, CalendarCheck, CalendarDays, Clock, Timer, Tag, Flag, Trash2, X, Repeat, ArrowRight, CalendarPlus, Layers, Bell, Hash, Columns3, Video, Paperclip } from 'lucide-react'
+import { Activity, CalendarCheck, CalendarDays, Clock, Timer, Tag, Flag, Trash2, X, Repeat, ArrowRight, CalendarPlus, Layers, Bell, Hash, Columns3, Video, Paperclip, MoreHorizontal, PauseCircle, XCircle } from 'lucide-react'
 import { googleCalendarUrl } from '../lib/calendar'
 import { meetLinkFor } from '../lib/gcal'
 import { pickDriveFiles, pickerAvailable } from '../lib/picker'
@@ -13,7 +13,7 @@ import { usePlanner } from '../store/PlannerContext'
 import ParkDialog from './ParkDialog'
 import { STATUSES, STATUS_LABEL, carriedLabel, daysOnPlan, endDayOf, fmtMinutes, isOverdue, startDayOf, todayKey, totalMinutes } from '../lib/tasks'
 import { FREQS, FREQ_LABEL, describe } from '../lib/recurrence'
-import { CategoryPills, IconButton, PriorityPills, Segmented, cx, useDialogFocus } from './ui'
+import { CategoryPills, IconButton, Menu, PriorityPills, Segmented, cx, useDialogFocus } from './ui'
 import Checklist from './Checklist'
 import { RemindersField, SaveAsTemplate, TagsField } from './TaskExtras'
 import { DateField } from './DatePicker'
@@ -61,17 +61,31 @@ export default function TaskPanel() {
     <div className="fixed inset-0 z-40">
       <div className="absolute inset-0 bg-ink/25 animate-fade-in" onClick={close} />
       <aside ref={panelRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label={`Task: ${task.title || 'Untitled'}`}
-        className="absolute top-4 right-4 bottom-4 w-[min(540px,calc(100vw-2rem))] card shadow-modal animate-panel-in flex flex-col overflow-hidden outline-none">
-        <header className="flex items-center justify-between px-6 pt-5 pb-3">
-          <div className="flex items-center gap-2">
+        className="absolute top-4 right-4 bottom-4 w-[min(540px,calc(100vw-2rem))] card shadow-modal animate-panel-in flex flex-col overflow-hidden outline-none max-sm:inset-0 max-sm:w-full max-sm:rounded-none max-sm:border-0 max-sm:shadow-none">
+        {/* Phones: a full-screen page, not a floating card. */}
+        <header className="flex items-center justify-between gap-2 px-4 sm:px-6 pt-5 max-sm:pt-[max(1.25rem,env(safe-area-inset-top))] pb-3">
+          <div className="flex items-center gap-2 min-w-0 flex-wrap">
             <span className={cx('pill', STATUS_PILL[task.status])}>{cols.find((c) => c.id === columnOf(task, cols))?.name || STATUS_LABEL[task.status]}</span>
             {overdue && <span className="pill bg-page text-muted border border-line text-[10px]">carried over {carriedLabel(task.date, now)}</span>}
             {task.recurrence && <span className="pill bg-page text-muted border border-line"><Repeat size={11} /> {describe(task.recurrence)}</span>}
           </div>
-          <IconButton label="Close" onClick={close}><X size={16} /></IconButton>
+          <div className="flex items-center gap-1 shrink-0">
+            {/* Phones: Pause, Drop and Delete live behind a menu, so the footer can be one big Done button. */}
+            <span className="sm:hidden">
+              <Menu items={[
+                ...(!task.hold && !task.dropped && task.status !== 'completed'
+                  ? [{ label: 'Pause…', icon: PauseCircle, onSelect: () => setPark('pause') }, { label: 'Drop…', icon: XCircle, onSelect: () => setPark('drop') }, 'divider']
+                  : []),
+                { label: 'Delete', icon: Trash2, danger: true, onSelect: () => setConfirm(true) },
+              ]} trigger={({ toggle, open }) => (
+                <IconButton label="More" onClick={toggle} active={open} className="max-sm:h-10 max-sm:w-10"><MoreHorizontal size={18} /></IconButton>
+              )} />
+            </span>
+            <IconButton label="Close" onClick={close} className="max-sm:h-10 max-sm:w-10"><X size={18} /></IconButton>
+          </div>
         </header>
         {(task.hold || task.dropped) && (
-          <div className={cx('mx-6 mb-2 rounded-2xl px-4 py-3 flex flex-wrap items-center gap-3', task.dropped ? 'bg-coral' : 'bg-sky')}>
+          <div className={cx('mx-4 sm:mx-6 mb-2 rounded-2xl px-4 py-3 flex flex-wrap items-center gap-3', task.dropped ? 'bg-coral' : 'bg-sky')}>
             <p className={cx('text-[13px] font-semibold flex-1 min-w-[12rem]', task.dropped ? 'text-coral-fg' : 'text-sky-fg')}>
               {task.dropped ? `Dropped: ${task.dropped.reason}` : `Paused: ${task.hold.reason}${task.hold.until ? ` · back on ${task.hold.until}` : ''}`}
             </p>
@@ -81,7 +95,7 @@ export default function TaskPanel() {
           </div>
         )}
 
-        <div className="flex-1 overflow-y-auto px-6 pb-4">
+        <div className="flex-1 overflow-y-auto px-4 sm:px-6 pb-4">
           {task.status !== 'completed' && (
             <button type="button" onClick={() => { startFocus(task.id); close() }}
               className={cx('mb-3 inline-flex items-center gap-1.5 rounded-full px-3 h-8 text-xs font-semibold transition',
@@ -108,8 +122,18 @@ export default function TaskPanel() {
 
           <div className="mt-3 divide-y divide-line">
             <Row icon={Activity} label="Status" stack>
-              <Segmented size="sm" value={task.status} onChange={(s) => setStatus(task.id, s)}
-                options={STATUSES.map((s) => ({ value: s, label: STATUS_LABEL[s] }))} />
+              <div className="sm:hidden grid grid-cols-2 gap-2 w-full" role="group" aria-label="Status">
+                {STATUSES.map((s) => (
+                  <button key={s} type="button" aria-pressed={task.status === s} onClick={() => setStatus(task.id, s)}
+                    className={cx('h-11 rounded-2xl text-sm font-semibold transition active:scale-[0.98]', task.status === s ? 'bg-brand text-white shadow-sm' : 'bg-page text-ink border border-line')}>
+                    {STATUS_LABEL[s]}
+                  </button>
+                ))}
+              </div>
+              <div className="hidden sm:block">
+                <Segmented size="sm" value={task.status} onChange={(s) => setStatus(task.id, s)}
+                  options={STATUSES.map((s) => ({ value: s, label: STATUS_LABEL[s] }))} />
+              </div>
             </Row>
             {/* Worked out for you, so plain text rather than fields: it cannot be edited here. */}
             <Row icon={CalendarDays} label="Start day">
@@ -239,10 +263,10 @@ export default function TaskPanel() {
           <div className="mt-3"><SaveAsTemplate task={task} /></div>
         </div>
 
-        <footer className="px-6 py-4 border-t border-line flex items-center justify-between gap-3">
+        <footer className="px-4 sm:px-6 py-3 sm:py-4 max-sm:pb-[max(0.75rem,env(safe-area-inset-bottom))] border-t border-line flex items-center justify-between gap-3">
           {confirm ? (
-            <div className="flex flex-wrap items-center gap-2 text-sm">
-              <span className="font-semibold text-coral-fg">{task.recurrence ? 'Delete…' : 'Delete this task?'}</span>
+            <div className="flex flex-wrap items-center gap-2 text-sm max-sm:w-full">
+              <span className="font-semibold text-coral-fg max-sm:w-full">{task.recurrence ? 'Delete…' : 'Delete this task?'}</span>
               <button type="button" className="btn-ghost h-8 py-0 px-3" onClick={() => setConfirm(false)}>Cancel</button>
               {task.recurrence ? (
                 <>
@@ -255,18 +279,18 @@ export default function TaskPanel() {
             </div>
           ) : (
             <button type="button" onClick={() => setConfirm(true)}
-              className="inline-flex items-center gap-1.5 rounded-full bg-coral text-coral-fg px-3.5 h-9 text-sm font-semibold hover:opacity-90 transition">
+              className="max-sm:hidden inline-flex items-center gap-1.5 rounded-full bg-coral text-coral-fg px-3.5 h-9 text-sm font-semibold hover:opacity-90 transition">
               <Trash2 size={14} /> Delete
             </button>
           )}
-          <div className="flex items-center gap-2">
+          <div className={cx('flex items-center gap-2', !confirm && 'max-sm:flex-1')}>
             {!task.hold && !task.dropped && task.status !== 'completed' && !confirm && (
-              <>
+              <span className="max-sm:hidden contents">
                 <button type="button" className="btn-ghost h-9 py-0 px-3" onClick={() => setPark('pause')} title="Stopped or blocked: take it off your plan, with a reason">Pause…</button>
                 <button type="button" className="btn-ghost h-9 py-0 px-3" onClick={() => setPark('drop')} title="Let it go, with a reason (restorable for 30 days)">Drop…</button>
-              </>
+              </span>
             )}
-            <button type="button" className="btn-black" onClick={close}>Done</button>
+            <button type="button" className="btn-black max-sm:flex-1 max-sm:h-12 max-sm:text-base" onClick={close}>Done</button>
           </div>
         </footer>
         {park && <ParkDialog task={task} mode={park} onClose={() => setPark(null)} />}
@@ -342,7 +366,7 @@ function Row({ icon: Icon, label, children, top, stack }) {
       <span className={cx('w-28 shrink-0 inline-flex items-center gap-2 text-xs font-semibold text-muted', top && 'pt-1')}>
         <Icon size={14} className="text-faint" /> {label}
       </span>
-      <div className="flex-1 min-w-0 max-w-full">{children}</div>
+      <div className={cx('flex-1 min-w-0 max-w-full', stack && 'w-full sm:w-auto')}>{children}</div>
     </div>
   )
 }

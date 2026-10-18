@@ -21,7 +21,7 @@ import CalendarFeed from './features/CalendarFeed'
 import Notices from './features/Notices'
 import Ritual from './features/Ritual'
 import WelcomeBack from './features/WelcomeBack'
-import Interrupt, { InterruptButton, ResumePrompt } from './features/Interrupt'
+import Interrupt, { ResumePrompt } from './features/Interrupt'
 import Dashboard from './views/Dashboard'
 import Board from './views/Board'
 import Week from './views/Week'
@@ -38,7 +38,7 @@ import Work from './work/Work'
 const VIEWS = { dashboard: Dashboard, board: Board, week: Week, month: Month, matrix: Matrix, someday: Someday, agenda: Agenda, notes: Notes, paused: Paused, work: Work, settings: Settings }
 
 function Shell() {
-  const { view, setQuickAdd } = usePlanner()
+  const { view, setView, setQuickAdd } = usePlanner()
   const View = VIEWS[view] || Dashboard
   const [palette, setPalette] = useState(false)
 
@@ -56,6 +56,14 @@ function Shell() {
     window.addEventListener('nineflow:palette', onAsk)
     return () => { window.removeEventListener('keydown', onKey); window.removeEventListener('nineflow:palette', onAsk) }
   }, [])
+
+  // Phone app: the Back button (src/native/androidBridge.js) closes what is open first; with nothing open it
+  // goes back to Home from any other screen, and only on Home does it leave the app.
+  useEffect(() => {
+    const onBack = (e) => { if (view !== 'dashboard') { e.preventDefault(); setView('dashboard') } }
+    window.addEventListener('nineflow:back', onBack)
+    return () => window.removeEventListener('nineflow:back', onBack)
+  }, [view, setView])
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -81,7 +89,9 @@ function Shell() {
         type="button"
         onClick={() => setQuickAdd({})}
         title="New task"
-        className="fixed bottom-20 sm:bottom-6 right-4 sm:right-6 z-30 h-14 w-14 rounded-full bg-brand text-white shadow-lift flex items-center justify-center transition hover:scale-105 active:scale-95"
+        // On phones it floats just above the tab bar (4rem, plus the gesture bar's inset).
+        // Phones don't show it on Settings, where there is nothing to add.
+        className={`fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] sm:bottom-6 right-4 sm:right-6 z-30 h-14 w-14 rounded-full bg-brand text-white shadow-lift flex items-center justify-center transition hover:scale-105 active:scale-95${view === 'settings' ? ' max-sm:hidden' : ''}`}
       >
         <Plus size={24} />
       </button>
@@ -105,9 +115,6 @@ function Shell() {
       <WelcomeBack />
       <Interrupt />
       <ResumePrompt />
-
-      {/* Phones: interruption button above the quick-add button */}
-      <span className="sm:hidden fixed bottom-[9.5rem] right-5 z-30"><InterruptButton compact /></span>
     </div>
   )
 }

@@ -147,13 +147,16 @@ export function CarriedOver({ i = 0 }) {
         {shown.map((t) => {
           const c = colorOf(categoryById(t.category).color)
           return (
-            <li key={t.id} className="flex flex-wrap items-center gap-x-3 gap-y-1.5 px-3 py-2 rounded-2xl hover:bg-subtle transition">
-              <i className={cx('h-2 w-2 rounded-full shrink-0', c.dot)} />
-              <button type="button" onClick={() => setSelectedId(t.id)} className="min-w-0 flex-1 text-left">
-                <span className="block text-[14px] font-semibold truncate">{t.title}</span>
-                <span className="block text-[11px] text-faint tnum">{carriedLabel(t.date, now)} · {fmtMinutes(remainingMinutes(t, now))}{t.priority === 'high' ? ' · high priority' : ''}</span>
-              </button>
-              <div className="flex items-center gap-1 shrink-0">
+            <li key={t.id} className="flex flex-wrap items-center gap-x-3 gap-y-1.5 px-3 py-2 rounded-2xl hover:bg-subtle transition max-sm:flex-col max-sm:items-stretch max-sm:gap-y-2.5 max-sm:py-3">
+              {/* Phones: the title takes the full row, and the four choices wrap on a row of their own. */}
+              <div className="flex items-center gap-3 min-w-0 flex-1 max-sm:flex-none">
+                <i className={cx('h-2 w-2 rounded-full shrink-0', c.dot)} />
+                <button type="button" onClick={() => setSelectedId(t.id)} className="min-w-0 flex-1 text-left">
+                  <span className="block text-[14px] font-semibold truncate">{t.title}</span>
+                  <span className="block text-[11px] text-faint tnum">{carriedLabel(t.date, now)} · {fmtMinutes(remainingMinutes(t, now))}{t.priority === 'high' ? ' · high priority' : ''}</span>
+                </button>
+              </div>
+              <div className="flex items-center gap-1 shrink-0 max-sm:flex-wrap max-sm:gap-2 max-sm:pl-5">
                 <Choice onClick={() => move(t, today, 'today')}>Today</Choice>
                 <Choice onClick={() => move(t, tomorrow, 'tomorrow')}>Tomorrow</Choice>
                 <Choice onClick={() => move(t, null, 'Someday')} title="No date: keep it without a day"><Inbox size={11} /> Someday</Choice>
@@ -176,8 +179,8 @@ export function CarriedOver({ i = 0 }) {
 function Choice({ children, onClick, quiet, title }) {
   return (
     <button type="button" onClick={onClick} title={title}
-      className={cx('inline-flex items-center gap-1 h-7 rounded-full px-2.5 text-[11px] font-semibold transition active:scale-[0.96]',
-        quiet ? 'text-faint hover:text-ink hover:bg-card' : 'bg-card text-ink shadow-soft hover:-translate-y-px')}>
+      className={cx('inline-flex items-center gap-1 h-7 rounded-full px-2.5 text-[11px] font-semibold transition active:scale-[0.96] max-sm:h-9 max-sm:px-3.5 max-sm:text-xs',
+        quiet ? 'text-faint hover:text-ink hover:bg-card max-sm:px-1' : 'bg-card text-ink shadow-soft hover:-translate-y-px')}>
       {children}
     </button>
   )

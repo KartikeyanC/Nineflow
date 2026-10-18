@@ -48,22 +48,22 @@ export default function Dashboard() {
   return (
     <div className="animate-view-in">
       {/* Header */}
-      <header className="flex flex-wrap items-start justify-between gap-4 mb-5">
+      <header className="flex flex-wrap items-start justify-between gap-4 mb-5 max-sm:gap-3 max-sm:mb-4">
         <div>
-          <h1 className="h-display text-3xl">{greeting}{firstName(currentProfile()?.name) ? `, ${firstName(currentProfile().name)}` : ''} 👋</h1>
+          <h1 className="h-display text-3xl max-sm:text-2xl">{greeting}{firstName(currentProfile()?.name) ? `, ${firstName(currentProfile().name)}` : ''} 👋</h1>
           <p className="text-sm text-muted mt-1 font-medium">{format(day, 'EEEE, MMMM d, yyyy')}</p>
-          <p className="text-sm text-faint">Let's make today productive.</p>
+          <p className="text-sm text-faint max-sm:hidden">Let's make today productive.</p>
           {holiday && <p className="mt-1.5 inline-flex items-center gap-1.5 text-[12px] font-semibold text-peach-fg"><PartyPopper size={13} aria-hidden="true" /> {holiday}</p>}
           <WeatherChip dayKey={dashboardDate} />
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 max-sm:w-full">
           {isToday && <RitualPrompt />}
           {isToday && (
-            <button type="button" className="btn-ghost h-9 py-0" onClick={openInterrupt} title="Something came up (Ctrl+I)">
+            <button type="button" className="btn-ghost h-9 py-0 max-sm:hidden" onClick={openInterrupt} title="Something came up (Ctrl+I)">
               <Zap size={14} className="text-peach-fg" /> Interruption
             </button>
           )}
-          <DayNav value={dashboardDate} onChange={setDashboardDate} />
+          <DayNav value={dashboardDate} onChange={setDashboardDate} block />
         </div>
       </header>
 
@@ -71,8 +71,18 @@ export default function Dashboard() {
       <CapacityBar dayKey={dashboardDate} />
       {isToday && <CarriedOver />}
 
+      {/* Phones: the five counts as one compact strip instead of five cards (which cut their own words off). */}
+      <div className="sm:hidden card mb-4 px-1 py-3 grid grid-cols-5" aria-label="Today at a glance">
+        {[['Tasks', counts.total], ['Done', counts.done], ['Working', counts.working], ['Review', counts.review], ['To do', counts.todo]].map(([label, value], i) => (
+          <div key={label} className={cx('text-center px-1', i > 0 && 'border-l border-line')}>
+            <p className="h-display text-2xl leading-none tnum">{value}</p>
+            <p className="mt-1 text-[11px] font-semibold text-muted truncate">{label}</p>
+          </div>
+        ))}
+      </div>
+
       {/* Stat cards */}
-      <div className="grid grid-cols-2 xl:grid-cols-5 gap-4 mb-4">
+      <div className="hidden sm:grid grid-cols-2 xl:grid-cols-5 gap-4 mb-4">
         <Stat label="My tasks" value={counts.total} sub={isToday ? 'Planned for today' : 'Planned that day'} icon={ListChecks} tone="lav" />
         <Stat label="Completed" value={counts.done} sub={`${counts.total ? Math.round((counts.done / counts.total) * 100) : 0}% of tasks done`} icon={CheckCircle2} tone="mint" />
         <Stat label="Working" value={counts.working} sub="In progress" icon={Activity} tone="sky" />

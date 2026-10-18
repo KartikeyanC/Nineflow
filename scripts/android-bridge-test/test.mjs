@@ -175,5 +175,23 @@ await bridge.signOut()
 ok(localStorage.getItem(SESSION) === null && tokens.at(-1) === null && tokens.length > n, 'sign out clears the session and tells the app')
 ok(__fetchLog.some((f) => f.url.startsWith('https://oauth2.googleapis.com/revoke?token=')), 'sign out revokes the token at Google')
 
+// ---- 9. the phone's Back button
+const keys = []
+addEventListener('keydown', (e) => keys.push(e.key))
+__dialogs = [390]
+App.emit('backButton')
+ok(keys.at(-1) === 'Escape' && App.exits === 0, 'Back with a dialog open closes it (Escape), the app stays open')
+__dialogs = [0]
+let screen = 'board'
+const onBack = (e) => { if (screen !== 'dashboard') { e.preventDefault(); screen = 'dashboard' } }
+addEventListener('nineflow:back', onBack)
+keys.length = 0
+App.emit('backButton')
+ok(screen === 'dashboard' && keys.length === 0 && App.exits === 0, 'Back on another screen goes Home (a hidden dialog does not count)')
+App.emit('backButton')
+await sleep(10)
+ok(App.exits === 1, 'Back on Home closes the app')
+removeEventListener('nineflow:back', onBack)
+
 console.log(`\n${pass} passed, ${fail} failed`)
 process.exit(fail ? 1 : 0)

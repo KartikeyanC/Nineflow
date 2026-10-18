@@ -285,6 +285,19 @@
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
   }
+  /* Touch screens (phones, and the phone app): no grey flash on tap, no double-tap-zoom delay, no
+     pull-down bounce that makes a screen feel like a web page, and text only selectable where you type. */
+  @media (pointer: coarse) {
+    html, body { -webkit-tap-highlight-color: transparent; overscroll-behavior-y: none; }
+    a, button, [role='button'], [role='checkbox'], [role='tab'], label, select, summary { touch-action: manipulation; }
+    button, nav, [role='tab'], [role='button'] { -webkit-user-select: none; user-select: none; }
+    /* Small round buttons keep their look but get a 44px target: the extra area is invisible. */
+    .tap-target { position: relative; }
+    .tap-target::after { content: ''; position: absolute; inset: -12px; }
+    /* A phone app has no scrollbars: scrolling rows just scroll. */
+    * { scrollbar-width: none; }
+    *::-webkit-scrollbar { display: none; }
+  }
   body {
     @apply bg-page text-ink font-sans;
     transition: background-color 200ms ease, color 200ms ease;

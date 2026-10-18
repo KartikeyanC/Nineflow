@@ -12,7 +12,7 @@ export const NARROW_HIDE = '[@container_(max-width:1199px)]:hidden'
 
 // "‹ Today ›": step the selected day back and forward, or pick any day. "Back to today" appears
 // while you are on another day. The Dashboard and the Board share it (and the day it is on).
-export default function DayNav({ value, onChange, backLabel = 'Back to today', compact = false }) {
+export default function DayNav({ value, onChange, backLabel = 'Back to today', compact = false, block = false }) {
   const { now } = usePlanner()
   const day = parseISO(value)
   const today = dateKey(now)
@@ -30,18 +30,18 @@ export default function DayNav({ value, onChange, backLabel = 'Back to today', c
           <span className={compact ? NARROW_HIDE : undefined}>{backLabel}</span>
         </button>
       )}
-      <div className="inline-flex items-center rounded-full bg-card border border-line p-1 shadow-soft">
+      <div className={cx('inline-flex items-center rounded-full bg-card border border-line p-1 shadow-soft', block && 'max-sm:flex max-sm:w-full max-sm:justify-between')}>
         <button type="button" aria-label="Previous day" data-tip="Previous day" onClick={() => go(dateKey(subDays(day, 1)))}
-          className="h-8 w-8 rounded-full inline-flex items-center justify-center text-muted hover:bg-page hover:text-ink transition"><ChevronLeft size={16} /></button>
+          className={cx('h-8 w-8 rounded-full inline-flex items-center justify-center text-muted hover:bg-page hover:text-ink transition', block && 'max-sm:h-10 max-sm:w-10')}><ChevronLeft size={16} /></button>
         <DateField value={value} onChange={go} allowClear={false} align="right"
           trigger={({ toggle, open }) => (
             <button type="button" onClick={toggle} data-tip={format(day, 'EEEE, d MMMM yyyy')}
-              className={cx('px-3 h-8 rounded-full text-sm font-bold transition min-w-[84px]', open ? 'bg-brand text-white' : 'hover:bg-page')}>
+              className={cx('px-3 h-8 rounded-full text-sm font-bold transition min-w-[84px]', block && 'max-sm:flex-1 max-sm:h-10', open ? 'bg-brand text-white' : 'hover:bg-page')}>
               {label}
             </button>
           )} />
         <button type="button" aria-label="Next day" data-tip="Next day" onClick={() => go(dateKey(addDays(day, 1)))}
-          className="h-8 w-8 rounded-full inline-flex items-center justify-center text-muted hover:bg-page hover:text-ink transition"><ChevronRight size={16} /></button>
+          className={cx('h-8 w-8 rounded-full inline-flex items-center justify-center text-muted hover:bg-page hover:text-ink transition', block && 'max-sm:h-10 max-sm:w-10')}><ChevronRight size={16} /></button>
       </div>
     </>
   )

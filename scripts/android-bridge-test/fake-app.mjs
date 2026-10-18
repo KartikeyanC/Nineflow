@@ -3,4 +3,6 @@ export const App = {
   addListener: async (name, fn) => { (listeners[name] ||= new Set()).add(fn); return { remove: () => listeners[name].delete(fn) } },
   emit: (name, data) => [...(listeners[name] || [])].forEach((f) => f(data)),
   count: (name) => (listeners[name] ? listeners[name].size : 0),
+  exits: 0,
+  exitApp: async () => { App.exits += 1 },
 }

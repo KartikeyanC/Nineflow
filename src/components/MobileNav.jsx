@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react'
-import { LayoutDashboard, KanbanSquare, CalendarRange, CalendarDays, Grid2x2, Settings, Briefcase, ListTodo, Inbox, StickyNote, PauseCircle, MoreHorizontal, Search, X } from 'lucide-react'
+import { LayoutDashboard, KanbanSquare, CalendarRange, CalendarDays, Grid2x2, Settings, Briefcase, ListTodo, Inbox, StickyNote, PauseCircle, MoreHorizontal, Search, X, Zap } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
 import { cx } from './ui'
+import { openInterrupt } from '../features/Interrupt'
 
 const NAV = [
   { id: 'dashboard', label: 'Home', icon: LayoutDashboard },
@@ -69,6 +70,12 @@ export default function MobileNav() {
               <Search size={16} /> Search tasks or jump anywhere…
             </button>
             <div className="grid grid-cols-3 gap-2">
+              {/* "Something came up": reachable from any screen, so it no longer needs a second floating button */}
+              <button type="button" onClick={() => { setSheet(false); openInterrupt() }}
+                className="h-20 rounded-2xl flex flex-col items-center justify-center gap-1.5 text-xs font-semibold transition bg-peach text-peach-fg active:scale-95">
+                <Zap size={20} />
+                Interruption
+              </button>
               {more.map(({ id, label, icon: Icon }) => (
                 <button key={id} type="button" onClick={() => go(id)} aria-current={view === id ? 'page' : undefined}
                   className={cx('h-20 rounded-2xl flex flex-col items-center justify-center gap-1.5 text-xs font-semibold transition',

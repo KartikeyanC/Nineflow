@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react'
-import { Plus, Trash2, Download, Upload, Sparkles, AlertTriangle, CalendarPlus, CalendarCheck, Check, Loader2, RefreshCw } from 'lucide-react'
+import { Plus, Trash2, Download, Upload, Sparkles, AlertTriangle, CalendarPlus, CalendarCheck, Check, Loader2, RefreshCw, ChevronRight, UserRound, Layers, Smartphone, Tag, SlidersHorizontal, Columns3, Bookmark, Database, CalendarDays, Plug } from 'lucide-react'
+import { usePhone } from '../lib/usePhone'
 import { downloadIcs } from '../lib/calendar'
 import { THEMES, themeId } from '../lib/themes'
 import { CLIMATES, detectClimate } from '../lib/climate'
@@ -25,6 +26,7 @@ import { WorkspacesSection } from '../features/Workspaces'
 import { usePlanner } from '../store/PlannerContext'
 import { COLOR_IDS, colorOf } from '../lib/colors'
 import { uid, validateBackup } from '../lib/storage'
+import { isNativeApp } from '../lib/platform'
 import { loadWork } from '../work/workStore'
 import { ConfirmDialog, Segmented, cx } from '../components/ui'
 import { TimeField } from '../components/TimePicker'
@@ -507,16 +509,17 @@ export default function Settings() {
 
   return (
     <div className="animate-view-in max-w-3xl">
-      <header className="mb-6">
-        <h1 className="h-display text-3xl">Settings</h1>
-        <p className="text-sm text-muted mt-1">Make the planner yours. Everything is saved instantly in this browser.</p>
+      <header className="mb-6 max-sm:mb-4">
+        <h1 className="h-display text-3xl max-sm:text-2xl">Settings</h1>
+        <p className="text-sm text-muted mt-1 max-sm:text-xs">Make the planner yours. Everything is saved instantly {isNativeApp() ? 'on this phone' : 'in this browser'}.</p>
       </header>
 
-      <div className="space-y-4">
-        <AccountSection />
-        <WorkspacesSection />
-        <InstallApp />
+      <div className="space-y-4 max-sm:space-y-2.5">
+        <Group icon={UserRound} title="Your account" open><AccountSection /></Group>
+        <Group icon={Layers} title="Workspaces"><WorkspacesSection /></Group>
+        {!isNativeApp() && <Group icon={Smartphone} title="Install the app"><InstallApp /></Group>}
         {/* Categories */}
+        <Group icon={Tag} title="Categories">
         <section className="card p-5">
           <h2 className="h-display text-base mb-1">Categories</h2>
           <p className="text-sm text-muted mb-4">Rename, recolour or remove. A category in use warns before it goes.</p>
@@ -538,8 +541,10 @@ export default function Settings() {
             <button type="submit" className="btn-black h-9 py-0" disabled={!newName.trim()}><Plus size={14} /> Add</button>
           </form>
         </section>
+        </Group>
 
         {/* Preferences */}
+        <Group icon={SlidersHorizontal} title="Preferences">
         <section className="card p-5 space-y-5">
           <Row label="Week starts on" hint="Used by the Week and Month screens.">
             <Segmented size="sm" value={settings.weekStart} onChange={(v) => updateSettings({ weekStart: v })}
@@ -635,17 +640,21 @@ export default function Settings() {
               options={[{ value: 'light', label: 'Light' }, { value: 'dark', label: 'Dark' }]} />
           </Row>
         </section>
+        </Group>
 
         {/* Board columns */}
+        <Group icon={Columns3} title="Board columns">
         <section className="card p-5">
           <h2 className="h-display text-base mb-1">Board columns</h2>
           <ColumnsEditor />
         </section>
+        </Group>
 
         {/* Templates and saved views */}
-        <LibrarySection />
+        <Group icon={Bookmark} title="Templates and saved views"><LibrarySection /></Group>
 
         {/* Data */}
+        <Group icon={Database} title="Your data">
         <section className="card p-5">
           <h2 className="h-display text-base mb-1">Your data</h2>
           <p className="text-sm text-muted mb-4">{tasks.length} tasks and {habits.length} habits, saved on this device and in your Google Drive. The backup file also includes your Work OS data.</p>
@@ -657,8 +666,10 @@ export default function Settings() {
           </div>
           {importError && <p className="mt-3 text-sm text-coral-fg font-medium">{importError}</p>}
         </section>
+        </Group>
 
         {/* Calendar */}
+        <Group icon={CalendarDays} title="Google Calendar">
         <section className="card p-5">
           <h2 className="h-display text-base mb-1">Google Calendar</h2>
           <CalendarConnect />
@@ -675,10 +686,12 @@ export default function Settings() {
             <button type="button" className="btn-ghost" onClick={() => downloadIcs(tasks, settings.categories)}><CalendarPlus size={14} /> Download .ics for Google Calendar</button>
           </div>
         </section>
+        </Group>
 
-        <ConnectionsSection settings={settings} updateSettings={updateSettings} />
+        <Group icon={Plug} title="Connections"><ConnectionsSection settings={settings} updateSettings={updateSettings} /></Group>
 
         {/* Danger zone */}
+        <Group icon={AlertTriangle} title="Danger zone" danger>
         <section className="rounded-card border border-coral-fg/30 bg-coral/40 p-5">
           <h2 className="h-display text-base text-coral-fg mb-1 inline-flex items-center gap-2"><AlertTriangle size={16} /> Danger zone</h2>
           <p className="text-sm text-muted mb-3">Clearing removes every task, session and habit log. Type <b className="text-ink">DELETE</b> to confirm.</p>
@@ -690,6 +703,7 @@ export default function Settings() {
             </button>
           </div>
         </section>
+        </Group>
       </div>
 
       <ConfirmDialog open={!!pendingImport} onClose={() => setPendingImport(null)}
@@ -708,6 +722,30 @@ export default function Settings() {
         body={removeCat && usage(removeCat.id)
           ? `${usage(removeCat.id)} task${usage(removeCat.id) === 1 ? '' : 's'} use this category. They will move to "${settings.categories.find((c) => c.id !== removeCat.id)?.name}".`
           : 'No tasks use this category.'} />
+    </div>
+  )
+}
+
+// Phones: each part of Settings is a row in a list (icon, name, chevron) that opens in place,
+// like a phone's own settings app. Wider screens show the cards as they are.
+function Group({ icon: Icon, title, open: startOpen = false, danger = false, children }) {
+  const phone = usePhone()
+  const [open, setOpen] = useState(startOpen)
+  if (!phone) return children
+  return (
+    <div className="card overflow-hidden">
+      <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open}
+        className="w-full h-14 px-4 flex items-center gap-3 text-left active:bg-page transition">
+        <span className={cx('h-9 w-9 rounded-xl inline-flex items-center justify-center shrink-0', danger ? 'bg-coral text-coral-fg' : 'bg-accent-soft text-lav-fg')}><Icon size={17} /></span>
+        <span className={cx('flex-1 min-w-0 truncate text-[15px] font-semibold', danger && 'text-coral-fg')}>{title}</span>
+        <ChevronRight size={18} className={cx('text-faint shrink-0 transition-transform', open && 'rotate-90')} />
+      </button>
+      {/* The card's own heading repeats the row's name, so it goes; the card itself sits flat inside the row. */}
+      {open && (
+        <div className="border-t border-line animate-fade-in [&_h2.h-display]:hidden [&>section]:rounded-none [&>section]:border-0 [&>section]:shadow-none [&>section]:bg-transparent [&>section]:p-4">
+          {children}
+        </div>
+      )}
     </div>
   )
 }

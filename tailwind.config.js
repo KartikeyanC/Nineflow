@@ -91,6 +91,11 @@ export default {
           from: { transform: 'translateX(100%)' },
           to: { transform: 'translateX(0)' },
         },
+        // Phones: pop-ups rise from the bottom edge as sheets.
+        'sheet-in': {
+          from: { transform: 'translateY(100%)' },
+          to: { transform: 'translateY(0)' },
+        },
         pop: {
           '0%': { transform: 'scale(0.6)' },
           '60%': { transform: 'scale(1.2)' },
@@ -117,6 +122,7 @@ export default {
         'modal-in': 'modal-in 180ms cubic-bezier(0.2, 0.7, 0.2, 1) both',
         'fade-in': 'fade-in 160ms ease-out both',
         'panel-in': 'panel-in 260ms cubic-bezier(0.2, 0.7, 0.2, 1) both',
+        'sheet-in': 'sheet-in 280ms cubic-bezier(0.2, 0.7, 0.2, 1) both',
         pop: 'pop 260ms cubic-bezier(0.2, 0.7, 0.2, 1) both',
         'card-out': 'card-out 260ms ease-in both',
         'card-lift': 'card-lift 160ms cubic-bezier(0.2, 0, 0, 1) both',

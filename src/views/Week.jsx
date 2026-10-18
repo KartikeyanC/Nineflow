@@ -10,6 +10,7 @@ import { eventsOn, useCalendarEvents, useShowEvents } from '../lib/gcalEvents'
 import { useHolidays } from '../lib/holidays'
 import { colorOf, cssVar } from '../lib/colors'
 import { PriorityPill, ProgressBar, Segmented, cx } from '../components/ui'
+import { usePhone } from '../lib/usePhone'
 
 // The whole day, so early and late tasks have a place; the grid opens
 // scrolled to now (or the start of your working day).
@@ -66,18 +67,20 @@ export default function Week() {
   const anchor = useMemo(() => parseISO(dashboardDate), [dashboardDate])
   const setAnchor = (next) => setDashboardDate(dateKey(typeof next === 'function' ? next(anchor) : next))
 
+  // Phones: a strip of the week's days on top, and the chosen day's timeline under it (like a phone calendar).
+  const phone = usePhone()
   const days = useMemo(() => {
-    if (mode === 'day') return [anchor]
+    if (mode === 'day' && !phone) return [anchor]
     const start = startOfWeek(anchor, { weekStartsOn: settings.weekStart })
     return Array.from({ length: 7 }, (_, i) => addDays(start, i))
-  }, [anchor, mode, settings.weekStart])
+  }, [anchor, mode, phone, settings.weekStart])
 
   const holidays = useHolidays(settings.holidays, days.map((d) => d.getFullYear())) // public holidays, or null when off
   const todayInRange = days.some((d) => isSameDay(d, now))
-  const shift = (dir) => setAnchor((a) => addDays(a, dir * (mode === 'day' ? 1 : 7)))
+  const shift = (dir) => setAnchor((a) => addDays(a, dir * (mode === 'day' && !phone ? 1 : 7)))
 
   // "Plan" targets the single day in day mode, otherwise today when it's in range.
-  const planDate = mode === 'day' ? anchor : todayInRange ? now : null
+  const planDate = mode === 'day' || phone ? anchor : todayInRange ? now : null
   const planKey = planDate ? dateKey(planDate) : null
   const unscheduled = planKey ? unscheduledOn(tasks, planKey).length : 0
   const [planMsg, setPlanMsg] = useState(null)
@@ -152,12 +155,56 @@ export default function Week() {
   }, [byDay, mode])
 
   const hours = Array.from({ length: (GRID_END - GRID_START) / 60 }, (_, i) => GRID_START + i * 60)
+  // The days the time grid shows: on phones only the chosen one.
+  const gridDays = phone ? byDay.filter(({ day }) => isSameDay(day, anchor)) : byDay
+  const axisW = phone ? 46 : AXIS_W
   // A week needs ~110px per day; narrower screens scroll sideways.
-  const colTemplate = `${AXIS_W}px repeat(${days.length}, minmax(${days.length > 1 ? 110 : 0}px, 1fr))`
+  const colTemplate = `${axisW}px repeat(${gridDays.length}, minmax(${gridDays.length > 1 ? 110 : 0}px, 1fr))`
+  const planButton = unscheduled > 0 && !planMsg && (
+    <button type="button" className={cx('btn-ghost h-9 py-0 text-lav-fg', phone && 'h-10 px-3')}
+      onClick={() => { setPlanMsg(describePlan(planDay(planKey))); setTimeout(() => setPlanMsg(null), 4000) }}
+      title={`Timebox ${unscheduled} unscheduled task${unscheduled === 1 ? '' : 's'} on ${format(planDate, 'EEE d')}`}>
+      <Wand2 size={15} /> Plan{phone ? '' : ` ${isSameDay(planDate, now) ? 'today' : format(planDate, 'EEE d')}`} · {unscheduled}
+    </button>
+  )
 
   return (
     <div className="animate-view-in">
       {/* Top bar */}
+      {phone ? (
+        <header className="mb-3">
+          <div className="flex items-center gap-2 mb-3">
+            <h1 className="h-display text-2xl flex-1 min-w-0 truncate">{format(anchor, 'MMMM yyyy')}</h1>
+            {!isSameDay(anchor, now) && (
+              <button type="button" onClick={() => setAnchor(new Date())}
+                className="h-10 px-3.5 rounded-full border border-line bg-card text-[13px] font-semibold text-ink active:scale-95 transition">Today</button>
+            )}
+            {planButton}
+          </div>
+          {planMsg && <p className="text-xs font-semibold text-muted mb-2 animate-fade-in">{planMsg}</p>}
+          {/* The week's days; tap one to see it, arrows move a week. */}
+          <div className="card p-1.5 flex items-center gap-1">
+            <button type="button" onClick={() => shift(-1)} aria-label="Previous week" className="h-10 w-7 shrink-0 rounded-full inline-flex items-center justify-center text-muted active:bg-page"><ChevronLeft size={18} /></button>
+            <div className="grid grid-cols-7 gap-1 flex-1 min-w-0">
+              {byDay.map(({ day, key, list }) => {
+                const on = isSameDay(day, anchor)
+                const today = isSameDay(day, now)
+                return (
+                  <button key={key} type="button" onClick={() => setAnchor(day)} aria-pressed={on}
+                    aria-label={`${format(day, 'EEEE d MMMM')}${list.length ? `, ${list.length} task${list.length === 1 ? '' : 's'}` : ''}`}
+                    className={cx('h-14 rounded-2xl flex flex-col items-center justify-center gap-0.5 transition active:scale-95',
+                      on ? 'bg-brand text-white shadow-sm' : today ? 'text-brand' : 'text-ink')}>
+                    <span className={cx('text-[10px] font-bold uppercase', on ? 'text-white/80' : today ? 'text-brand' : 'text-faint')}>{format(day, 'EEEEE')}</span>
+                    <span className="text-base font-bold leading-none tnum">{format(day, 'd')}</span>
+                    <i className={cx('h-1 w-1 rounded-full', list.length ? (on ? 'bg-white' : 'bg-faint') : 'bg-transparent')} />
+                  </button>
+                )
+              })}
+            </div>
+            <button type="button" onClick={() => shift(1)} aria-label="Next week" className="h-10 w-7 shrink-0 rounded-full inline-flex items-center justify-center text-muted active:bg-page"><ChevronRight size={18} /></button>
+          </div>
+        </header>
+      ) : (
       <header className="flex flex-wrap items-center justify-between gap-3 mb-5">
         <div className="flex items-center gap-2">
           <div className="inline-flex items-center rounded-full bg-brand text-white p-1">
@@ -171,25 +218,20 @@ export default function Week() {
         </div>
         <div className="flex items-center gap-2">
           {planMsg && <span className="text-[11px] font-semibold text-muted animate-fade-in">{planMsg}</span>}
-          {unscheduled > 0 && !planMsg && (
-            <button type="button" className="btn-ghost h-9 py-0 text-lav-fg"
-              onClick={() => { setPlanMsg(describePlan(planDay(planKey))); setTimeout(() => setPlanMsg(null), 4000) }}
-              title={`Timebox ${unscheduled} unscheduled task${unscheduled === 1 ? '' : 's'} on ${format(planDate, 'EEE d')}`}>
-              <Wand2 size={15} /> Plan {isSameDay(planDate, now) ? 'today' : format(planDate, 'EEE d')} · {unscheduled}
-            </button>
-          )}
+          {planButton}
           <button type="button" className="btn-ghost h-9 py-0" onClick={() => setQuickAdd({ date: dateKey(anchor) })}><Plus size={15} /> Add task</button>
           <Segmented size="sm" value={mode}
             onChange={(v) => (v === 'month' ? setView('month') : setMode(v))}
             options={[{ value: 'day', label: 'Day' }, { value: 'week', label: 'Week' }, { value: 'month', label: 'Month' }]} />
         </div>
       </header>
+      )}
 
       {/* Calendar card */}
-      <section className="card overflow-x-auto">
+      <section className="card overflow-x-auto max-sm:overflow-hidden">
         <DndContext sensors={sensors} collisionDetection={pointerWithin} onDragEnd={onDragEnd}>
-          {/* Day tiles */}
-          <div className="grid gap-2 px-3 pt-3" style={{ gridTemplateColumns: colTemplate }}>
+          {/* Day tiles (phones have the strip above instead) */}
+          {!phone && <div className="grid gap-2 px-3 pt-3" style={{ gridTemplateColumns: colTemplate }}>
             <div className="rounded-2xl bg-page flex flex-col items-center justify-center py-2">
               <span className="text-[10px] font-bold text-faint">W</span>
               <span className="text-sm font-bold">{getISOWeek(days[0])}</span>
@@ -209,12 +251,12 @@ export default function Week() {
                 </button>
               )
             })}
-          </div>
+          </div>}
 
           {/* No-time row */}
-          <div className="grid gap-2 px-3 pt-2 pb-2 border-b border-line" style={{ gridTemplateColumns: colTemplate }}>
-            <div className="text-[10px] font-bold text-faint uppercase tracking-wider flex items-center justify-center">No time</div>
-            {byDay.map(({ key, untimed, allDayEvents }) => (
+          <div className={cx('grid gap-2 px-3 pt-2 pb-2 border-b border-line', phone && 'px-2 py-2.5')} style={{ gridTemplateColumns: colTemplate }}>
+            <div className="text-[10px] font-bold text-faint uppercase tracking-wider flex items-center justify-center text-center leading-tight">No time</div>
+            {gridDays.map(({ key, untimed, allDayEvents }) => (
               <div key={key} className="min-h-[28px] flex flex-wrap gap-1 content-start">
                 {allDayEvents.slice(0, 2).map((e) => <EventChip key={e.id} event={e} />)}
                 {untimed.slice(0, 3).map((t) => <Chip key={t.id} task={t} />)}
@@ -224,12 +266,12 @@ export default function Week() {
           </div>
 
           {/* Time grid */}
-          <div ref={scrollRef} className="overflow-y-auto" style={{ height: 520 }}>
+          <div ref={scrollRef} className="overflow-y-auto overscroll-contain" style={{ height: phone ? 'max(360px, calc(100dvh - 330px))' : 520 }}>
             <div className="grid relative" style={{ gridTemplateColumns: colTemplate, height: GRID_HEIGHT }}>
               {/* Axis */}
               <div className="relative">
                 {hours.map((m) => (
-                  <span key={m} className="absolute right-3 -translate-y-1/2 text-[11px] font-semibold text-faint" style={{ top: (m - GRID_START) * PX_PER_MIN }}>
+                  <span key={m} className={cx('absolute -translate-y-1/2 text-[11px] font-semibold text-faint', phone ? 'right-2' : 'right-3')} style={{ top: (m - GRID_START) * PX_PER_MIN }}>
                     {toHHMM(m)}
                   </span>
                 ))}
@@ -241,7 +283,7 @@ export default function Week() {
                 )}
               </div>
 
-              {byDay.map(({ day, key, lanes }) => (
+              {gridDays.map(({ day, key, lanes }) => (
                 <DayColumn key={key} dayKey={key} isToday={isSameDay(day, now)} hours={hours}
                   onSlot={(min) => setQuickAdd({ date: key, startTime: toHHMM(min), durationMinutes: 60 })}>
                   {lanes.map(({ task, lane, lanes: n }) => (task.event
@@ -252,7 +294,7 @@ export default function Week() {
 
               {showNow && (
                 <div className="absolute left-0 right-0 z-10 pointer-events-none border-t-2 border-dashed border-coral-fg"
-                  style={{ top: (nowMin - GRID_START) * PX_PER_MIN, marginLeft: AXIS_W }} />
+                  style={{ top: (nowMin - GRID_START) * PX_PER_MIN, marginLeft: axisW }} />
               )}
             </div>
           </div>
