@@ -9,11 +9,9 @@ import { Modal, cx } from './ui'
 // "Import from Todoist / Trello / GitHub": lists what the other tool has for the person, they tick
 // what to bring in, and those become tasks here. Nothing is changed in the other tool. Tasks already
 // imported show as "Already added" (the id is fixed, see lib/importers.js).
-// `source` replaces `service` for a list that is not another tool, such as a file (Settings → Your data):
-// { label, what, title, note, load }.
-export default function ImportDialog({ service, source, onClose }) {
+export default function ImportDialog({ service, onClose }) {
   const { allTasks, settings, addTasks } = usePlanner()
-  const src = source || IMPORTERS[service]
+  const src = IMPORTERS[service]
   const [state, setState] = useState({ status: 'loading', items: [], error: '' })
   const [picked, setPicked] = useState(new Set())
   const have = useMemo(() => new Set(allTasks.map((t) => t.id)), [allTasks])
@@ -28,7 +26,7 @@ export default function ImportDialog({ service, source, onClose }) {
       })
       .catch((e) => live && setState({ status: 'error', items: [], error: e.message || `Could not load from ${src.label}.` }))
     return () => { live = false }
-  }, [service, source]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [service]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const fresh = state.items.filter((i) => !have.has(i.id))
   const chosen = fresh.filter((i) => picked.has(i.id))
@@ -38,21 +36,21 @@ export default function ImportDialog({ service, source, onClose }) {
     const category = settings.categories[0]?.id || 'work'
     addTasks(chosen.map((c) => ({
       id: c.id, title: c.title, description: c.description, date: c.date, startTime: c.date ? c.startTime : null,
-      ...(c.durationMinutes ? { durationMinutes: c.durationMinutes } : {}), priority: c.priority, category: c.category || category, tags: c.tags,
-    })), `Added ${chosen.length} task${chosen.length === 1 ? '' : 's'} from ${src.label}`)
+      ...(c.durationMinutes ? { durationMinutes: c.durationMinutes } : {}), priority: c.priority, category, tags: c.tags,
+    })), `Imported ${chosen.length} task${chosen.length === 1 ? '' : 's'} from ${src.label}`)
     onClose()
   }
   const when = (c) => (c.date ? `${format(parseISO(c.date), 'EEE d MMM')}${c.startTime ? ` · ${c.startTime}` : ''}` : 'No date')
 
   return (
-    <Modal open onClose={onClose} width="max-w-lg" title={src.title || `Import from ${src.label}`}>
+    <Modal open onClose={onClose} width="max-w-lg" title={`Import from ${src.label}`}>
       {state.status === 'loading' && <p className="text-sm text-muted inline-flex items-center gap-2" role="status"><Loader2 size={14} className="animate-spin" /> Loading your {src.what}…</p>}
       {state.status === 'error' && <p role="alert" className="text-sm font-semibold text-coral-fg">{state.error}</p>}
       {state.status === 'ready' && (state.items.length === 0 ? (
         <p className="text-sm text-muted">{src.label} has no {src.what} for you right now.</p>
       ) : (
         <>
-          <p className="text-sm text-muted -mt-1">{src.note || <>Your {src.what}. Tick the ones to bring in as NineFlow tasks. Nothing changes in {src.label}.</>}</p>
+          <p className="text-sm text-muted -mt-1">Your {src.what}. Tick the ones to bring in as NineFlow tasks. Nothing changes in {src.label}.</p>
           <div className="mt-3 flex items-center justify-between text-[12px] font-semibold">
             <span className="text-muted tnum">{chosen.length} of {fresh.length} selected</span>
             <span className="flex gap-3">
@@ -83,7 +81,7 @@ export default function ImportDialog({ service, source, onClose }) {
           <div className="mt-4 flex items-center justify-end gap-2">
             <button type="button" className="btn-ghost" onClick={onClose}>Cancel</button>
             <button type="button" className="btn-black disabled:opacity-40" disabled={!chosen.length} onClick={importNow}>
-              {source ? 'Add' : 'Import'} {chosen.length || ''} task{chosen.length === 1 ? '' : 's'}
+              Import {chosen.length || ''} task{chosen.length === 1 ? '' : 's'}
             </button>
           </div>
         </>

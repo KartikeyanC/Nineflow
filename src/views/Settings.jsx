@@ -1,8 +1,6 @@
 import React, { useRef, useState } from 'react'
 import { Plus, Trash2, Download, Upload, Sparkles, AlertTriangle, CalendarPlus, CalendarCheck, Check, Loader2, RefreshCw, ChevronRight, UserRound, Layers, Smartphone, Tag, SlidersHorizontal, Columns3, Bookmark, Database, CalendarDays, Plug } from 'lucide-react'
 import { usePhone } from '../lib/usePhone'
-import { parseTaskFile } from '../lib/taskFile'
-import ImportDialog from '../components/ImportDialog'
 import { downloadIcs } from '../lib/calendar'
 import { THEMES, themeId } from '../lib/themes'
 import { CLIMATES, detectClimate } from '../lib/climate'
@@ -473,24 +471,6 @@ export default function Settings() {
     updateSettings({ reminders: { ...settings.reminders, enabled: true } })
   }
   const fileRef = useRef(null)
-  // "Add tasks from a file": adds a list of tasks next to everything already here (lib/taskFile.js).
-  const tasksFileRef = useRef(null)
-  const [taskSource, setTaskSource] = useState(null)
-  const pickTasksFile = async (file) => {
-    if (!file) return
-    setImportError(null)
-    try {
-      const { items, cut } = parseTaskFile(await file.text(), settings.categories)
-      setTaskSource({
-        label: file.name, what: 'tasks', title: 'Add tasks from a file',
-        note: `${items.length} task${items.length === 1 ? '' : 's'} in ${file.name}${cut ? ' (only the first 500)' : ''}. Tick the ones to add. Your other tasks stay as they are.`,
-        load: async () => items,
-      })
-    } catch (e) {
-      setImportError(e.message)
-    }
-    if (tasksFileRef.current) tasksFileRef.current.value = ''
-  }
 
   const usage = (id) => allTasks.filter((t) => t.category === id).length
 
@@ -677,13 +657,11 @@ export default function Settings() {
         <Group icon={Database} title="Your data">
         <section className="card p-5">
           <h2 className="h-display text-base mb-1">Your data</h2>
-          <p className="text-sm text-muted mb-4">{tasks.length} tasks and {habits.length} habits, saved on this device and in your Google Drive. The backup file also includes your Work OS data. <b className="text-ink">Import JSON</b> replaces everything; <b className="text-ink">Add tasks from a file</b> only adds.</p>
+          <p className="text-sm text-muted mb-4">{tasks.length} tasks and {habits.length} habits, saved on this device and in your Google Drive. The backup file also includes your Work OS data.</p>
           <div className="flex flex-wrap gap-2">
             <button type="button" className="btn-ghost" onClick={exportData}><Download size={14} /> Export JSON</button>
             <button type="button" className="btn-ghost" onClick={() => fileRef.current?.click()}><Upload size={14} /> Import JSON</button>
             <input ref={fileRef} type="file" accept="application/json,.json" className="hidden" onChange={(e) => pickFile(e.target.files?.[0])} />
-            <button type="button" className="btn-ghost" onClick={() => tasksFileRef.current?.click()}><Plus size={14} /> Add tasks from a file</button>
-            <input ref={tasksFileRef} type="file" accept="application/json,.json" className="hidden" onChange={(e) => pickTasksFile(e.target.files?.[0])} />
             <button type="button" className="btn-ghost" onClick={() => setConfirmSample(true)}><Sparkles size={14} /> Load sample data</button>
           </div>
           {importError && <p className="mt-3 text-sm text-coral-fg font-medium">{importError}</p>}
@@ -727,8 +705,6 @@ export default function Settings() {
         </section>
         </Group>
       </div>
-
-      {taskSource && <ImportDialog source={taskSource} onClose={() => setTaskSource(null)} />}
 
       <ConfirmDialog open={!!pendingImport} onClose={() => setPendingImport(null)}
         onConfirm={() => importData(pendingImport)} confirmLabel="Replace"
