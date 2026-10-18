@@ -10,6 +10,7 @@
 // The Java and Android tools it uses are in .android-tools/ (JDK 21, Android SDK, Gradle). If you
 // installed Android Studio instead, set JAVA_HOME and ANDROID_HOME and those are used.
 import { spawnSync } from 'node:child_process'
+import { createHash } from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
 
@@ -42,8 +43,28 @@ const run = (label, cmd, args, cwd = root) => {
   if (r.status !== 0) die(`${label} failed.`)
 }
 
+// The phone app only runs scripts it ships with (plus Google's sign-in and file-picker scripts), so a
+// task title or note that somehow got turned into a script could not load code from elsewhere. Each
+// inline script in index.html is allowed by its hash. Only the phone build gets this; the website is unchanged.
+function addScriptPolicy() {
+  const file = path.join(root, 'dist', 'index.html')
+  let html = fs.readFileSync(file, 'utf8')
+  const hashes = [...html.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g)]
+    .map((m) => `'sha256-${createHash('sha256').update(m[1], 'utf8').digest('base64')}'`)
+  const policy = [
+    `script-src 'self' ${hashes.join(' ')} https://accounts.google.com https://apis.google.com https://www.gstatic.com`,
+    "object-src 'none'",
+    "base-uri 'none'",
+  ].join('; ')
+  html = html.replace('<meta charset="UTF-8" />', `<meta charset="UTF-8" />\n    <meta http-equiv="Content-Security-Policy" content="${policy}" />`)
+  if (!html.includes('Content-Security-Policy')) die('Could not add the script policy to dist/index.html.')
+  fs.writeFileSync(file, html)
+  console.log(`\n> script policy added (${hashes.length} inline script${hashes.length === 1 ? '' : 's'} allowed by hash)`)
+}
+
 if (!process.argv.includes('--skip-web')) {
   run('vite build', 'npx', ['vite', 'build'])
+  addScriptPolicy()
   run('cap sync android', 'npx', ['cap', 'sync', 'android'])
 }
 // Gradle finds the SDK through this file (it is git-ignored).

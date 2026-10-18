@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 12 and newer: nothing of NineFlow's is copied to Google's cloud backup or to a new phone
+     during setup. Its storage holds the Google sign-in (a refresh token); copying it to another device
+     would sign that device in without the person. The planner itself lives in their Google Drive.
+     (android:allowBackup="false" covers Android 11 and older, but not the phone-to-phone transfer.) -->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="root" path="." />
+        <exclude domain="file" path="." />
+        <exclude domain="database" path="." />
+        <exclude domain="sharedpref" path="." />
+        <exclude domain="external" path="." />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="root" path="." />
+        <exclude domain="file" path="." />
+        <exclude domain="database" path="." />
+        <exclude domain="sharedpref" path="." />
+        <exclude domain="external" path="." />
+    </device-transfer>
+</data-extraction-rules>

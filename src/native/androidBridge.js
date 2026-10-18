@@ -169,7 +169,8 @@ async function signOut() {
   session = { refresh: '', access: null }
   saveSession()
   push(null)
-  if (t) await fetch(`${REVOKE_URL}?token=${encodeURIComponent(t)}`, { method: 'POST' }).catch(() => {})
+  // In the body, not the address, so the token never ends up in a log of URLs.
+  if (t) await fetch(REVOKE_URL, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ token: t }) }).catch(() => {})
 }
 
 // ---- reminders ---------------------------------------------------------------------------------

@@ -173,7 +173,8 @@ __fetchLog.length = 0
 const n = tokens.length
 await bridge.signOut()
 ok(localStorage.getItem(SESSION) === null && tokens.at(-1) === null && tokens.length > n, 'sign out clears the session and tells the app')
-ok(__fetchLog.some((f) => f.url.startsWith('https://oauth2.googleapis.com/revoke?token=')), 'sign out revokes the token at Google')
+const rv = __fetchLog.find((f) => f.url.startsWith('https://oauth2.googleapis.com/revoke'))
+ok(rv && rv.method === 'POST' && rv.body?.token === 'R8' && !rv.url.includes('token='), 'sign out revokes the token at Google (in the body, not the URL)', JSON.stringify(rv))
 
 // ---- 9. the phone's Back button
 const keys = []
