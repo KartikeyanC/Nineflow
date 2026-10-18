@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { LayoutDashboard, KanbanSquare, CalendarRange, CalendarDays, Grid2x2, Settings, Briefcase, ListTodo, Inbox, StickyNote, PauseCircle, MoreHorizontal, Search, X, Zap } from 'lucide-react'
+import { LayoutDashboard, KanbanSquare, CalendarRange, CalendarDays, Grid2x2, Settings, Briefcase, ListTodo, Inbox, StickyNote, PauseCircle, MoreHorizontal, Search, X, Zap, GraduationCap } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
 import { cx } from './ui'
 import { openInterrupt } from '../features/Interrupt'
@@ -18,6 +18,7 @@ const MORE = [
   { id: 'paused', label: 'Paused', icon: PauseCircle },
   { id: 'notes', label: 'Notes', icon: StickyNote },
   { id: 'work', label: 'Work OS', icon: Briefcase },
+  { id: 'ntpc', label: 'RRB NTPC', icon: GraduationCap },
   { id: 'settings', label: 'Settings', icon: Settings },
 ]
 
@@ -28,7 +29,7 @@ export const openPalette = () => window.dispatchEvent(new Event('nineflow:palett
 export default function MobileNav() {
   const { view, setView, settings } = usePlanner()
   const [sheet, setSheet] = useState(false)
-  const more = MORE.filter(({ id }) => id !== 'work' || settings.modules?.work)
+  const more = MORE.filter(({ id }) => (id !== 'work' || settings.modules?.work) && (id !== 'ntpc' || settings.modules?.ntpc))
   const inMore = more.some((m) => m.id === view)
   const go = (id) => { setSheet(false); setView(id) }
 

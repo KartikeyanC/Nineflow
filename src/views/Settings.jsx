@@ -616,6 +616,10 @@ export default function Settings() {
             <Segmented size="sm" value={settings.modules?.work ? 'on' : 'off'} onChange={(v) => updateSettings({ modules: { ...settings.modules, work: v === 'on' } })}
               options={[{ value: 'on', label: 'Shown' }, { value: 'off', label: 'Hidden' }]} />
           </Row>
+          <Row label="RRB NTPC study planner" hint="The NTPC syllabus with topic progress, practice, revisions and current affairs. Each workspace has its own.">
+            <Segmented size="sm" value={settings.modules?.ntpc ? 'on' : 'off'} onChange={(v) => updateSettings({ modules: { ...settings.modules, ntpc: v === 'on' } })}
+              options={[{ value: 'on', label: 'Shown' }, { value: 'off', label: 'Hidden' }]} />
+          </Row>
           <Row label="Colour theme" hint="Works in light and dark. Changes the page, cards and accent colour.">
             <div className="flex flex-wrap justify-end gap-2" role="radiogroup" aria-label="Colour theme">
               {THEMES.map((t) => (

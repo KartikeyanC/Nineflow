@@ -34,8 +34,9 @@ import Paused from './views/Paused'
 import CommandPalette from './components/CommandPalette'
 import Settings from './views/Settings'
 import Work from './work/Work'
+import Ntpc from './views/Ntpc'
 
-const VIEWS = { dashboard: Dashboard, board: Board, week: Week, month: Month, matrix: Matrix, someday: Someday, agenda: Agenda, notes: Notes, paused: Paused, work: Work, settings: Settings }
+const VIEWS = { dashboard: Dashboard, board: Board, week: Week, month: Month, matrix: Matrix, someday: Someday, agenda: Agenda, notes: Notes, paused: Paused, work: Work, ntpc: Ntpc, settings: Settings }
 
 function Shell() {
   const { view, setView, setQuickAdd } = usePlanner()

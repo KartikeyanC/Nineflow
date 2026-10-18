@@ -16,7 +16,8 @@
     "postbuild": "node scripts/security-headers.mjs",
     "android:sync": "vite build && cap sync android",
     "android:build": "node scripts/build-android.mjs",
-    "android:test": "rolldown -c scripts/android-bridge-test/rolldown.config.mjs && node node_modules/.cache/android-bridge-test.mjs"
+    "android:test": "rolldown -c scripts/android-bridge-test/rolldown.config.mjs && node node_modules/.cache/android-bridge-test.mjs",
+    "test:ntpc": "rolldown -c scripts/ntpc-test/rolldown.config.mjs && node node_modules/.cache/ntpc-test.mjs"
   },
   "dependencies": {
     "@capacitor/app": "^8.1.2",

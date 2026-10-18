@@ -1,5 +1,5 @@
 import React from 'react'
-import { LayoutDashboard, KanbanSquare, CalendarRange, CalendarDays, Grid2x2, Inbox, ListTodo, StickyNote, PauseCircle, Settings, Plus, Moon, Sun, Briefcase } from 'lucide-react'
+import { LayoutDashboard, KanbanSquare, CalendarRange, CalendarDays, Grid2x2, Inbox, ListTodo, StickyNote, PauseCircle, Settings, Plus, Moon, Sun, Briefcase, GraduationCap } from 'lucide-react'
 import { BrandMark, Wordmark } from './Brand'
 import { usePlanner } from '../store/PlannerContext'
 import { dayStats } from '../lib/tasks'
@@ -23,6 +23,7 @@ const NAV = [
   { id: 'paused', label: 'Paused', icon: PauseCircle },
   { id: 'notes', label: 'Notes', icon: StickyNote },
   { id: 'work', label: 'Work OS', icon: Briefcase },
+  { id: 'ntpc', label: 'RRB NTPC', icon: GraduationCap },
   { id: 'settings', label: 'Settings', icon: Settings },
 ]
 
@@ -47,7 +48,7 @@ export default function Sidebar() {
       <div className="flex flex-col flex-1 min-h-0 overflow-y-auto gap-3 overflow-x-hidden [&>*]:shrink-0 -mx-1 px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {/* Nav */}
       <nav className="flex flex-col gap-1">
-        {NAV.filter(({ id }) => id !== 'work' || settings.modules?.work).map(({ id, label, icon: Icon }) => {
+        {NAV.filter(({ id }) => (id !== 'work' || settings.modules?.work) && (id !== 'ntpc' || settings.modules?.ntpc)).map(({ id, label, icon: Icon }) => {
           const active = view === id
           return (
             <button

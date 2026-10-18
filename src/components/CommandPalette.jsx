@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { Search, LayoutDashboard, KanbanSquare, CalendarRange, CalendarDays, Grid2x2, Inbox, Settings, Briefcase, Plus, Target, Sparkles, MessageCircle, Moon, CornerDownLeft, ListTodo, StickyNote, PauseCircle } from 'lucide-react'
+import { Search, LayoutDashboard, KanbanSquare, CalendarRange, CalendarDays, Grid2x2, Inbox, Settings, Briefcase, Plus, Target, Sparkles, MessageCircle, Moon, CornerDownLeft, ListTodo, StickyNote, PauseCircle, GraduationCap } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
 import { Modal, cx } from './ui'
 
@@ -25,6 +25,7 @@ export default function CommandPalette({ open, onClose }) {
       { label: 'Paused', icon: PauseCircle, run: go('paused') },
       { label: 'Someday', icon: Inbox, run: go('someday') },
       ...(settings.modules?.work ? [{ label: 'Work OS', icon: Briefcase, run: go('work') }] : []),
+      ...(settings.modules?.ntpc ? [{ label: 'RRB NTPC syllabus', icon: GraduationCap, run: go('ntpc') }] : []),
       { label: 'Settings', icon: Settings, run: go('settings') },
     ].map((x) => ({ ...x, group: 'Go to' }))
     const actions = [

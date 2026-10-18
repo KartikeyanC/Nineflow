@@ -31,7 +31,7 @@ export const DEFAULT_SETTINGS = {
   columns: DEFAULT_COLUMNS, // Board columns (see lib/columns.js)
   views: [], // saved Board filters: [{ id, name, text, crit }] (see lib/views.js)
   templates: [], // reusable tasks: [{ id, name, title, steps, ... }]
-  modules: { work: true }, // which optional sections show in the navigation
+  modules: { work: true, ntpc: false }, // which optional sections show in the navigation
   workHours: { start: '09:00', end: '18:00', breakMinutes: 60 }, // capacity and "Plan my day" use these
   reminders: { enabled: false, minutes: 5, repeat: 0 }, // browser notification before a timed task starts
   notes: [], // sticky notes: [{ id, text, color, pinned, createdAt, updatedAt }]
@@ -205,6 +205,18 @@ function normalizeTask(t) {
     files: cleanFiles(t.files), // Drive files attached to the task (lib/taskFiles.js)
     meet: t.meet === true, // add a Google Meet link to its calendar event (lib/gcal.js)
     dropped: t.dropped && typeof t.dropped === 'object' ? { reason: String(t.dropped.reason || 'Let go').slice(0, 120), at: typeof t.dropped.at === 'string' ? t.dropped.at : new Date().toISOString() } : null,
+    exam: cleanExamLink(t.exam),
+  }
+}
+
+// A study task's place in an exam syllabus (src/exams): { id, subject, topic, kind, deadline }.
+// Optional; ordinary tasks have none. Tasks saved before this field existed load as null.
+const EXAM_KINDS = ['learn', 'notes', 'practice', 'pyq', 'test', 'revision', 'reading']
+function cleanExamLink(x) {
+  if (!x || typeof x !== 'object' || typeof x.id !== 'string' || typeof x.topic !== 'string') return null
+  return {
+    id: x.id.slice(0, 40), subject: typeof x.subject === 'string' ? x.subject.slice(0, 40) : null, topic: x.topic.slice(0, 120),
+    kind: EXAM_KINDS.includes(x.kind) ? x.kind : 'learn', deadline: /^\d{4}-\d{2}-\d{2}$/.test(x.deadline || '') ? x.deadline : null,
   }
 }
 
