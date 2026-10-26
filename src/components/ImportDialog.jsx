@@ -66,7 +66,7 @@ export default function ImportDialog({ service, onClose }) {
                 <li key={c.id}>
                   <button type="button" role="checkbox" aria-checked={added ? true : on} disabled={added} onClick={() => toggle(c.id)}
                     className="w-full flex items-start gap-3 px-3 py-2.5 text-left hover:bg-page transition disabled:opacity-60 disabled:hover:bg-transparent">
-                    <span className={cx('mt-0.5 shrink-0 h-5 w-5 rounded-md border-2 flex items-center justify-center', added || on ? 'bg-mint-fg border-mint-fg text-white' : 'border-line')}>
+                    <span className={cx('mt-0.5 shrink-0 h-5 w-5 rounded-md border-2 flex items-center justify-center', added || on ? 'bg-accent border-accent text-white' : 'border-line bg-card')}>
                       {(added || on) && <Check size={12} strokeWidth={3.5} />}
                     </span>
                     <span className="min-w-0 flex-1">

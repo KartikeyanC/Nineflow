@@ -145,7 +145,7 @@ export default function TaskImport({ onClose }) {
               <li key={`${r.line}-${r.id}`}>
                 <button type="button" role="checkbox" aria-checked={r.ticked} disabled={!!r.skip} onClick={() => toggle(r)}
                   className="w-full flex items-start gap-3 px-3 py-2 text-left hover:bg-page transition disabled:opacity-55 disabled:hover:bg-transparent">
-                  <span className={cx('mt-0.5 shrink-0 h-5 w-5 rounded-md border-2 flex items-center justify-center', r.ticked ? 'bg-mint-fg border-mint-fg text-white' : 'border-line')}>{r.ticked && <Check size={12} strokeWidth={3.5} />}</span>
+                  <span className={cx('mt-0.5 shrink-0 h-5 w-5 rounded-md border-2 flex items-center justify-center', r.ticked ? 'bg-accent border-accent text-white' : 'border-line bg-card')}>{r.ticked && <Check size={12} strokeWidth={3.5} />}</span>
                   <span className="w-[5.5rem] shrink-0 text-[12px] font-semibold tnum text-muted">{r.date ? format(parseISO(r.date), 'EEE d MMM') : 'No date'}{r.startTime && <span className="block font-medium text-faint">{r.startTime}</span>}</span>
                   <span className="min-w-0 flex-1">
                     <span className="block text-[13px] font-semibold">{r.title}</span>
