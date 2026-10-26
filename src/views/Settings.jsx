@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react'
-import { Plus, Trash2, Download, Upload, Sparkles, AlertTriangle, CalendarPlus, CalendarCheck, Check, Loader2, RefreshCw, ChevronRight, UserRound, Layers, Smartphone, Tag, SlidersHorizontal, Columns3, Bookmark, Database, CalendarDays, Plug } from 'lucide-react'
+import { Plus, Trash2, Download, Upload, Sparkles, AlertTriangle, CalendarPlus, CalendarCheck, Check, Loader2, RefreshCw, ChevronRight, UserRound, Layers, Smartphone, Tag, SlidersHorizontal, Columns3, Bookmark, Database, CalendarDays, Plug, FileSpreadsheet } from 'lucide-react'
 import { usePhone } from '../lib/usePhone'
+import TaskImport from '../components/TaskImport'
 import { downloadIcs } from '../lib/calendar'
 import { THEMES, themeId } from '../lib/themes'
 import { CLIMATES, detectClimate } from '../lib/climate'
@@ -471,6 +472,7 @@ export default function Settings() {
     updateSettings({ reminders: { ...settings.reminders, enabled: true } })
   }
   const fileRef = useRef(null)
+  const [importing, setImporting] = useState(false) // the CSV / Excel task import window
 
   const usage = (id) => allTasks.filter((t) => t.category === id).length
 
@@ -661,7 +663,8 @@ export default function Settings() {
         <Group icon={Database} title="Your data">
         <section className="card p-5">
           <h2 className="h-display text-base mb-1">Your data</h2>
-          <p className="text-sm text-muted mb-4">{tasks.length} tasks and {habits.length} habits, saved on this device and in your Google Drive. The backup file also includes your Work OS data.</p>
+          <p className="text-sm text-muted mb-4">{tasks.length} tasks and {habits.length} habits, saved on this device and in your Google Drive. The backup file also includes your Work OS data. <b className="text-ink">Import tasks</b> adds a list from a CSV or Excel file next to your tasks; <b className="text-ink">Import JSON</b> restores a backup and replaces everything.</p>
+          <button type="button" className="btn-black mb-3" onClick={() => setImporting(true)}><FileSpreadsheet size={14} /> Import tasks (CSV or Excel)</button>
           <div className="flex flex-wrap gap-2">
             <button type="button" className="btn-ghost" onClick={exportData}><Download size={14} /> Export JSON</button>
             <button type="button" className="btn-ghost" onClick={() => fileRef.current?.click()}><Upload size={14} /> Import JSON</button>
@@ -709,6 +712,8 @@ export default function Settings() {
         </section>
         </Group>
       </div>
+
+      {importing && <TaskImport onClose={() => setImporting(false)} />}
 
       <ConfirmDialog open={!!pendingImport} onClose={() => setPendingImport(null)}
         onConfirm={() => importData(pendingImport)} confirmLabel="Replace"
