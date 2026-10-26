@@ -2,6 +2,8 @@ import React, { useRef, useState } from 'react'
 import { Plus, Trash2, Download, Upload, Sparkles, AlertTriangle, CalendarPlus, CalendarCheck, Check, Loader2, RefreshCw, ChevronRight, UserRound, Layers, Smartphone, Tag, SlidersHorizontal, Columns3, Bookmark, Database, CalendarDays, Plug, FileSpreadsheet } from 'lucide-react'
 import { usePhone } from '../lib/usePhone'
 import TaskImport from '../components/TaskImport'
+import HowToConnect from '../components/HowToConnect'
+import { CHAT_GUIDES } from '../lib/connectGuides'
 import { downloadIcs } from '../lib/calendar'
 import { THEMES, themeId } from '../lib/themes'
 import { CLIMATES, detectClimate } from '../lib/climate'
@@ -109,6 +111,7 @@ function CalendarConnect() {
         Tasks with a date become events on your primary calendar (all-day if they have no start time), and change or disappear when the task does.
         By default NineFlow only creates and edits its own events.
       </p>
+      <HowToConnect ids="googleCalendar" className="mt-2 mb-3" />
       {!on ? (
         <div className="mt-3">
           <button type="button" className="btn-black" disabled={busy} onClick={connect}>
@@ -199,6 +202,7 @@ function ConnectionsSection({ settings, updateSettings }) {
           </ul>
         ) : <p className="text-[13px] text-muted">No city matches that. Try another spelling.</p>)}
         {error && <p role="alert" className="text-[13px] text-coral-fg font-semibold">{error}</p>}
+        <HowToConnect ids="weather" />
       </div>
 
       <div className="space-y-3 pt-4 border-t border-line">
@@ -214,6 +218,7 @@ function ConnectionsSection({ settings, updateSettings }) {
             </select>
           </label>
         )}
+        <HowToConnect ids="holidays" />
       </div>
       <ChatHooks settings={settings} updateSettings={updateSettings} />
       <CalendarLink settings={settings} updateSettings={updateSettings} />
@@ -256,6 +261,7 @@ function ChatHooks({ settings, updateSettings }) {
       <div>
         <p className="text-sm font-semibold">Send my report to chat</p>
         <p className="text-xs text-muted mt-0.5">Slack, Discord, Microsoft Teams, ntfy, or Zapier and Make. Paste the webhook link from the service. The link works like a password for that channel, so keep it private.</p>
+        <HowToConnect ids={CHAT_GUIDES} className="mt-2" />
       </div>
 
       {hooks.length > 0 && (
@@ -325,6 +331,7 @@ function CalendarLink({ settings, updateSettings }) {
       <div>
         <p className="text-sm font-semibold">Calendar link for any calendar app</p>
         <p className="text-xs text-muted mt-0.5">A private link that Google Calendar, Outlook or Apple Calendar can subscribe to, so your tasks show up there and stay up to date. Unlike the .ics download, it keeps itself current.</p>
+        <HowToConnect ids="calendarLink" className="mt-2" />
       </div>
       {!available && <p className="text-[13px] text-muted">This needs the NineFlow site. In the desktop app, set VITE_API_BASE to your site's address.</p>}
       {available && !token && <button type="button" className="btn-black" onClick={create}>Create my calendar link</button>}
@@ -371,6 +378,7 @@ function GoogleExport({ tasks, categories, now, dayKey }) {
       <div>
         <p className="text-sm font-semibold">Google Sheets and Docs</p>
         <p className="text-xs text-muted mt-0.5">Copies made in your own Google Drive (Daily Planner folder). They are snapshots, so they don't change when your tasks do.</p>
+        <HowToConnect ids="googleExport" className="mt-2" />
       </div>
       <div className="flex flex-wrap gap-2">
         <button type="button" className="btn-ghost" disabled={!!busy} onClick={run('sheet', () => exportTasksToSheet({ tasks, categories, now }))}>
@@ -849,6 +857,7 @@ function EmailInbox() {
   }
   const saveAllow = () => set({ allowFrom: allow.split(/[\s,;]+/).map((x) => x.trim().toLowerCase()).filter((x) => /.+@.+/.test(x)).slice(0, 10) })
   return (
+    <div className="space-y-2">
     <Row label="Email to NineFlow" hint="Forward or send an email to your private address and it becomes a task. The subject is the title and is read like quick add (“tomorrow 3pm !high @admin”); without a day it goes to Someday. The email text goes in the notes.">
       {!address ? (
         <button type="button" className="btn-ghost h-9 py-0" onClick={() => set({ key: newInboxKey(), allowFrom: inbox.allowFrom || [] })}>Get my address</button>
@@ -870,5 +879,7 @@ function EmailInbox() {
         </div>
       )}
     </Row>
+    <HowToConnect ids="email" />
+    </div>
   )
 }

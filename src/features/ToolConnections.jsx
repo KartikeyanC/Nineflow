@@ -13,6 +13,7 @@ import { connectMicrosoft, microsoftAvailable, sendTasksToOutlook } from '../lib
 import { fmtMinutes, tasksOn } from '../lib/tasks'
 import ImportDialog from '../components/ImportDialog'
 import { Segmented, cx } from '../components/ui'
+import HowToConnect from '../components/HowToConnect'
 
 // Settings → Connections → "Your tools": the services that need the person's own token. The token is
 // checked with the service before it is saved, and is saved on this device only (lib/connections.js).
@@ -126,6 +127,7 @@ function Tool({ svc, conn }) {
             : <button type="button" className="btn-ghost h-8 py-0 px-3" aria-expanded={open} onClick={() => setOpen((o) => !o)}>{open ? 'Cancel' : 'Connect'}</button>}
       </div>
 
+      {!conn && <HowToConnect ids={svc.id} className="mt-1.5" />}
       {!conn && open && (
         <form className="mt-3 grid gap-2 max-w-md" onSubmit={connect}>
           {svc.fields.map((f) => (
