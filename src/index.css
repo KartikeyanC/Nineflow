@@ -285,6 +285,10 @@
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
   }
+  /* Tick boxes, radio buttons and sliders take the colour theme's accent, so they change with it. */
+  input[type='checkbox'], input[type='radio'], input[type='range'], progress {
+    accent-color: rgb(var(--accent));
+  }
   /* Touch screens (phones, and the phone app): no grey flash on tap, no double-tap-zoom delay, no
      pull-down bounce that makes a screen feel like a web page, and text only selectable where you type. */
   @media (pointer: coarse) {

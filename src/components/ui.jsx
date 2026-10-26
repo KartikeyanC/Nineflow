@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Check, X } from 'lucide-react'
 import { colorOf, PRIORITY_STYLE } from '../lib/colors'
 import { PRIORITY_LABEL } from '../lib/tasks'
@@ -127,7 +128,9 @@ export function Modal({ open, onClose, children, title, width = 'max-w-lg' }) {
   }, [open, onClose])
 
   if (!open) return null
-  return (
+  // Drawn on <body>, so it always opens at the top of the screen you're looking at, wherever the
+  // page is scrolled; inside the page, a transform on a parent would place it on the page instead.
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-start justify-center pt-[12vh] px-4 bg-ink/30 backdrop-blur-sm animate-fade-in max-sm:items-end max-sm:pt-0 max-sm:px-0"
       onMouseDown={onClose}
@@ -154,7 +157,8 @@ export function Modal({ open, onClose, children, title, width = 'max-w-lg' }) {
         )}
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
 

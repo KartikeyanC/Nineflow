@@ -77,7 +77,9 @@ export default {
         // screen for a moment on every page switch.
         'view-in': {
           from: { opacity: '0.55', transform: 'translateY(6px)' },
-          to: { opacity: '1', transform: 'translateY(0)' },
+          // 'none', not translateY(0): the animation keeps its end state, and any transform left on
+          // the page would make pop-ups inside it open relative to the page instead of the screen.
+          to: { opacity: '1', transform: 'none' },
         },
         'modal-in': {
           from: { opacity: '0', transform: 'scale(0.96)' },
