@@ -6,6 +6,7 @@ import { cleanNtpc, emptyNtpc, loadNtpc, saveNtpc, topicsOf } from '../../src/ex
 import { loadTasks, saveTasks } from '../../src/lib/storage.js'
 import { ensureRecurrences } from '../../src/lib/recurrence.js'
 import { createTask } from '../../src/lib/tasks.js'
+import { PLAN_ROWS, planTasks } from '../../src/exams/ntpc/plan40.js'
 
 let pass = 0, fail = 0
 const ok = (cond, label, extra = '') => { if (cond) pass += 1; else fail += 1; console.log(`${cond ? 'PASS' : 'FAIL'}  ${label}${!cond && extra ? `  -> ${extra}` : ''}`) }
@@ -81,6 +82,31 @@ ok(b.exam === null, 'a broken exam link is ignored')
 const series = { ...createTask({ id: 'ntpc-ca-daily', title: 'Read current affairs', date: '2026-10-19', recurrence: { freq: 'daily', until: null, skip: [] }, exam: link('ga:national-current-affairs', 'reading') }), seriesId: 'ntpc-ca-daily' }
 const more = ensureRecurrences([series], new Date(2026, 9, 19), 3)
 ok(more.length === 3 && more.every((t) => t.exam?.topic === 'ga:national-current-affairs' && t.seriesId === 'ntpc-ca-daily'), 'each day of a repeating study task stays linked to its topic')
+
+// ---- 7. the 40-day plan follows the brief
+const toMin = (hhmm) => { const [h, m] = hhmm.split(':').map(Number); return h * 60 + m }
+const days = {}
+for (const r of PLAN_ROWS) (days[r.day] ||= []).push(r)
+ok(Object.keys(days).length === 40 && PLAN_ROWS[0].date === '2026-10-26' && PLAN_ROWS.at(-1).date === '2026-12-04', '40 days, 26 Oct (day 1) to 4 Dec (day 40)')
+ok(days[1].every((r) => toMin(r.time) >= 20 * 60), 'day 1 uses the evening slot only')
+const inSlots = PLAN_ROWS.every((r) => { const s = toMin(r.time), e = s + r.minutes; return (s >= 300 && e <= 450) || (s >= 1200 && e <= 1290) })
+ok(inSlots, 'every task fits inside 05:00-07:30 or 20:00-21:30')
+const noOverlap = Object.values(days).every((rs) => rs.every((a, i) => rs.every((b, j) => i === j || toMin(a.time) + a.minutes <= toMin(b.time) || toMin(b.time) + b.minutes <= toMin(a.time))))
+ok(noOverlap, 'no two tasks overlap on a day')
+const full = Object.entries(days).filter(([d]) => d !== '1').every(([, rs]) => rs.reduce((m, r) => m + r.minutes, 0) === 240)
+ok(full, 'days 2-40 use all 4 hours (150 morning + 90 evening)')
+ok(Object.values(days).every((rs) => rs.some((r) => /error notebook/i.test(r.title) && r.minutes === 5)), 'every day has 5 minutes for the error notebook')
+const mockDays = Object.entries(days).filter(([, rs]) => rs.some((r) => /mock test/i.test(r.title))).map(([d]) => Number(d))
+ok(same(mockDays, [7, 14, 18, 21, 25, 28, 29, 31, 33, 35, 37, 39]), 'diagnostic mock on day 7, two mocks a week in days 15-28, every second day from 29', mockDays.join(','))
+ok([7, 14, 21, 28, 35].every((d) => days[d].some((r) => /weekly revision/i.test(r.title))), 'every 7th day has a weekly revision')
+ok([29, 31, 33, 35, 37, 39].every((d) => days[d].filter((r) => /review/i.test(r.title)).reduce((m, r) => m + r.minutes, 0) === 120), 'each mock from day 29 gets 2 hours of review')
+ok(new Set(PLAN_ROWS.map((r) => r.id)).size === PLAN_ROWS.length, 'every plan task has its own fixed id')
+const known = new Set(BUILT_IN_TOPICS.map((t) => t.id))
+ok(PLAN_ROWS.every((r) => !r.topic || known.has(r.topic)), 'every linked topic exists in the syllabus')
+const sources = ['Rajesh Verma', 'R.S. Aggarwal', 'Kiran', 'NCERT', 'Lucent', 'AffairsCloud', 'Railway Adda247', 'Rakesh Yadav', 'Piyush Varshney', 'Parmar SSC']
+ok(sources.every((s) => PLAN_ROWS.some((r) => r.notes.includes(s))), 'all ten sources are named in the notes')
+const late = planTasks({ category: 'learning', fromDate: '2026-10-28' })
+ok(late.length === PLAN_ROWS.filter((r) => r.date >= '2026-10-28').length && late.every((t) => t.date >= '2026-10-28' && t.exam.id === 'rrb-ntpc'), 'added late, days already past are left out')
 
 console.log(`\n${pass} passed, ${fail} failed`)
 process.exit(fail ? 1 : 0)

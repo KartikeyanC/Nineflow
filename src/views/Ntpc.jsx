@@ -7,6 +7,7 @@ import { CheckCircle, EmptyState, Modal, ProgressBar, Segmented, cx } from '../c
 import { CA_CATEGORIES, CATEGORIES, EXAM_ID, EXAM_NAME, subjectById } from '../exams/ntpc/syllabus'
 import { CHECKPOINTS, DEFAULT_INTERVALS, STATUSES, accuracy, examTasks, isWeak, planRevisions, practiceTotals, statusLabel, studyMinutes, summarize, topicCompletion, topicStatus } from '../exams/ntpc/calc'
 import { DIFFICULTIES, PRACTICE_LEVELS, PRIORITY_LEVELS, topicsOf, useNtpc } from '../exams/ntpc/store'
+import { PLAN_NAME, PLAN_ROWS, planTasks } from '../exams/ntpc/plan40'
 
 // RRB NTPC study planner (Settings → Preferences → RRB NTPC). The syllabus comes from
 // exams/ntpc/syllabus.js, the person's progress from exams/ntpc/store.js, and every study task is an
@@ -104,6 +105,7 @@ function Overview({ ctx, planner, goSyllabus }) {
 
   return (
     <div className="grid gap-4">
+      <PlanCard ctx={ctx} planner={planner} />
       <section className="card p-5 grid gap-4 sm:grid-cols-[minmax(0,15rem)_1fr] sm:items-center">
         <div>
           <p className="text-xs font-semibold text-muted">Syllabus completion</p>
@@ -141,7 +143,7 @@ function Overview({ ctx, planner, goSyllabus }) {
                   <CheckCircle checked={t.status === 'completed'} onToggle={() => toggleComplete(t.id)} size="sm" />
                   <button type="button" onClick={() => setSelectedId(t.id)} className="min-w-0 flex-1 text-left">
                     <span className={cx('block text-sm font-semibold truncate', t.status === 'completed' && 'line-through text-muted')}>{t.title}</span>
-                    <span className="block text-[11px] text-faint">{subjectById(t.exam.subject)?.short} · {fmtMinutes(t.durationMinutes)}</span>
+                    <span className="block text-[11px] text-faint">{t.startTime ? `${t.startTime} · ` : ''}{subjectById(t.exam.subject)?.short || 'All subjects'} · {fmtMinutes(t.durationMinutes)}</span>
                   </button>
                 </li>
               ))}
@@ -196,6 +198,56 @@ function Overview({ ctx, planner, goSyllabus }) {
         </section>
       </div>
     </div>
+  )
+}
+
+// ---- The 40-day plan (exams/ntpc/plan40.js) ------------------------------------------------
+// One press adds the whole plan to the planner open now (account and workspace), from today on.
+// Every task has a fixed id, so pressing again only adds what is missing; one Undo removes them.
+function PlanCard({ ctx, planner }) {
+  const { today, taskCategory } = ctx
+  const { addTasks, allTasks, setView, setDashboardDate } = planner
+  const [confirm, setConfirm] = useState(false)
+  const have = useMemo(() => new Map(allTasks.map((t) => [t.id, t])), [allTasks])
+  const inPlanner = PLAN_ROWS.filter((r) => have.has(r.id))
+  const done = inPlanner.filter((r) => have.get(r.id).status === 'completed').length
+  const toAdd = planTasks({ category: taskCategory, fromDate: today }).filter((t) => !have.has(t.id))
+  const skipped = PLAN_ROWS.filter((r) => r.date < today && !have.has(r.id)).length
+  const first = PLAN_ROWS[0].date, last = PLAN_ROWS.at(-1).date
+  if (today > last && !inPlanner.length) return null
+  const nice = (k) => format(parseISO(k), 'EEE d MMM')
+  const add = () => {
+    addTasks(toAdd, `Added the 40-day plan (${toAdd.length} tasks)`)
+    setConfirm(false)
+    setDashboardDate(toAdd[0]?.date || today)
+  }
+  return (
+    <section className="card p-5">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h2 className="h-display text-base flex items-center gap-2"><CalendarClock size={16} /> {PLAN_NAME}</h2>
+          <p className="text-sm text-muted mt-1">{format(parseISO(first), 'd MMM')} to {format(parseISO(last), 'd MMM yyyy')} · mornings 5:00 to 7:30, evenings 8:00 to 9:30 · {PLAN_ROWS.length} tasks with times, sources and topics</p>
+          {inPlanner.length > 0 && <p className="text-xs text-faint mt-1 tnum">{inPlanner.length} in your planner · {done} done</p>}
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {toAdd.length > 0
+            ? <button type="button" className="btn-black" onClick={() => setConfirm(true)}><Plus size={14} /> {inPlanner.length ? `Add the missing ${toAdd.length}` : 'Add the 40-day plan'}</button>
+            : <button type="button" className="btn-ghost" onClick={() => { setDashboardDate(today); setView('dashboard') }}>See today's plan</button>}
+        </div>
+      </div>
+      {inPlanner.length > 0 && <ProgressBar value={done / PLAN_ROWS.length} tone="bg-mint-fg" className="mt-3" />}
+      <Modal open={confirm} onClose={() => setConfirm(false)} title="Add the 40-day plan?">
+        <p className="text-sm text-muted">
+          {toAdd.length} tasks go into this planner, from {nice(toAdd[0]?.date || today)} to {nice(last)}, each at its time with its notes and syllabus topic.
+          {skipped > 0 && ` The ${skipped} tasks for days already past are left out, so today isn't filled with overdue work.`}
+          {' '}Your other tasks stay as they are, and Undo removes all of these at once.
+        </p>
+        <div className="mt-5 flex justify-end gap-2">
+          <button type="button" className="btn-ghost" onClick={() => setConfirm(false)}>Cancel</button>
+          <button type="button" className="btn-black" onClick={add}>Add {toAdd.length} tasks</button>
+        </div>
+      </Modal>
+    </section>
   )
 }
 
