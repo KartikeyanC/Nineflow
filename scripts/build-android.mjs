@@ -46,6 +46,18 @@ const run = (label, cmd, args, cwd = root) => {
 // The phone app only runs scripts it ships with (plus Google's sign-in and file-picker scripts), so a
 // task title or note that somehow got turned into a script could not load code from elsewhere. Each
 // inline script in index.html is allowed by its hash. Only the phone build gets this; the website is unchanged.
+// The phone app's splash inside the page (scripts/android-splash.html), first thing in <body>, so it
+// picks up from Android's own splash until the planner has drawn. Runs before addScriptPolicy, which
+// then allows its little script by hash. Only the phone build gets it.
+function addSplash() {
+  const file = path.join(root, 'dist', 'index.html')
+  const splash = fs.readFileSync(path.join(root, 'scripts', 'android-splash.html'), 'utf8').trim()
+  const html = fs.readFileSync(file, 'utf8')
+  if (!html.includes('<body>')) die('Could not add the splash to dist/index.html.')
+  fs.writeFileSync(file, html.replace('<body>', `<body>\n${splash}`))
+  console.log('\n> splash added')
+}
+
 function addScriptPolicy() {
   const file = path.join(root, 'dist', 'index.html')
   let html = fs.readFileSync(file, 'utf8')
@@ -64,6 +76,7 @@ function addScriptPolicy() {
 
 if (!process.argv.includes('--skip-web')) {
   run('vite build', 'npx', ['vite', 'build'])
+  addSplash()
   addScriptPolicy()
   run('cap sync android', 'npx', ['cap', 'sync', 'android'])
 }

@@ -1,0 +1,46 @@
+<style>
+  /* The phone app's splash, inside the page (scripts/build-android.mjs puts it first in <body>). It picks
+     up from Android's own splash: the same orange, the white N at the same 288px size in the middle,
+     then the name and a loading bar, and fades out once the planner has drawn. The logo stays orange in
+     every colour theme, so this never changes with light or dark. */
+  #nf-splash { position: fixed; inset: 0; z-index: 2147483647; background: #FF6A13; display: flex; align-items: center; justify-content: center; transition: opacity 0.35s ease; }
+  #nf-splash.nf-out { opacity: 0; pointer-events: none; }
+  #nf-splash .nf-mark { width: 288px; height: 288px; flex-shrink: 0; }
+  #nf-splash .nf-text { position: absolute; left: 16px; right: 16px; top: calc(50% + 88px); text-align: center; color: #fff; font-family: 'Plus Jakarta Sans Variable', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; opacity: 0; transform: translateY(8px); animation: nf-in 0.45s 0.12s ease-out forwards; }
+  #nf-splash .nf-name { font-size: 30px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.1; }
+  #nf-splash .nf-tag { margin-top: 6px; font-size: 14px; font-weight: 500; opacity: 0.85; }
+  #nf-splash .nf-bar { position: absolute; left: 50%; bottom: calc(56px + env(safe-area-inset-bottom, 0px)); width: 120px; height: 3px; margin-left: -60px; border-radius: 3px; background: rgba(255, 255, 255, 0.3); overflow: hidden; }
+  #nf-splash .nf-bar::after { content: ''; position: absolute; top: 0; bottom: 0; left: 0; width: 40%; border-radius: 3px; background: #fff; animation: nf-load 1.1s ease-in-out infinite; }
+  @keyframes nf-in { to { opacity: 1; transform: none; } }
+  @keyframes nf-load { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
+  @media (prefers-reduced-motion: reduce) {
+    #nf-splash .nf-text { animation: none; opacity: 1; transform: none; }
+    #nf-splash .nf-bar::after { animation: none; width: 100%; opacity: 0.6; }
+  }
+</style>
+<div id="nf-splash" aria-hidden="true">
+  <img class="nf-mark" src="/brand/nineflow-mark-white.png" alt="" draggable="false">
+  <div class="nf-text"><div class="nf-name">NineFlow</div><div class="nf-tag">Plan better. Flow forward.</div></div>
+  <div class="nf-bar"></div>
+</div>
+<script>
+  // Fade the splash out once the planner has drawn something (shown at least 0.9 s, so it never just
+  // blinks), and never keep it longer than 8 s.
+  (function () {
+    var s = document.getElementById('nf-splash'), t0 = Date.now(), gone = false
+    function out() {
+      if (gone || !s) return
+      gone = true
+      s.className = 'nf-out'
+      setTimeout(function () { if (s.parentNode) s.parentNode.removeChild(s) }, 400)
+    }
+    // A timer rather than animation frames, which stop while the app is in the background.
+    var timer = setInterval(function () {
+      var r = document.getElementById('root')
+      if (!r || !r.children.length) return
+      clearInterval(timer)
+      setTimeout(out, Math.max(0, 900 - (Date.now() - t0)))
+    }, 50)
+    setTimeout(out, 8000)
+  })()
+</script>
