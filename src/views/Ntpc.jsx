@@ -8,6 +8,7 @@ import { CA_CATEGORIES, CATEGORIES, EXAM_ID, EXAM_NAME, subjectById } from '../e
 import { CHECKPOINTS, DEFAULT_INTERVALS, STATUSES, accuracy, examTasks, isWeak, planRevisions, practiceTotals, statusLabel, studyMinutes, summarize, topicCompletion, topicStatus } from '../exams/ntpc/calc'
 import { DIFFICULTIES, PRACTICE_LEVELS, PRIORITY_LEVELS, topicsOf, useNtpc } from '../exams/ntpc/store'
 import { PLAN_NAME, PLAN_ROWS, planTasks } from '../exams/ntpc/plan40'
+import { rowId } from '../lib/taskImport'
 
 // RRB NTPC study planner (Settings → Preferences → RRB NTPC). The syllabus comes from
 // exams/ntpc/syllabus.js, the person's progress from exams/ntpc/store.js, and every study task is an
@@ -206,13 +207,29 @@ function Overview({ ctx, planner, goSyllabus }) {
 // Every task has a fixed id, so pressing again only adds what is missing; one Undo removes them.
 function PlanCard({ ctx, planner }) {
   const { today, taskCategory } = ctx
-  const { addTasks, allTasks, setView, setDashboardDate } = planner
+  const { addTasks, removeTasks, allTasks, setView, setDashboardDate } = planner
   const [confirm, setConfirm] = useState(false)
-  const have = useMemo(() => new Map(allTasks.map((t) => [t.id, t])), [allTasks])
-  const inPlanner = PLAN_ROWS.filter((r) => have.has(r.id))
-  const done = inPlanner.filter((r) => have.get(r.id).status === 'completed').length
-  const toAdd = planTasks({ category: taskCategory, fromDate: today }).filter((t) => !have.has(t.id))
-  const skipped = PLAN_ROWS.filter((r) => r.date < today && !have.has(r.id)).length
+  const [removing, setRemoving] = useState(false)
+  const [alsoDone, setAlsoDone] = useState(false)
+  // The plan's tasks in this planner, however they came: the Add button (ids ntpc-40-…), or the CSV
+  // through Import tasks (ids made from each row, see lib/taskImport.js rowId). Matching on ids, not
+  // dates, still finds a task that was carried over to a later day or renamed.
+  const mine = useMemo(() => {
+    const byRow = new Map()
+    for (const r of PLAN_ROWS) { byRow.set(r.id, r); byRow.set(rowId(r.title, r.date, r.time), r) }
+    const found = new Map() // row id -> task
+    for (const t of allTasks) { const r = byRow.get(t.id); if (r && !t.dropped && !found.has(r.id)) found.set(r.id, t) }
+    return found
+  }, [allTasks])
+  const inPlanner = PLAN_ROWS.filter((r) => mine.has(r.id))
+  const done = inPlanner.filter((r) => mine.get(r.id).status === 'completed').length
+  const toAdd = planTasks({ category: taskCategory, fromDate: today }).filter((t) => !mine.has(t.id))
+  const skipped = PLAN_ROWS.filter((r) => r.date < today && !mine.has(r.id)).length
+  const toRemove = inPlanner.map((r) => mine.get(r.id)).filter((t) => alsoDone || t.status !== 'completed')
+  const remove = () => {
+    removeTasks(toRemove.map((t) => t.id), `Removed the 40-day plan (${toRemove.length} tasks)`)
+    setRemoving(false); setAlsoDone(false)
+  }
   const first = PLAN_ROWS[0].date, last = PLAN_ROWS.at(-1).date
   if (today > last && !inPlanner.length) return null
   const nice = (k) => format(parseISO(k), 'EEE d MMM')
@@ -233,6 +250,7 @@ function PlanCard({ ctx, planner }) {
           {toAdd.length > 0
             ? <button type="button" className="btn-black" onClick={() => setConfirm(true)}><Plus size={14} /> {inPlanner.length ? `Add the missing ${toAdd.length}` : 'Add the 40-day plan'}</button>
             : <button type="button" className="btn-ghost" onClick={() => { setDashboardDate(today); setView('dashboard') }}>See today's plan</button>}
+          {inPlanner.length > 0 && <button type="button" className="btn-ghost text-coral-fg" onClick={() => setRemoving(true)}><Trash2 size={14} /> Remove the plan</button>}
         </div>
       </div>
       {inPlanner.length > 0 && <ProgressBar value={done / PLAN_ROWS.length} tone="bg-mint-fg" className="mt-3" />}
@@ -245,6 +263,21 @@ function PlanCard({ ctx, planner }) {
         <div className="mt-5 flex justify-end gap-2">
           <button type="button" className="btn-ghost" onClick={() => setConfirm(false)}>Cancel</button>
           <button type="button" className="btn-black" onClick={add}>Add {toAdd.length} tasks</button>
+        </div>
+      </Modal>
+      <Modal open={removing} onClose={() => { setRemoving(false); setAlsoDone(false) }} title="Remove the 40-day plan?">
+        <p className="text-sm text-muted">
+          {toRemove.length} task{toRemove.length === 1 ? '' : 's'} of the plan will be deleted from this planner{done && !alsoDone ? `. The ${done} you finished stay, so your study history is kept` : ''}.
+          {' '}Your other tasks, your RRB NTPC progress and your practice records are not touched. Undo, right after, brings the plan back.
+        </p>
+        {done > 0 && (
+          <label className="mt-3 flex items-center gap-2 text-sm cursor-pointer">
+            <input type="checkbox" checked={alsoDone} onChange={(e) => setAlsoDone(e.target.checked)} /> Also delete the {done} finished task{done === 1 ? '' : 's'}
+          </label>
+        )}
+        <div className="mt-5 flex justify-end gap-2">
+          <button type="button" className="btn-ghost" onClick={() => { setRemoving(false); setAlsoDone(false) }}>Cancel</button>
+          <button type="button" className="btn-danger" disabled={!toRemove.length} onClick={remove}>Remove {toRemove.length} task{toRemove.length === 1 ? '' : 's'}</button>
         </div>
       </Modal>
     </section>

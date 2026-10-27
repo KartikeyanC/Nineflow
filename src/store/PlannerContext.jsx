@@ -457,6 +457,17 @@ export function PlannerProvider({ children }) {
     setTasks((ts) => ts.map((x) => (x.id === id ? { ...withDate({ ...x, dropped: null }, date), dropped: null } : x)))
   }, [])
 
+  // Several tasks at once (a whole study plan). One Undo brings them all back.
+  const removeTasks = useCallback((ids, undoLabel) => {
+    const want = new Set(ids)
+    const found = tasksRef.current.filter((t) => want.has(t.id))
+    if (!found.length) return 0
+    offerUndo(undoLabel || `Deleted ${found.length} tasks`)
+    setTasks((ts) => ts.filter((t) => !want.has(t.id)))
+    setSelectedId((s) => (want.has(s) ? null : s))
+    return found.length
+  }, [offerUndo])
+
   const removeTask = useCallback((id) => {
     const gone = tasksRef.current.find((x) => x.id === id)
     if (gone) offerUndo(`Deleted “${gone.title}”`)
@@ -859,6 +870,7 @@ export function PlannerProvider({ children }) {
       openDay,
       addTask,
       addTasks,
+      removeTasks,
       gateTaskId,
       closeGate,
       finishGate,
@@ -917,7 +929,7 @@ export function PlannerProvider({ children }) {
     }),
     [
       activeTasks, tasks, pauseTask, resumeTask, dropTask, restoreTask, settings, now, view, setView, selectedId, quickAdd, dashboardDate, calendarMode, openDay,
-      addTask, addTasks, gateTaskId, closeGate, finishGate, moveToWorkspace, goalPlannerOpen, promptListOpen, askOpen, updateTask, setSessions, setStatus, toggleComplete, moveTask, sortStatus,
+      addTask, addTasks, removeTasks, gateTaskId, closeGate, finishGate, moveToWorkspace, goalPlannerOpen, promptListOpen, askOpen, updateTask, setSessions, setStatus, toggleComplete, moveTask, sortStatus,
       moveOverdueToToday, clearCompleted, removeTask, setRecurrence, removeSeries, applyToUpcoming, planDay,
       previewPlan, applyPlan, moveTasksTo,
       focus, startFocus, pauseFocus, resumeFocus, advanceFocus, stopFocus, setFocusOpen,
