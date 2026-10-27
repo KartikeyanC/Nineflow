@@ -387,7 +387,7 @@
       placeholder:text-faint outline-none transition focus:border-lav-fg/60 focus:ring-2 focus:ring-lav-fg/20;
   }
   .pill {
-    @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold leading-5;
+    @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold leading-5 whitespace-nowrap;
   }
   .kbd {
     @apply inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-md bg-page border border-line text-[10px] font-semibold text-muted;

@@ -711,9 +711,9 @@ export default function Settings() {
           <h2 className="h-display text-base text-coral-fg mb-1 inline-flex items-center gap-2"><AlertTriangle size={16} /> Danger zone</h2>
           <p className="text-sm text-muted mb-3">Clearing removes every task, session and habit log. Type <b className="text-ink">DELETE</b> to confirm.</p>
           <div className="flex gap-2">
-            <input className="input max-w-[200px] bg-card" placeholder="DELETE" value={deleteText} onChange={(e) => setDeleteText(e.target.value)} />
+            <input className="input max-w-[200px] bg-card min-w-0 flex-1 sm:flex-none" placeholder="DELETE" value={deleteText} onChange={(e) => setDeleteText(e.target.value)} />
             <button type="button" disabled={!canDelete} onClick={() => { clearAll(); setDeleteText('') }}
-              className={canDelete ? 'btn-danger' : 'btn-black opacity-40'}>
+              className={cx('whitespace-nowrap shrink-0', canDelete ? 'btn-danger' : 'btn-black opacity-40')}>
               Clear all data
             </button>
           </div>

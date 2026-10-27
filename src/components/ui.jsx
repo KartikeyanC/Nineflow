@@ -43,7 +43,7 @@ export function Segmented({ value, onChange, options, size = 'md', className }) 
             type="button"
             onClick={() => onChange(o.value)}
             className={cx(
-              'rounded-full font-semibold transition-all',
+              'rounded-full font-semibold transition-all whitespace-nowrap',
               pad,
               active ? 'bg-brand text-white shadow-sm' : 'text-ink/70 hover:text-ink',
             )}

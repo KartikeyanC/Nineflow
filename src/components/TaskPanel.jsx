@@ -169,7 +169,7 @@ export default function TaskPanel() {
               <div className="flex items-center gap-2">
                 <DateField value={task.date} onChange={(date) => updateTask(task.id, { date })} placeholder="No date" className="w-40" />
                 {task.date !== todayKey() && (
-                  <button type="button" className="text-xs font-semibold text-lav-fg hover:underline" onClick={() => updateTask(task.id, { date: todayKey() })}>Today →</button>
+                  <button type="button" className="text-xs font-semibold text-lav-fg hover:underline whitespace-nowrap shrink-0" onClick={() => updateTask(task.id, { date: todayKey() })}>Today →</button>
                 )}
               </div>
             </Row>

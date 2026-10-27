@@ -156,10 +156,10 @@ export function CarriedOver({ i = 0 }) {
                   <span className="block text-[11px] text-faint tnum">{carriedLabel(t.date, now)} · {fmtMinutes(remainingMinutes(t, now))}{t.priority === 'high' ? ' · high priority' : ''}</span>
                 </button>
               </div>
-              <div className="flex items-center gap-1 shrink-0 max-sm:flex-wrap max-sm:gap-2 max-sm:pl-5">
+              <div className="flex items-center gap-1 shrink-0 max-sm:grid max-sm:grid-cols-4 max-sm:gap-1.5">
                 <Choice onClick={() => move(t, today, 'today')}>Today</Choice>
                 <Choice onClick={() => move(t, tomorrow, 'tomorrow')}>Tomorrow</Choice>
-                <Choice onClick={() => move(t, null, 'Someday')} title="No date: keep it without a day"><Inbox size={11} /> Someday</Choice>
+                <Choice onClick={() => move(t, null, 'Someday')} title="No date: keep it without a day"><Inbox size={11} className="max-sm:hidden" /> Someday</Choice>
                 <Choice onClick={() => dropTask(t.id, 'Let go')} quiet title="Drop it: off your plan, restorable from Paused for 30 days">Let go</Choice>
               </div>
             </li>
@@ -179,8 +179,8 @@ export function CarriedOver({ i = 0 }) {
 function Choice({ children, onClick, quiet, title }) {
   return (
     <button type="button" onClick={onClick} title={title}
-      className={cx('inline-flex items-center gap-1 h-7 rounded-full px-2.5 text-[11px] font-semibold transition active:scale-[0.96] max-sm:h-9 max-sm:px-3.5 max-sm:text-xs',
-        quiet ? 'text-faint hover:text-ink hover:bg-card max-sm:px-1' : 'bg-card text-ink shadow-soft hover:-translate-y-px')}>
+      className={cx('inline-flex items-center gap-1 h-7 rounded-full px-2.5 text-[11px] font-semibold transition active:scale-[0.96] whitespace-nowrap max-sm:h-9 max-sm:px-1 max-sm:justify-center max-sm:border',
+        quiet ? 'text-faint hover:text-ink hover:bg-card max-sm:border-line' : 'bg-card text-ink shadow-soft hover:-translate-y-px max-sm:border-line max-sm:shadow-none')}>
       {children}
     </button>
   )

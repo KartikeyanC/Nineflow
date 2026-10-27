@@ -116,7 +116,7 @@ function Overview({ ctx, planner, goSyllabus }) {
         <ul className="grid gap-3">
           {bySubject.map(({ s, sum }) => (
             <li key={s.id}>
-              <div className="flex items-baseline justify-between gap-2 text-sm"><span className="font-semibold truncate">{s.name}</span><span className="tnum text-muted shrink-0">{pct(sum.completion)} · {sum.finished}/{sum.measured}</span></div>
+              <div className="flex items-baseline justify-between gap-2 text-sm"><span className="font-semibold truncate min-w-0">{s.name}</span><span className="tnum text-muted shrink-0">{pct(sum.completion)} · {sum.finished}/{sum.measured}</span></div>
               <ProgressBar value={sum.completion} tone={SUBJECT_BAR[s.color]} className="mt-1.5" />
             </li>
           ))}
@@ -175,7 +175,7 @@ function Overview({ ctx, planner, goSyllabus }) {
           <ul className="mt-3 grid gap-2.5">
             {[{ id: 'all', name: 'All subjects', sum: all }, ...bySubject.map(({ s, sum }) => ({ id: s.id, name: s.name, sum }))].map((r) => (
               <li key={r.id} className="flex items-baseline justify-between gap-3 text-sm">
-                <span className={cx('truncate', r.id === 'all' && 'font-semibold')}>{r.name}</span>
+                <span className={cx('truncate min-w-0', r.id === 'all' && 'font-semibold')}>{r.name}</span>
                 <span className="tnum shrink-0">{r.sum.accuracy === null ? <span className="text-faint">No practice yet</span> : <><b>{r.sum.accuracy}%</b> <span className="text-faint">of {r.sum.attempted}</span></>}</span>
               </li>
             ))}

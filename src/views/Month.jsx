@@ -6,6 +6,7 @@ import { dateKey, tasksOn, todayKey } from '../lib/tasks'
 import { cssVar } from '../lib/colors'
 import { IconButton, Segmented, cx } from '../components/ui'
 import SeasonScene from '../components/SeasonScene'
+import { usePhone } from '../lib/usePhone'
 import { climateOf, monthLook } from '../lib/climate'
 import { useHolidays } from '../lib/holidays'
 
@@ -17,6 +18,7 @@ const levelOf = (value, steps) => (value <= 0 ? 0 : steps.findIndex((s) => value
 
 export default function Month() {
   const { tasks, now, settings, updateSettings, openDay, dashboardDate, setDashboardDate } = usePlanner()
+  const phone = usePhone()
   // The month of the day the planner is looking at (shared with Week and the Dashboard).
   const selected = useMemo(() => parseISO(dashboardDate), [dashboardDate])
   const monthStart = useMemo(() => startOfMonth(selected), [selected])
@@ -63,7 +65,7 @@ export default function Month() {
 
       <div className="flex-1 min-w-0 relative">
         {/* Giant year, behind everything */}
-        <span aria-hidden className="absolute -top-3 sm:-top-6 right-0 select-none pointer-events-none font-black leading-none tracking-tighter text-[64px] sm:text-[112px]"
+        <span aria-hidden className="max-sm:hidden absolute -top-3 sm:-top-6 right-0 select-none pointer-events-none font-black leading-none tracking-tighter text-[64px] sm:text-[112px]"
           style={{ color: cssVar('--lav-fg', 0.16) }}>
           {format(monthStart, 'yyyy')}
         </span>
@@ -79,17 +81,17 @@ export default function Month() {
           <SeasonScene season={look.season} viewBox="0 40 150 180" className="absolute right-3 bottom-0 h-20 w-[67px]" />
         </div>
 
-        <header className="relative flex flex-wrap items-end justify-between gap-3 mb-5">
-          <div>
-            <div className="flex items-center gap-1.5 mb-2">
+        <header className="relative flex flex-wrap items-end justify-between gap-3 mb-5 max-sm:items-center max-sm:gap-2 max-sm:mb-4">
+          <div className="max-sm:contents">
+            <div className="flex items-center gap-1.5 mb-2 max-sm:mb-0">
               <IconButton label="Previous month" onClick={() => moveMonth(-1)} className="border border-line bg-card"><ChevronLeft size={16} /></IconButton>
               <IconButton label="Next month" onClick={() => moveMonth(1)} className="border border-line bg-card"><ChevronRight size={16} /></IconButton>
               {!thisMonth && <button type="button" className="btn-ghost h-8 py-0" onClick={() => setDashboardDate(todayKey())}>This month</button>}
             </div>
-            <h1 className="text-ink font-black tracking-tight leading-none text-[40px] sm:text-[56px]">{format(monthStart, 'MMMM')}</h1>
+            <h1 className="text-ink font-black tracking-tight leading-none text-[40px] sm:text-[56px] max-sm:sr-only">{format(monthStart, 'MMMM')}</h1>
           </div>
           <Segmented size="sm" value={measure} onChange={(v) => updateSettings({ heatmapMeasure: v })}
-            options={[{ value: 'hours', label: 'By hours' }, { value: 'count', label: 'By task count' }]} />
+            options={[{ value: 'hours', label: phone ? 'Hours' : 'By hours' }, { value: 'count', label: phone ? 'Tasks' : 'By task count' }]} />
         </header>
 
         {/* Grid */}
@@ -149,7 +151,7 @@ function Tile({ cell, onOpen }) {
     <button type="button" onClick={onOpen} aria-label={`${format(day, 'EEEE, MMMM d')}${holiday ? `, ${holiday}` : ''}${list.length ? `, ${list.length} task${list.length === 1 ? '' : 's'}` : ''}. Open this day`}
       aria-current={today ? 'date' : undefined} title={holiday || undefined}
       className={cx(
-        'relative text-left rounded-xl sm:rounded-2xl p-1.5 sm:p-2 min-h-[60px] sm:min-h-[104px] flex flex-col transition duration-200 hover:-translate-y-0.5 hover:shadow-lift',
+        'relative text-left rounded-xl sm:rounded-2xl p-1.5 sm:p-2 min-h-[60px] sm:min-h-[104px] flex flex-col transition duration-200 hover:-translate-y-0.5 hover:shadow-lift max-sm:p-1 max-sm:min-h-[54px] max-sm:rounded-lg',
         level === 0 && 'border border-line',
         !inMonth && 'opacity-50 border border-dashed border-line',
         today && 'outline outline-2 outline-offset-2 outline-coral-fg',
@@ -157,9 +159,9 @@ function Tile({ cell, onOpen }) {
         strong ? 'text-white' : 'text-ink',
       )}
       style={{ background: level ? cssVar('--lav-fg', LEVEL_ALPHA[level]) : undefined }}>
-      <div className="flex items-start justify-between gap-1">
+      <div className="flex items-start justify-between gap-1 max-sm:flex-col-reverse max-sm:items-center max-sm:justify-start max-sm:gap-1.5 max-sm:pt-0.5">
         {list.length > 0 ? (
-          <span className={cx('rounded-full px-1.5 py-0.5 text-[10px] font-semibold', strong ? 'bg-white/20' : 'bg-card border border-line text-muted')}>
+          <span className={cx('rounded-full px-1.5 py-0.5 text-[10px] font-semibold max-sm:min-w-[18px] max-sm:text-center max-sm:px-1 max-sm:py-0 max-sm:leading-[16px]', strong ? 'bg-white/20' : 'bg-card border border-line text-muted')}>
             {list.length}<span className="hidden sm:inline"> task{list.length === 1 ? '' : 's'}</span>
           </span>
         ) : <span />}

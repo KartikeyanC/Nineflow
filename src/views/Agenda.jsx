@@ -39,12 +39,12 @@ export default function Agenda() {
     <div className="flex flex-col gap-4">
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="h-display text-3xl">Agenda</h1>
+          <h1 className="h-display text-3xl max-sm:text-2xl">Agenda</h1>
           <p className="text-sm text-muted mt-1">{total} open task{total === 1 ? '' : 's'}, by day.</p>
         </div>
-        <div className="flex items-center gap-2">
-          <Segmented size="sm" value={range} onChange={setRange} options={RANGES} />
-          <button type="button" className="btn-black h-9 py-0 px-3 inline-flex items-center gap-1.5" onClick={() => setQuickAdd({})}>
+        <div className="flex items-center gap-2 max-sm:w-full">
+          <Segmented size="sm" value={range} onChange={setRange} options={RANGES} className="max-sm:w-full max-sm:[&>button]:flex-1" />
+          <button type="button" className="btn-black h-9 py-0 px-3 inline-flex items-center gap-1.5 whitespace-nowrap max-sm:hidden" onClick={() => setQuickAdd({})}>
             <Plus size={14} /> New task
           </button>
         </div>
@@ -62,12 +62,13 @@ export default function Agenda() {
               {g.tasks.map((t) => (
                 <li key={t.id} tabIndex={0} onClick={() => setSelectedId(t.id)}
                   onKeyDown={(e) => { if (e.target === e.currentTarget && e.key === 'Enter') setSelectedId(t.id) }}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer hover:bg-page focus-visible:bg-page outline-none transition">
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer hover:bg-page focus-visible:bg-page outline-none transition max-sm:px-2 max-sm:gap-2.5">
                   <CheckCircle checked={false} onToggle={() => toggleComplete(t.id)} size="sm" />
-                  <span className="w-12 shrink-0 text-xs font-medium text-muted tnum">{t.startTime || '—'}</span>
+                  <span className="w-12 shrink-0 text-xs font-medium text-muted tnum max-sm:hidden">{t.startTime || '—'}</span>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold truncate">{t.title}</p>
-                    <div className="flex items-center gap-1.5 mt-0.5">
+                    <div className="flex items-center gap-1.5 mt-0.5 min-w-0">
+                      {t.startTime && <span className="sm:hidden text-[11px] font-semibold text-muted tnum shrink-0">{t.startTime}</span>}
                       <CategoryTag category={categoryById(t.category)} className="text-[10px] py-0" />
                       {t.recurrence && <Repeat size={10} className="text-lav-fg" />}
                       <RequiredBadge task={t} className="!text-[10px]" />

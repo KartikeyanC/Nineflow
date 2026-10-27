@@ -16,12 +16,12 @@ export default function Someday() {
 
   return (
     <div className="flex flex-col gap-4">
-      <header className="flex items-start justify-between gap-3">
-        <div>
-          <h1 className="h-display text-3xl">Someday</h1>
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="h-display text-3xl max-sm:text-2xl">Someday</h1>
           <p className="text-sm text-muted mt-1">Tasks without a day. Pull one onto a day when it's time.</p>
         </div>
-        <button type="button" className="btn-black h-9 py-0 px-3 inline-flex items-center gap-1.5" onClick={() => setQuickAdd({ date: null })}>
+        <button type="button" className="btn-black h-9 py-0 px-3 inline-flex items-center gap-1.5 whitespace-nowrap" onClick={() => setQuickAdd({ date: null })}>
           <Plus size={14} /> Add to Someday
         </button>
       </header>
