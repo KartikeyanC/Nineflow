@@ -23,6 +23,7 @@ import RequiredBadge from '../components/RequiredBadge'
 import DayNav from '../components/DayNav'
 import { CapacityBar, CarriedOver } from '../features/Planning'
 import { RitualPrompt } from '../features/Ritual'
+import { WorkspaceMenu } from '../features/Workspaces'
 import { openInterrupt } from '../features/Interrupt'
 
 const toMin = (hhmm) => { const [h, m] = hhmm.split(':').map(Number); return h * 60 + m }
@@ -49,7 +50,9 @@ export default function Dashboard() {
     <div className="animate-view-in">
       {/* Header */}
       <header className="flex flex-wrap items-start justify-between gap-4 mb-5 max-sm:gap-3 max-sm:mb-4">
-        <div>
+        <div className="min-w-0">
+          {/* Phones have no sidebar, so the workspace switcher sits here: tap it to change workspace. */}
+          <WorkspaceMenu className="sm:hidden mb-3 w-fit max-w-[75vw]" />
           <h1 className="h-display text-3xl max-sm:text-2xl">{greeting}{firstName(currentProfile()?.name) ? `, ${firstName(currentProfile().name)}` : ''} 👋</h1>
           <p className="text-sm text-muted mt-1 font-medium">{format(day, 'EEEE, MMMM d, yyyy')}</p>
           <p className="text-sm text-faint max-sm:hidden">Let's make today productive.</p>

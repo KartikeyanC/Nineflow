@@ -77,8 +77,6 @@ export default {
         // screen for a moment on every page switch.
         'view-in': {
           from: { opacity: '0.55', transform: 'translateY(6px)' },
-          // 'none', not translateY(0): the animation keeps its end state, and any transform left on
-          // the page would make pop-ups inside it open relative to the page instead of the screen.
           to: { opacity: '1', transform: 'none' },
         },
         'modal-in': {
@@ -120,16 +118,19 @@ export default {
         spring: 'cubic-bezier(0.2, 0.7, 0.2, 1)',
       },
       animation: {
-        'view-in': 'view-in 220ms cubic-bezier(0.2, 0.7, 0.2, 1) both',
-        'modal-in': 'modal-in 180ms cubic-bezier(0.2, 0.7, 0.2, 1) both',
-        'fade-in': 'fade-in 160ms ease-out both',
-        'panel-in': 'panel-in 260ms cubic-bezier(0.2, 0.7, 0.2, 1) both',
-        'sheet-in': 'sheet-in 280ms cubic-bezier(0.2, 0.7, 0.2, 1) both',
-        pop: 'pop 260ms cubic-bezier(0.2, 0.7, 0.2, 1) both',
+        // 'backwards', not 'both': the start applies before it runs, and afterwards the page has no transform
+        // at all. Keeping the end frame left an identity transform, which pins position:fixed pop-ups inside
+        // a page to the page instead of the screen.
+        'view-in': 'view-in 220ms cubic-bezier(0.2, 0.7, 0.2, 1) backwards',
+        'modal-in': 'modal-in 180ms cubic-bezier(0.2, 0.7, 0.2, 1) backwards',
+        'fade-in': 'fade-in 160ms ease-out backwards',
+        'panel-in': 'panel-in 260ms cubic-bezier(0.2, 0.7, 0.2, 1) backwards',
+        'sheet-in': 'sheet-in 280ms cubic-bezier(0.2, 0.7, 0.2, 1) backwards',
+        pop: 'pop 260ms cubic-bezier(0.2, 0.7, 0.2, 1) backwards',
         'card-out': 'card-out 260ms ease-in both',
         'card-lift': 'card-lift 160ms cubic-bezier(0.2, 0, 0, 1) both',
-        'menu-in': 'menu-in 140ms cubic-bezier(0.2, 0.7, 0.2, 1) both',
-        rise: 'rise 260ms cubic-bezier(0.2, 0.7, 0.2, 1) both',
+        'menu-in': 'menu-in 140ms cubic-bezier(0.2, 0.7, 0.2, 1) backwards',
+        rise: 'rise 260ms cubic-bezier(0.2, 0.7, 0.2, 1) backwards',
       },
     },
   },

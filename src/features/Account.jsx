@@ -48,7 +48,7 @@ export default function AccountSection() {
         {p.picture
           ? <img src={p.picture} alt="" referrerPolicy="no-referrer" className="h-12 w-12 rounded-full object-cover" />
           : <span className={cx('h-12 w-12 rounded-full flex items-center justify-center font-bold text-lg', c.bg, c.text)}>{initials(p.name)}</span>}
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 flex-1 max-sm:min-w-[65%]">
           <h2 className="h-display text-base">Your account</h2>
           <p className="text-sm text-muted truncate">{email ? 'Signed in as' : 'Signed in with Google as'}<span className="sm:hidden">:</span> <b className="text-ink max-sm:block max-sm:truncate">{p.email}</b></p>
         </div>

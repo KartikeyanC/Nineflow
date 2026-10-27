@@ -169,6 +169,8 @@ export function WorkspaceMenu({ compact = false, className }) {
         <span className={cx('min-w-0 flex-1 truncate text-left text-[13px] font-semibold', compact && 'hidden wide:block')}>{current.name}</span>
         <ChevronsUpDown size={14} className={cx('shrink-0 mr-1.5 text-faint', compact && 'hidden wide:block')} />
       </button>
+      {/* Phones: dim the page behind the list, like the other sheets; a tap on it closes the list. */}
+      {open && <div className="sm:hidden fixed inset-0 z-40 bg-ink/30 animate-fade-in" onClick={() => setOpen(false)} aria-hidden="true" />}
       {open && (
         <div role="dialog" aria-label="Workspaces"
           className="fixed inset-x-4 top-16 z-50 sm:absolute sm:inset-x-auto sm:left-0 sm:top-full sm:mt-2 sm:w-[280px] rounded-2xl bg-card p-2.5 shadow-lift ring-hair animate-modal-in">
@@ -184,7 +186,7 @@ export function WorkspacesSection() {
   return (
     <section className="card p-5">
       <div className="flex items-center gap-3 mb-3">
-        <span className="h-10 w-10 rounded-xl bg-accent-soft text-lav-fg inline-flex items-center justify-center"><Layers size={18} /></span>
+        <span className="h-10 w-10 shrink-0 rounded-xl bg-accent-soft text-lav-fg inline-flex items-center justify-center max-sm:hidden"><Layers size={18} /></span>
         <div className="min-w-0">
           <h2 className="h-display text-base">Workspaces</h2>
           <p className="text-sm text-muted">Up to {WORKSPACE_LIMIT} separate planners under this one login, each with its own tasks, habits and settings.</p>
