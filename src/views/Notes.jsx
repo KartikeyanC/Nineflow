@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { ListPlus, Pin, PinOff, Plus, StickyNote, Trash2 } from 'lucide-react'
+import { format, isSameDay, isValid, parseISO } from 'date-fns'
+import { Clock3, ListPlus, Pin, PinOff, Plus, StickyNote, Trash2 } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
 import { uid } from '../lib/storage'
 import { COLOR_IDS, colorOf } from '../lib/colors'
@@ -16,7 +17,7 @@ export default function Notes() {
   const notes = settings.notes || []
   const [focusId, setFocusId] = useState(null)
   const save = (next) => updateSettings({ notes: next })
-  const patch = (id, p) => save(notes.map((n) => (n.id === id ? { ...n, ...p, updatedAt: new Date().toISOString() } : n)))
+  const patch = (id, p) => save(notes.map((n) => (n.id === id ? { ...n, ...p, ...('text' in p ? { updatedAt: new Date().toISOString() } : {}) } : n)))
 
   const add = () => {
     if (notes.length >= MAX_NOTES) return
@@ -82,6 +83,7 @@ function Note({ note, autoFocus, onFocused, onText, onColor, onPin, onDelete, on
 
   return (
     <article className={cx('group break-inside-avoid rounded-2xl p-4 shadow-soft', c.bg)}>
+      <NoteTime note={note} />
       <textarea ref={ref} value={text} maxLength={MAX_NOTE_LENGTH} onChange={(e) => typed(e.target.value)} onBlur={() => { clearTimeout(timer.current); commit() }}
         aria-label="Note" placeholder="Write something…"
         className="w-full resize-none bg-transparent outline-none text-sm leading-relaxed text-ink placeholder:text-ink/40" />
@@ -101,5 +103,24 @@ function Note({ note, autoFocus, onFocused, onText, onColor, onPin, onDelete, on
           className="h-7 w-7 rounded-full inline-flex items-center justify-center text-ink/60 hover:bg-card/60 hover:text-coral-fg transition"><Trash2 size={14} /></button>
       </div>
     </article>
+  )
+}
+
+// When the note was made, and when its text last changed (if later): "Tue 28 Oct 2026 · 10:42 AM · edited 3:15 PM".
+// Notes made before this was shown may have no time; then nothing is shown.
+function NoteTime({ note }) {
+  const made = note.createdAt ? parseISO(note.createdAt) : null
+  if (!made || !isValid(made)) return null
+  const edited = note.updatedAt ? parseISO(note.updatedAt) : null
+  const wasEdited = edited && isValid(edited) && note.text && edited - made > 60_000
+  return (
+    <p className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold text-ink/55 tnum"
+      title={`Created ${format(made, 'EEEE d MMMM yyyy, h:mm a')}${wasEdited ? ` · last edited ${format(edited, 'EEEE d MMMM yyyy, h:mm a')}` : ''}`}>
+      <Clock3 size={11} className="shrink-0" aria-hidden="true" />
+      <span className="min-w-0 truncate">
+        <time dateTime={note.createdAt}>{format(made, 'EEE d MMM yyyy · h:mm a')}</time>
+        {wasEdited && <> · edited <time dateTime={note.updatedAt}>{format(edited, isSameDay(edited, made) ? 'h:mm a' : 'd MMM, h:mm a')}</time></>}
+      </span>
+    </p>
   )
 }
