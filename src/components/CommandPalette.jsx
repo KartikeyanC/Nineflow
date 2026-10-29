@@ -2,8 +2,9 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Search, LayoutDashboard, KanbanSquare, CalendarRange, CalendarDays, Grid2x2, Inbox, Settings, Briefcase, Plus, Target, Sparkles, MessageCircle, Moon, CornerDownLeft, ListTodo, StickyNote, PauseCircle, GraduationCap } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
 import { Modal, cx } from './ui'
+import { showNote } from '../views/Notes'
 
-// Ctrl/Cmd+K: jump to a screen, run an action, find a task, or type a new one.
+// Ctrl/Cmd+K: jump to a screen, run an action, find a task or note, or type a new task.
 export default function CommandPalette({ open, onClose }) {
   const { allTasks: tasks, settings, updateSettings, setView, setQuickAdd, setSelectedId, setGoalPlannerOpen, setPromptListOpen, setAskOpen } = usePlanner()
   const [q, setQ] = useState('')
@@ -40,14 +41,20 @@ export default function CommandPalette({ open, onClose }) {
     const match = (x) => !needle || x.label.toLowerCase().includes(needle)
     const found = needle
       ? tasks
-          .filter((t) => t.title.toLowerCase().includes(needle) || (t.tags || []).some((g) => g.includes(needle.replace(/^#/, ''))))
+          .filter((t) => t.title.toLowerCase().includes(needle) || (t.description || '').toLowerCase().includes(needle) || (t.tags || []).some((g) => g.includes(needle.replace(/^#/, ''))))
           .sort((a, b) => (a.status === 'completed') - (b.status === 'completed'))
           .slice(0, 8)
           .map((t) => ({ label: t.title, hint: t.dropped ? 'Dropped' : t.hold ? 'Paused' : t.status === 'completed' ? 'Done' : t.date || 'Someday', icon: ListTodo, group: 'Tasks', run: () => setSelectedId(t.id) }))
       : []
+    const notes = needle
+      ? (settings.notes || [])
+          .filter((n) => (n.text || '').toLowerCase().includes(needle))
+          .slice(0, 6)
+          .map((n) => ({ label: n.text.trim().split('\n')[0].slice(0, 80) || 'Note', hint: 'Note', icon: StickyNote, group: 'Notes', run: () => { setView('notes'); showNote(n.id) } }))
+      : []
     const create = needle ? [{ label: `Add “${q.trim()}”`, icon: Plus, group: 'Create', run: () => setQuickAdd({ title: q.trim() }) }] : []
-    return [...create, ...actions.filter(match), ...nav.filter(match), ...found]
-  }, [q, tasks, settings.theme, settings.modules, setView, setQuickAdd, setSelectedId, setGoalPlannerOpen, setPromptListOpen, setAskOpen, updateSettings])
+    return [...create, ...actions.filter(match), ...nav.filter(match), ...found, ...notes]
+  }, [q, tasks, settings.notes, settings.theme, settings.modules, setView, setQuickAdd, setSelectedId, setGoalPlannerOpen, setPromptListOpen, setAskOpen, updateSettings])
 
   useEffect(() => { setI(0) }, [q])
   useEffect(() => { listRef.current?.querySelector('[data-active="true"]')?.scrollIntoView({ block: 'nearest' }) }, [i])
@@ -65,7 +72,7 @@ export default function CommandPalette({ open, onClose }) {
         <div className="flex items-center gap-2.5 border-b border-line pb-3">
           <Search size={18} className="text-faint shrink-0" />
           <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={onKey} aria-label="Search or type a command"
-            placeholder="Search tasks, jump to a screen, or type a new task…"
+            placeholder="Search tasks and notes, jump to a screen, or type a new task…"
             className="flex-1 min-w-0 bg-transparent outline-none text-base placeholder:text-faint" />
           <kbd className="text-[10px] text-faint border border-line rounded px-1.5 py-0.5">Esc</kbd>
         </div>

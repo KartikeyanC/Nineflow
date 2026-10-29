@@ -12,10 +12,28 @@ export const MAX_NOTE_LENGTH = 2000
 
 // Quick notes that aren't tasks: a thought, a link, a list. They live in the settings (so they sync
 // like everything else). A note can be turned into a task with one click.
+// Search picks a note: Notes scrolls to it and flashes it once it is on screen.
+let wanted = null
+export function showNote(id) { wanted = id; window.dispatchEvent(new Event('nineflow:show-note')) }
+
 export default function Notes() {
   const { settings, updateSettings, addTask, setSelectedId } = usePlanner()
   const notes = settings.notes || []
   const [focusId, setFocusId] = useState(null)
+  const [flashId, setFlashId] = useState(null)
+  useEffect(() => {
+    const show = () => {
+      if (!wanted) return
+      const id = wanted
+      wanted = null
+      requestAnimationFrame(() => document.getElementById(`note-${id}`)?.scrollIntoView({ block: 'center', behavior: 'smooth' }))
+      setFlashId(id)
+      setTimeout(() => setFlashId((f) => (f === id ? null : f)), 1600)
+    }
+    show()
+    window.addEventListener('nineflow:show-note', show)
+    return () => window.removeEventListener('nineflow:show-note', show)
+  }, [])
   const save = (next) => updateSettings({ notes: next })
   const patch = (id, p) => save(notes.map((n) => (n.id === id ? { ...n, ...p, ...('text' in p ? { updatedAt: new Date().toISOString() } : {}) } : n)))
 
@@ -54,7 +72,7 @@ export default function Notes() {
       ) : (
         <div className="columns-1 sm:columns-2 xl:columns-3 2xl:columns-4 gap-4 [&>*]:mb-4">
           {ordered.map((n) => (
-            <Note key={n.id} note={n} autoFocus={focusId === n.id} onFocused={() => setFocusId(null)}
+            <Note key={n.id} note={n} flash={flashId === n.id} autoFocus={focusId === n.id} onFocused={() => setFocusId(null)}
               onText={(text) => patch(n.id, { text })} onColor={(color) => patch(n.id, { color })}
               onPin={() => patch(n.id, { pinned: !n.pinned })} onDelete={() => remove(n.id)} onTask={() => toTask(n)} />
           ))}
@@ -64,7 +82,7 @@ export default function Notes() {
   )
 }
 
-function Note({ note, autoFocus, onFocused, onText, onColor, onPin, onDelete, onTask }) {
+function Note({ note, flash, autoFocus, onFocused, onText, onColor, onPin, onDelete, onTask }) {
   const c = colorOf(note.color)
   const [text, setText] = useState(note.text)
   const ref = useRef(null)
@@ -82,7 +100,7 @@ function Note({ note, autoFocus, onFocused, onText, onColor, onPin, onDelete, on
   useEffect(() => () => clearTimeout(timer.current), [])
 
   return (
-    <article className={cx('group break-inside-avoid rounded-2xl p-4 shadow-soft', c.bg)}>
+    <article id={`note-${note.id}`} className={cx('group break-inside-avoid rounded-2xl p-4 shadow-soft transition-shadow', c.bg, flash && 'ring-2 ring-brand')}>
       <NoteTime note={note} />
       <textarea ref={ref} value={text} maxLength={MAX_NOTE_LENGTH} onChange={(e) => typed(e.target.value)} onBlur={() => { clearTimeout(timer.current); commit() }}
         aria-label="Note" placeholder="Write something…"

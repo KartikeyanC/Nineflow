@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Plus } from 'lucide-react'
+import { Plus, Search } from 'lucide-react'
 import { PlannerProvider, usePlanner } from './store/PlannerContext'
 import Sidebar from './components/Sidebar'
 import MobileNav from './components/MobileNav'
@@ -95,6 +95,15 @@ function Shell() {
         className={`fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] sm:bottom-6 right-4 sm:right-6 z-30 h-14 w-14 rounded-full bg-brand text-white shadow-lift flex items-center justify-center transition hover:scale-105 active:scale-95${view === 'settings' ? ' max-sm:hidden' : ''}`}
       >
         <Plus size={24} />
+      </button>
+      {/* Phones have no Ctrl+K: search sits just above the + button on every screen */}
+      <button
+        type="button"
+        onClick={() => setPalette(true)}
+        aria-label="Search tasks and notes"
+        className="sm:hidden fixed bottom-[calc(9.25rem+env(safe-area-inset-bottom))] right-[1.375rem] z-30 h-11 w-11 rounded-full bg-card text-ink border border-line shadow-lift flex items-center justify-center active:scale-95 transition"
+      >
+        <Search size={18} />
       </button>
 
       <CommandPalette open={palette} onClose={() => setPalette(false)} />
