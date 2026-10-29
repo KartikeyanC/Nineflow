@@ -200,10 +200,11 @@ module.exports = {
   cached() { return access && access.expiresAt - 60_000 > Date.now() ? forRenderer() : null },
 
   // Silent when this computer is already signed in; otherwise the browser opens.
-  async getToken({ interactive = true, hint, prompt, scope } = {}) {
+  // `fresh`: Google refused the current token, so don't hand it back again.
+  async getToken({ interactive = true, hint, prompt, scope, fresh } = {}) {
     // Asking for an extra permission (Google Calendar) always opens the browser.
     if (scope) return signIn({ hint, prompt: 'consent', scope })
-    const c = this.cached()
+    const c = fresh ? null : this.cached()
     if (c && prompt !== 'select_account') return c
     if (refreshToken && prompt !== 'select_account') {
       try { return await refresh() } catch (e) { if (e.code === 'offline' || !interactive) throw e }

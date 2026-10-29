@@ -156,10 +156,11 @@ if (desktop) {
 }
 
 // Opens Google's window (a quick flash when consent was already given).
-// Must run from a click, or the browser blocks the window.
-export async function requestToken({ prompt = '', hint } = {}) {
+// Must run from a click, or the browser blocks the window. `fresh`: the
+// current token was refused, so the desktop app must not reuse it.
+export async function requestToken({ prompt = '', hint, fresh = false } = {}) {
   if (desktop) {
-    const r = await desktop.getToken({ interactive: true, prompt, hint })
+    const r = await desktop.getToken({ interactive: true, prompt, hint, fresh })
     if (!r.ok) throw new SignInError(r.code, r.message)
     saveToken(r.token.access_token, r.token.expires_in)
     return r.token.access_token

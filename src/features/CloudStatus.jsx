@@ -69,11 +69,13 @@ export function PasswordReconnect({ className, onDone }) {
   )
 }
 
-export async function runAction(action, setError) {
+export async function runAction(action, setError, setBusy) {
+  setError?.(null)
+  setBusy?.(true)
   try {
     if (action === 'reconnect') await reconnect()
     else await syncNow({ force: true })
-  } catch (e) { setError?.(e.message) }
+  } catch (e) { setError?.(e.message) } finally { setBusy?.(false) }
 }
 
 // Compact line for the sidebars. Icon-only when `iconOnly`.

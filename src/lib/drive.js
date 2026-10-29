@@ -20,7 +20,15 @@ async function call(url, opts = {}) {
   } catch {
     throw new OfflineError('No connection to Google Drive.')
   }
-  if (r.status === 401 || r.status === 403) throw new AuthError('Google Drive access expired.')
+  if (r.status === 401) throw new AuthError('Google Drive access expired.')
+  if (r.status === 403) {
+    // 403 is also Drive's "slow down" and "API turned off"; only a permission problem needs a new sign-in.
+    const err = (await r.json().catch(() => null))?.error
+    const reason = err?.errors?.[0]?.reason || ''
+    if (/rateLimit/i.test(reason)) throw new Error('Google Drive is busy. It will retry in a moment.')
+    if (reason === 'accessNotConfigured' || reason === 'SERVICE_DISABLED') throw new Error(`Google Drive refused: ${err?.message || reason}`)
+    throw new AuthError('Google Drive did not allow access.')
+  }
   if (r.status === 404) return null
   if (!r.ok) throw new Error(`Google Drive error ${r.status}`)
   return r

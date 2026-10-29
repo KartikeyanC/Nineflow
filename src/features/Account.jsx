@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { LogOut, ExternalLink, RefreshCw, HardDrive, Cloud, KeyRound, Check } from 'lucide-react'
 import { currentProfile, updateProfile, removeProfileRecord, signOut, initials, isEmailProfile, OCCUPATIONS } from '../lib/profiles'
-import { forgetAccount, revokeToken } from '../lib/google'
+import { forgetAccount, isDesktop, revokeToken } from '../lib/google'
 import * as supa from '../lib/supabase'
 import { forgetWorkspace } from '../lib/workspaces'
 import { clearLocal, flush, stopSync } from '../lib/cloud'
@@ -17,6 +17,7 @@ export default function AccountSection() {
   const [busy, setBusy] = useState(false)
   const [warn, setWarn] = useState(false)
   const [error, setError] = useState(null)
+  const [syncing, setSyncing] = useState(false)
   if (!p) return null
   const email = isEmailProfile(p)
   const where = email ? 'your account' : 'Google Drive'
@@ -84,12 +85,17 @@ export default function AccountSection() {
           {email ? <Cloud size={16} className="text-sky-fg shrink-0" /> : <HardDrive size={16} className="text-sky-fg shrink-0" />}
           <p className="text-sm font-semibold flex-1 min-w-[180px]">{email ? 'Saved with your account' : `Google Drive · ${FOLDER_NAME} / ${FILE_NAME}`}</p>
           {!email && s.fileLink && <a href={s.fileLink} target="_blank" rel="noopener noreferrer" className="btn-ghost h-8 py-0"><ExternalLink size={13} /> Open in Drive</a>}
-          {!d.needsPassword && <button type="button" className="btn-ghost h-8 py-0" onClick={() => runAction(d.action || 'retry', setError)}><RefreshCw size={13} /> {d.action === 'reconnect' ? 'Reconnect' : 'Sync now'}</button>}
+          {!d.needsPassword && (
+            <button type="button" className="btn-ghost h-8 py-0" disabled={syncing} onClick={() => runAction(d.action || 'retry', setError, setSyncing)}>
+              <RefreshCw size={13} className={cx(syncing && 'animate-spin')} /> {syncing ? (d.action === 'reconnect' ? 'Connecting…' : 'Syncing…') : d.action === 'reconnect' ? 'Reconnect' : 'Sync now'}
+            </button>
+          )}
         </div>
         <p className={cx('mt-2 text-xs inline-flex items-center gap-1.5', d.tone)}>
           <Icon size={13} className={cx(d.spin && 'animate-spin')} /> {d.text}{s.state === 'saved' && s.savedAt ? ` · last saved ${savedAgo(s.savedAt)}` : ''}
         </p>
         {d.needsPassword && !warn && <PasswordReconnect className="mt-2 text-peach-fg" />}
+        {syncing && d.action === 'reconnect' && isDesktop && <p className="mt-1 text-xs text-muted">If Google opens in your web browser, finish signing in there, then come back.</p>}
         {(error || s.error) && <p className="mt-1 text-xs text-coral-fg">{error || s.error}</p>}
         <p className="mt-2 text-[11px] text-faint">
           {email

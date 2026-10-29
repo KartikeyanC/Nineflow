@@ -10,7 +10,7 @@
 // changed things at the same time, this device's version is kept as a
 // separate "conflict" copy, so nothing is lost.
 import { currentProfileId } from './profiles'
-import { getToken, requestToken, rememberedAccount } from './google'
+import { getToken, isDesktop, requestToken, rememberedAccount } from './google'
 import * as drive from './drive'
 import * as supa from './supabase'
 import { AuthError, OfflineError } from './syncErrors'
@@ -109,7 +109,8 @@ const driveStore = {
     await drive.createFile(folderId, `planner-data (conflict ${stamp}).json`, bundle)
   },
   conflictNotice: 'Another device saved changes at the same time. This device\'s version was kept as a "conflict" file in your Daily Planner folder.',
-  reconnect: () => requestToken({ prompt: '', hint: rememberedAccount()?.email }),
+  // `full`: the renewed token was refused too, so sign in again in Google's window.
+  reconnect: ({ full = false } = {}) => requestToken(full ? { prompt: 'select_account', hint: rememberedAccount()?.email } : { prompt: '', hint: rememberedAccount()?.email, fresh: true }),
 }
 
 const supabaseStore = {
@@ -245,8 +246,13 @@ export function stopSync() {
 // From a click: sign in again (Google's window, or the email account's
 // password), then save.
 export async function reconnect(password) {
-  await storeFor(running || currentProfileId()).reconnect(password)
+  const store = storeFor(running || currentProfileId())
+  if (store.kind === 'supabase') { await store.reconnect(password); await syncNow(); return }
+  await store.reconnect()
   await syncNow()
+  // Drive still refused the renewed token: the desktop app can sign in again from scratch in the browser.
+  if (status.state === 'needs-auth' && isDesktop) { await store.reconnect({ full: true }); await syncNow() }
+  if (status.state === 'needs-auth') throw new Error('Google Drive still refused access. Sign out, then sign in again and tick the Google Drive box.')
 }
 
 // Save whatever is unsaved now (before signing out). True when the store has it all.
