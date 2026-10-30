@@ -4,7 +4,7 @@ import { Bar, BarChart, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis
 import {
   ArrowRight, Plus, X, Flame, ListChecks, CheckCircle2, Activity, Circle, Eye,
   Sparkles, AlertTriangle, TrendingUp, Clock3, Flag, PieChart as PieIcon, Repeat, Wand2, Zap, Moon, CalendarDays, Hourglass, PartyPopper,
-  Sun, CloudSun, Cloud, CloudFog, CloudDrizzle, CloudRain, CloudSnow, CloudLightning, Droplets,
+  Search, Sun, CloudSun, Cloud, CloudFog, CloudDrizzle, CloudRain, CloudSnow, CloudLightning, Droplets,
 } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
 import { uid } from '../lib/storage'
@@ -25,6 +25,7 @@ import { CapacityBar, CarriedOver } from '../features/Planning'
 import { RitualPrompt } from '../features/Ritual'
 import { WorkspaceMenu } from '../features/Workspaces'
 import { openInterrupt } from '../features/Interrupt'
+import { openPalette } from '../components/MobileNav'
 
 const toMin = (hhmm) => { const [h, m] = hhmm.split(':').map(Number); return h * 60 + m }
 const hh = (min) => `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`
@@ -61,6 +62,10 @@ export default function Dashboard() {
         </div>
         <div className="flex flex-wrap items-center gap-2 max-sm:w-full">
           {isToday && <RitualPrompt />}
+          {/* Phones search from the round button above +, so this is for wider screens */}
+          <button type="button" className="btn-ghost h-9 py-0 max-sm:hidden text-muted hover:text-ink" onClick={openPalette} aria-label="Search tasks and notes" title="Search (Ctrl+K)">
+            <Search size={14} /> Search <span className="kbd ml-1">Ctrl K</span>
+          </button>
           {isToday && (
             <button type="button" className="btn-ghost h-9 py-0 max-sm:hidden" onClick={openInterrupt} title="Something came up (Ctrl+I)">
               <Zap size={14} className="text-peach-fg" /> Interruption

@@ -1,5 +1,5 @@
 import React from 'react'
-import { LayoutDashboard, KanbanSquare, CalendarRange, CalendarDays, Grid2x2, Inbox, ListTodo, StickyNote, PauseCircle, Settings, Plus, Moon, Sun, Briefcase, GraduationCap, Search } from 'lucide-react'
+import { LayoutDashboard, KanbanSquare, CalendarRange, CalendarDays, Grid2x2, Inbox, ListTodo, StickyNote, PauseCircle, Settings, Plus, Moon, Sun, Briefcase, GraduationCap } from 'lucide-react'
 import { BrandMark, Wordmark } from './Brand'
 import { usePlanner } from '../store/PlannerContext'
 import { dayStats } from '../lib/tasks'
@@ -11,7 +11,6 @@ import { PlanGoalButton } from './GoalPlanner'
 import { PromptListButton } from './PromptToList'
 import { AskPlannerButton } from './AskPlanner'
 import SidebarToggle from './SidebarToggle'
-import { openPalette } from './MobileNav'
 
 const NAV = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -43,18 +42,6 @@ export default function Sidebar() {
           <Wordmark className="text-[17px] hidden wide:block" />
         </div>
         <WorkspaceMenu compact />
-        <button
-          type="button"
-          onClick={openPalette}
-          className="h-10 rounded-full border border-line bg-page flex items-center justify-center wide:justify-start gap-2.5 px-3 text-sm text-faint hover:text-ink transition"
-          data-tip="Search"
-          data-tip-hint="Ctrl+K"
-          aria-label="Search tasks and notes"
-        >
-          <Search size={16} className="shrink-0" />
-          <span className="hidden wide:inline flex-1 text-left">Search</span>
-          <kbd className="hidden wide:inline text-[10px] border border-line rounded px-1.5 py-0.5">Ctrl K</kbd>
-        </button>
       </div>
 
       {/* Scrolls when the window is too short for everything (the toggle above hangs outside the edge, so it stays out of here) */}
