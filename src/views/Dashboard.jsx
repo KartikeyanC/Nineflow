@@ -63,8 +63,9 @@ export default function Dashboard() {
         <div className="flex flex-wrap items-center gap-2 max-sm:w-full">
           {isToday && <RitualPrompt />}
           {/* Phones search from the round button above +, so this is for wider screens */}
-          <button type="button" className="btn-ghost h-9 py-0 max-sm:hidden text-muted hover:text-ink" onClick={openPalette} aria-label="Search tasks and notes" title="Search (Ctrl+K)">
-            <Search size={14} /> Search <span className="kbd ml-1">Ctrl K</span>
+          {/* Wide like a search field, so it reads as the place to type */}
+          <button type="button" className="btn-ghost h-9 py-0 max-sm:hidden w-56 lg:w-80 justify-start font-medium text-muted hover:text-ink" onClick={openPalette} aria-label="Search tasks and notes" title="Search (Ctrl+K)">
+            <Search size={14} className="shrink-0" /> <span className="flex-1 text-left truncate">Search tasks and notes…</span> <span className="kbd shrink-0">Ctrl K</span>
           </button>
           {isToday && (
             <button type="button" className="btn-ghost h-9 py-0 max-sm:hidden" onClick={openInterrupt} title="Something came up (Ctrl+I)">
