@@ -170,7 +170,7 @@ export function withStatus(task, status, now = new Date()) {
 // An open session counts up to `now`, capped at 8h so a forgotten timer
 // doesn't inflate the stats.
 const OPEN_SESSION_CAP_MS = 8 * 60 * 60 * 1000
-const sessionEnd = (s, start, now) =>
+export const sessionEnd = (s, start, now) =>
   s.end ? parseISO(s.end) : new Date(Math.min(now.getTime(), start.getTime() + OPEN_SESSION_CAP_MS))
 
 // Close the open session without changing status (pomodoro breaks/pauses).

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { Search, LayoutDashboard, KanbanSquare, CalendarRange, CalendarDays, Grid2x2, Inbox, Settings, Briefcase, Plus, Target, Sparkles, MessageCircle, Moon, CornerDownLeft, ListTodo, StickyNote, PauseCircle, GraduationCap } from 'lucide-react'
+import { Search, LayoutDashboard, KanbanSquare, CalendarRange, CalendarDays, Grid2x2, Inbox, Settings, Briefcase, Plus, Target, Sparkles, MessageCircle, Moon, CornerDownLeft, ListTodo, StickyNote, PauseCircle, GraduationCap, ChartColumn } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
 import { Modal, cx } from './ui'
 import { showNote } from '../views/Notes'
@@ -22,6 +22,7 @@ export default function CommandPalette({ open, onClose }) {
       { label: 'Month', icon: CalendarDays, run: go('month') },
       { label: 'Agenda', icon: ListTodo, run: go('agenda') },
       { label: 'Matrix', icon: Grid2x2, run: go('matrix') },
+      { label: 'Working charts', icon: ChartColumn, run: go('charts') },
       { label: 'Notes', icon: StickyNote, run: go('notes') },
       { label: 'Paused', icon: PauseCircle, run: go('paused') },
       { label: 'Someday', icon: Inbox, run: go('someday') },
