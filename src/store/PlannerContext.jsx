@@ -482,8 +482,9 @@ export function PlannerProvider({ children }) {
     setSelectedId((s) => (s === id ? null : s))
   }, [offerUndo])
 
+  // `patch` is an object, or a function of the latest settings returning one (for saves that finish after an await).
   const updateSettings = useCallback((patch) => {
-    setSettings((s) => ({ ...s, ...patch }))
+    setSettings((s) => ({ ...s, ...(typeof patch === 'function' ? patch(s) : patch) }))
   }, [])
 
   const addCategory = useCallback((name, color) => {
