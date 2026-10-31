@@ -1,12 +1,13 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { format, isSameDay, isValid, parseISO } from 'date-fns'
-import { Clock3, ExternalLink, ImagePlus, Link2, ListPlus, Pin, PinOff, Plus, StickyNote, Trash2, X } from 'lucide-react'
+import { Brain, Clock3, ExternalLink, ImagePlus, Link2, ListPlus, Pin, PinOff, Plus, StickyNote, Trash2, X } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
 import { uid } from '../lib/storage'
 import { COLOR_IDS, colorOf } from '../lib/colors'
 import { IMAGE_BUDGET, MAX_IMAGES, MAX_NOTES, MAX_NOTE_LENGTH, imagesSize, linksIn, shrinkImage } from '../lib/noteImages'
 import { EmptyState, Modal, cx } from '../components/ui'
 import { NotesFolderNotice } from '../features/NotesFolder'
+import { countCards } from '../lib/flashcards'
 
 const NOTE_COLORS = COLOR_IDS.filter((c) => ['butter', 'mint', 'sky', 'rose', 'lav', 'peach'].includes(c))
 
@@ -17,7 +18,7 @@ let wanted = null
 export function showNote(id) { wanted = id; window.dispatchEvent(new Event('nineflow:show-note')) }
 
 export default function Notes() {
-  const { settings, updateSettings, addTask, setSelectedId } = usePlanner()
+  const { settings, updateSettings, addTask, setSelectedId, setView } = usePlanner()
   const notes = settings.notes || []
   const [focusId, setFocusId] = useState(null)
   const [flashId, setFlashId] = useState(null)
@@ -80,6 +81,7 @@ export default function Notes() {
         <div>
           <h1 className="h-display text-3xl">Notes</h1>
           <p className="text-sm text-muted mt-1">Sticky notes for things that aren't tasks yet: words, links and pictures. Turn one into a task when it is.</p>
+          <p className="text-xs text-faint mt-1">Flashcards: write <code className="kbd">question :: answer</code> on a line and it's revised in <button type="button" className="underline underline-offset-2 font-semibold text-muted hover:text-ink" onClick={() => setView('revise')}>Revise</button>.</p>
         </div>
         <button type="button" onClick={add} disabled={notes.length >= MAX_NOTES}
           className="btn-black h-9 py-0 px-3 inline-flex items-center gap-1.5 disabled:opacity-40">
@@ -111,6 +113,7 @@ function Note({ note, flash, autoFocus, onFocused, onText, onColor, onPin, onDel
   const ref = useRef(null)
   const images = note.images || []
   const links = useMemo(() => linksIn(text), [text])
+  const cardCount = useMemo(() => countCards(text), [text])
   const fileRef = useRef(null)
   const [imgError, setImgError] = useState(null)
   const [adding, setAdding] = useState(false)
@@ -182,6 +185,7 @@ function Note({ note, flash, autoFocus, onFocused, onText, onColor, onPin, onDel
           ))}
         </ul>
       )}
+      {cardCount > 0 && <p className="mt-1.5 inline-flex items-center gap-1 text-[11px] font-semibold text-ink/60"><Brain size={12} aria-hidden="true" /> {cardCount} flashcard{cardCount === 1 ? '' : 's'}</p>}
       {(adding || imgError) && <p role={imgError ? 'alert' : 'status'} className={cx('mt-1.5 text-xs font-semibold', imgError ? 'text-coral-fg' : 'text-ink/60')}>{imgError || 'Adding picture…'}</p>}
       <input ref={fileRef} type="file" accept="image/*" multiple hidden onChange={(e) => { take(e.target.files); e.target.value = '' }} />
       <div className="mt-2 flex items-center gap-1">

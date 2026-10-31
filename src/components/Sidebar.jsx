@@ -1,8 +1,9 @@
-import React from 'react'
-import { LayoutDashboard, KanbanSquare, CalendarRange, CalendarDays, Grid2x2, Inbox, ListTodo, StickyNote, PauseCircle, Settings, Plus, Moon, Sun, Briefcase, GraduationCap, ChartColumn } from 'lucide-react'
+import React, { useMemo } from 'react'
+import { LayoutDashboard, KanbanSquare, CalendarRange, CalendarDays, Grid2x2, Inbox, ListTodo, StickyNote, PauseCircle, Settings, Plus, Moon, Sun, Briefcase, GraduationCap, ChartColumn, Brain } from 'lucide-react'
 import { BrandMark, Wordmark } from './Brand'
 import { usePlanner } from '../store/PlannerContext'
-import { dayStats } from '../lib/tasks'
+import { dateKey, dayStats } from '../lib/tasks'
+import { cardsInNotes, dueCards } from '../lib/flashcards'
 import { cx, ProgressBar } from './ui'
 import { InterruptButton } from '../features/Interrupt'
 import { CloudStatusPill } from '../features/CloudStatus'
@@ -23,6 +24,7 @@ const NAV = [
   { id: 'someday', label: 'Someday', icon: Inbox },
   { id: 'paused', label: 'Paused', icon: PauseCircle },
   { id: 'notes', label: 'Notes', icon: StickyNote },
+  { id: 'revise', label: 'Revise', icon: Brain },
   { id: 'work', label: 'Work OS', icon: Briefcase },
   { id: 'ntpc', label: 'RRB NTPC', icon: GraduationCap },
   { id: 'settings', label: 'Settings', icon: Settings },
@@ -31,6 +33,8 @@ const NAV = [
 export default function Sidebar() {
   const { tasks, now, view, setView, setQuickAdd, settings, updateSettings } = usePlanner()
   const today = dayStats(tasks, now, now)
+  const todayKey = dateKey(now)
+  const cardsDue = useMemo(() => dueCards(cardsInNotes(settings.notes), settings.revision, todayKey).length, [settings.notes, settings.revision, todayKey])
   const dark = settings.theme === 'dark'
 
   return (
@@ -51,20 +55,26 @@ export default function Sidebar() {
       <nav className="flex flex-col gap-1">
         {NAV.filter(({ id }) => (id !== 'work' || settings.modules?.work) && (id !== 'ntpc' || settings.modules?.ntpc)).map(({ id, label, icon: Icon }) => {
           const active = view === id
+          const badge = id === 'revise' && cardsDue > 0 ? cardsDue : 0
           return (
             <button
               key={id}
               type="button"
               onClick={() => setView(id)}
               data-tip={label}
-              aria-label={label}
+              data-tip-hint={badge ? `${badge} card${badge === 1 ? '' : 's'} to revise today` : undefined}
+              aria-label={badge ? `${label}, ${badge} cards due` : label}
               className={cx(
                 'flex items-center gap-3 rounded-full h-10 px-3 wide:px-3.5 text-sm font-semibold transition justify-center wide:justify-start',
                 active ? 'bg-lav text-lav-fg' : 'text-muted hover:bg-page hover:text-ink',
               )}
             >
-              <Icon size={18} className="shrink-0" />
-              <span className="hidden wide:inline">{label}</span>
+              <span className="relative shrink-0">
+                <Icon size={18} />
+                {badge > 0 && <i className="wide:hidden absolute -top-1 -right-1 h-2 w-2 rounded-full bg-lav-fg" aria-hidden="true" />}
+              </span>
+              <span className="hidden wide:inline flex-1 text-left">{label}</span>
+              {badge > 0 && <span className="hidden wide:inline-flex min-w-[20px] h-5 px-1.5 rounded-full bg-lav-fg text-white text-[10px] font-bold items-center justify-center tnum" aria-hidden="true">{badge > 99 ? '99+' : badge}</span>}
             </button>
           )
         })}

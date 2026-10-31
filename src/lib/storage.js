@@ -4,6 +4,7 @@
 import { storageKey } from './profiles'
 import { cleanFiles } from './taskFiles'
 import { cleanImages } from './noteImages'
+import { cleanRevision } from './flashcards'
 import { cleanTags } from './taskMeta'
 import { THEMES } from './themes'
 import { COLUMNS_VERSION, DEFAULT_COLUMNS, LEGACY_REVIEW_ID, cleanColumns, migrateColumns } from './columns'
@@ -37,6 +38,7 @@ export const DEFAULT_SETTINGS = {
   reminders: { enabled: false, minutes: 5, repeat: 0 }, // browser notification before a timed task starts
   notes: [], // sticky notes: [{ id, text, color, pinned, createdAt, updatedAt, images: [{ id, src, w, h }] }] (lib/noteImages.js)
   countdowns: [], // days-left cards on the Dashboard: [{ id, name, date: 'yyyy-MM-dd' }]
+  revision: { cards: {}, days: {} }, // flashcard progress (lib/flashcards.js): cards from `question :: answer` lines in notes
   sidebarMin: false, // keep the sidebar an icon rail even where its labels would fit (see lib/sidebarRail.js)
   weather: { on: false, place: null }, // today's weather on the Dashboard (lib/weather.js); place: { name, region, country, lat, lon }
   holidays: { on: false, country: '' }, // public holidays on Week and Month (lib/holidays.js); country: ISO code, '' = from the browser
@@ -148,6 +150,7 @@ export function loadSettings() {
       ? stored.notes.filter((n) => n && typeof n.id === 'string' && typeof n.text === 'string').slice(0, 60)
           .map((n) => ({ id: n.id, text: n.text.slice(0, 2000), color: typeof n.color === 'string' ? n.color : 'butter', pinned: n.pinned === true, createdAt: n.createdAt || null, updatedAt: n.updatedAt || null, images: cleanImages(n.images) }))
       : [],
+    revision: cleanRevision(stored.revision),
     countdowns: Array.isArray(stored.countdowns)
       ? stored.countdowns.filter((c) => c && typeof c.name === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(c.date || '')).slice(0, 12)
       : [],
