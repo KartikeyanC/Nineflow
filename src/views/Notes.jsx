@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { format, isSameDay, isValid, parseISO } from 'date-fns'
-import { Brain, Clock3, ExternalLink, ImagePlus, Link2, ListPlus, Pin, PinOff, Plus, StickyNote, Trash2, X } from 'lucide-react'
+import { Brain, Clock3, ExternalLink, Image as ImageIcon, ImagePlus, LayoutGrid, Link2, List, ListPlus, Pin, PinOff, Plus, Search, StickyNote, Trash2, X } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
 import { uid } from '../lib/storage'
 import { COLOR_IDS, colorOf } from '../lib/colors'
@@ -8,6 +8,8 @@ import { IMAGE_BUDGET, MAX_IMAGES, MAX_NOTES, MAX_NOTE_LENGTH, imagesSize, links
 import { EmptyState, Modal, cx } from '../components/ui'
 import { NotesFolderNotice } from '../features/NotesFolder'
 import { countCards } from '../lib/flashcards'
+import { QUICK, SORTS, allTags, facts, findNotes, snippet, titleOf } from '../lib/noteFind'
+import { storageKey } from '../lib/profiles'
 
 const NOTE_COLORS = COLOR_IDS.filter((c) => ['butter', 'mint', 'sky', 'rose', 'lav', 'peach'].includes(c))
 
@@ -17,16 +19,39 @@ const NOTE_COLORS = COLOR_IDS.filter((c) => ['butter', 'mint', 'sky', 'rose', 'l
 let wanted = null
 export function showNote(id) { wanted = id; window.dispatchEvent(new Event('nineflow:show-note')) }
 
+// How Notes was last arranged, per workspace: { sort, view, tags, quick, colors }.
+const FIND_DEFAULT = { sort: 'edited', view: 'grid', tags: [], quick: [], colors: [] }
+const loadFind = () => {
+  try {
+    const f = JSON.parse(localStorage.getItem(storageKey('notes-find')) || 'null') || {}
+    const arr = (v) => (Array.isArray(v) ? v.filter((x) => typeof x === 'string').slice(0, 20) : [])
+    return {
+      sort: SORTS.some((s) => s.id === f.sort) ? f.sort : 'edited',
+      view: f.view === 'list' ? 'list' : 'grid',
+      tags: arr(f.tags), quick: arr(f.quick).filter((q) => QUICK.some((x) => x.id === q)), colors: arr(f.colors),
+    }
+  } catch { return { ...FIND_DEFAULT } }
+}
+const saveFind = (f) => { try { localStorage.setItem(storageKey('notes-find'), JSON.stringify(f)) } catch { /* only a convenience */ } }
+
 export default function Notes() {
   const { settings, updateSettings, addTask, setSelectedId, setView } = usePlanner()
   const notes = settings.notes || []
   const [focusId, setFocusId] = useState(null)
   const [flashId, setFlashId] = useState(null)
+  // Finding notes: search text (not remembered), and sort, view, tags and filters (remembered).
+  const [query, setQuery] = useState('')
+  const [find, setFindState] = useState(loadFind)
+  const setFind = (patch) => setFindState((f) => { const next = { ...f, ...patch }; saveFind(next); return next })
+  const [keep, setKeep] = useState(() => new Set()) // notes made or opened here stay visible whatever the filters
+  const [openId, setOpenId] = useState(null) // the list view opens a note in a window
   useEffect(() => {
     const show = () => {
       if (!wanted) return
       const id = wanted
       wanted = null
+      setKeep((k) => new Set(k).add(id))
+      setFindState((f) => ({ ...f, view: 'grid' }))
       requestAnimationFrame(() => document.getElementById(`note-${id}`)?.scrollIntoView({ block: 'center', behavior: 'smooth' }))
       setFlashId(id)
       setTimeout(() => setFlashId((f) => (f === id ? null : f)), 1600)
@@ -62,7 +87,9 @@ export default function Notes() {
     const color = NOTE_COLORS[notes.length % NOTE_COLORS.length]
     const note = { id: uid(), text: '', color, pinned: false, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
     save([note, ...notes])
-    setFocusId(note.id)
+    setKeep((k) => new Set(k).add(note.id))
+    if (find.view === 'list') setOpenId(note.id)
+    else setFocusId(note.id)
   }
   const remove = (id) => save(notes.filter((n) => n.id !== id))
   const toTask = (n) => {
@@ -73,7 +100,16 @@ export default function Notes() {
     setSelectedId(task.id)
   }
 
-  const ordered = [...notes].sort((a, b) => Number(b.pinned) - Number(a.pinned))
+  const found = useMemo(() => findNotes(notes, { ...find, query }, keep), [notes, find, query, keep])
+  const filtering = !!(query.trim() || find.tags.length || find.quick.length || find.colors.length)
+  const clearFilters = () => { setQuery(''); setFind({ tags: [], quick: [], colors: [] }) }
+  const noteProps = (n) => ({
+    note: n, flash: flashId === n.id,
+    onText: (text) => patch(n.id, { text }), onColor: (color) => patch(n.id, { color }),
+    onAddImages: (files) => addImages(n.id, files), onRemoveImage: (imgId) => patch(n.id, { images: (n.images || []).filter((im) => im.id !== imgId) }),
+    onPin: () => patch(n.id, { pinned: !n.pinned }), onDelete: () => { remove(n.id); setOpenId(null) }, onTask: () => { toTask(n); setOpenId(null) },
+  })
+  const opened = notes.find((n) => n.id === openId)
 
   return (
     <div className="flex flex-col gap-4">
@@ -91,18 +127,42 @@ export default function Notes() {
 
       <NotesFolderNotice />
 
-      {ordered.length === 0 ? (
-        <div className="card p-6"><EmptyState icon={StickyNote} title="No notes yet" hint="Jot down a thought, a link or a list." /></div>
+      {notes.length === 0 ? (
+        <div className="card p-6"><EmptyState icon={StickyNote} title="No notes yet" hint="Jot down a thought, a link or a list. Add #tags like #gk or #maths to find notes later." /></div>
       ) : (
-        <div className="columns-1 sm:columns-2 xl:columns-3 2xl:columns-4 gap-4 [&>*]:mb-4">
-          {ordered.map((n) => (
-            <Note key={n.id} note={n} flash={flashId === n.id} autoFocus={focusId === n.id} onFocused={() => setFocusId(null)}
-              onText={(text) => patch(n.id, { text })} onColor={(color) => patch(n.id, { color })}
-              onAddImages={(files) => addImages(n.id, files)} onRemoveImage={(imgId) => patch(n.id, { images: (n.images || []).filter((im) => im.id !== imgId) })}
-              onPin={() => patch(n.id, { pinned: !n.pinned })} onDelete={() => remove(n.id)} onTask={() => toTask(n)} />
+        <>
+          <NotesFinder notes={notes} query={query} setQuery={setQuery} find={find} setFind={setFind} count={found.count} filtering={filtering} onClear={clearFilters} />
+          {found.count === 0 ? (
+            <div className="card p-6">
+              <EmptyState icon={Search} title="No notes match" hint="Try fewer words, or turn off a tag or filter."
+                action={<button type="button" className="btn-ghost" onClick={clearFilters}>Show all notes</button>} />
+            </div>
+          ) : found.groups.map((g) => (
+            <section key={g.key} aria-label={g.label || 'Notes'}>
+              {g.label && (
+                <h2 className="flex items-baseline gap-2 text-sm font-bold text-ink mb-2">
+                  {g.key === 'pinned' && <Pin size={13} className="self-center text-muted" aria-hidden="true" />}{g.label}
+                  <span className="text-xs font-semibold text-faint tnum">{g.notes.length} note{g.notes.length === 1 ? '' : 's'}</span>
+                </h2>
+              )}
+              {find.view === 'list' ? (
+                <ul className="card divide-y divide-line overflow-hidden">
+                  {g.notes.map((n) => <NoteRow key={n.id} note={n} query={query} onOpen={() => setOpenId(n.id)} onTag={(t) => setFind({ tags: find.tags.includes(t) ? find.tags : [...find.tags, t] })} />)}
+                </ul>
+              ) : (
+                <div className="columns-1 sm:columns-2 xl:columns-3 2xl:columns-4 gap-4 [&>*]:mb-4">
+                  {g.notes.map((n) => <Note key={n.id} {...noteProps(n)} autoFocus={focusId === n.id} onFocused={() => setFocusId(null)} />)}
+                </div>
+              )}
+            </section>
           ))}
-        </div>
+        </>
       )}
+
+      {/* The list view opens a note here to read or edit it. */}
+      <Modal open={!!opened} onClose={() => setOpenId(null)} width="max-w-lg">
+        {opened && <Note {...noteProps(opened)} autoFocus={!opened.text} onFocused={() => {}} />}
+      </Modal>
     </div>
   )
 }
@@ -237,5 +297,107 @@ function NoteTime({ note }) {
         {wasEdited && <> · edited <time dateTime={note.updatedAt}>{format(edited, isSameDay(edited, made) ? 'h:mm a' : 'd MMM, h:mm a')}</time></>}
       </span>
     </p>
+  )
+}
+
+// Above the notes: search, sort, grid or list, then tags, quick filters and colours as chips.
+function NotesFinder({ notes, query, setQuery, find, setFind, count, filtering, onClear }) {
+  const tags = useMemo(() => allTags(notes), [notes])
+  const ref = useRef(null)
+  // "/" jumps to the search box, as on many sites.
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key !== '/' || /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || e.target.isContentEditable || document.querySelector('[role=dialog]')) return
+      e.preventDefault()
+      ref.current?.focus()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+  const toggle = (key, value) => setFind({ [key]: find[key].includes(value) ? find[key].filter((x) => x !== value) : [...find[key], value] })
+  const chip = (on) => cx('pill border transition cursor-pointer', on ? 'bg-lav text-lav-fg border-lav-fg' : 'bg-card text-muted border-line hover:text-ink')
+  const usedColors = NOTE_COLORS.filter((c) => notes.some((n) => n.color === c))
+  return (
+    <div className="card p-3 flex flex-col gap-2.5">
+      <div className="flex flex-wrap items-center gap-2">
+        <label className="relative flex-1 min-w-[200px]">
+          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-faint pointer-events-none" aria-hidden="true" />
+          <input ref={ref} type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search notes…  ( / )"
+            aria-label="Search notes" className="input h-9 py-0 pl-9 pr-8" />
+          {query && <button type="button" onClick={() => setQuery('')} aria-label="Clear search" className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6 rounded-full inline-flex items-center justify-center text-faint hover:text-ink"><X size={13} /></button>}
+        </label>
+        <select className="input h-9 py-0 w-auto" value={find.sort} onChange={(e) => setFind({ sort: e.target.value })} aria-label="Sort notes">
+          {SORTS.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
+        </select>
+        <div role="group" aria-label="View" className="inline-flex rounded-full p-1 gap-0.5 bg-ink/5 dark:bg-ink/10">
+          {[['grid', LayoutGrid, 'Grid'], ['list', List, 'List']].map(([id, Icon, label]) => (
+            <button key={id} type="button" aria-pressed={find.view === id} onClick={() => setFind({ view: id })} title={`${label} view`}
+              className={cx('rounded-full px-2.5 h-7 inline-flex items-center gap-1.5 text-xs font-semibold transition', find.view === id ? 'bg-brand text-white shadow-sm' : 'text-ink/70 hover:text-ink')}>
+              <Icon size={13} /> {label}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label="Filters">
+        {tags.map(({ tag, count: n }) => (
+          <button key={tag} type="button" aria-pressed={find.tags.includes(tag)} onClick={() => toggle('tags', tag)} className={chip(find.tags.includes(tag))}>
+            #{tag} <span className="tnum opacity-70">{n}</span>
+          </button>
+        ))}
+        {tags.length > 0 && <span className="w-px h-4 bg-line mx-1" aria-hidden="true" />}
+        {QUICK.map((q) => (
+          <button key={q.id} type="button" aria-pressed={find.quick.includes(q.id)} onClick={() => toggle('quick', q.id)} className={chip(find.quick.includes(q.id))}>{q.label}</button>
+        ))}
+        {usedColors.length > 1 && <span className="w-px h-4 bg-line mx-1" aria-hidden="true" />}
+        {usedColors.length > 1 && usedColors.map((c) => (
+          <button key={c} type="button" aria-pressed={find.colors.includes(c)} onClick={() => toggle('colors', c)} aria-label={`${colorOf(c).label} notes`} title={`${colorOf(c).label} notes`}
+            className={cx('h-5 w-5 rounded-full transition', colorOf(c).dot, find.colors.includes(c) ? 'ring-2 ring-offset-2 ring-offset-card ring-ink/60' : 'opacity-50 hover:opacity-100')} />
+        ))}
+        {filtering && (
+          <span className="ml-auto inline-flex items-center gap-2 text-xs text-muted">
+            <span className="tnum">{count} of {notes.length}</span>
+            <button type="button" onClick={onClear} className="font-semibold underline underline-offset-2 hover:text-ink">Clear</button>
+          </span>
+        )}
+      </div>
+      {tags.length === 0 && <p className="text-[11px] text-faint">Tip: write #tags like #gk or #maths in a note and they appear here to filter by.</p>}
+    </div>
+  )
+}
+
+// The search words shown in a highlight.
+function Marked({ text, query }) {
+  const ws = query.toLowerCase().split(/\s+/).filter(Boolean).map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+  if (!ws.length) return text
+  const parts = String(text).split(new RegExp(`(${ws.join('|')})`, 'gi'))
+  return parts.map((p, i) => (i % 2 ? <mark key={i} className="bg-butter text-ink rounded px-0.5">{p}</mark> : p))
+}
+
+// List view: one line per note to scan many at once.
+function NoteRow({ note, query, onOpen, onTag }) {
+  const f = useMemo(() => facts(note), [note])
+  const c = colorOf(note.color)
+  const when = note.updatedAt || note.createdAt
+  const d = when ? parseISO(when) : null
+  return (
+    <li className="flex items-start gap-3 px-4 py-3 hover:bg-page transition">
+      <span className={cx('mt-1.5 h-2.5 w-2.5 rounded-full shrink-0', c.dot)} aria-hidden="true" />
+      <button type="button" onClick={onOpen} className="flex-1 min-w-0 text-left">
+        <span className="flex items-center gap-1.5">
+          {note.pinned && <Pin size={12} className="shrink-0 text-muted" aria-label="Pinned" />}
+          <span className="font-semibold text-sm truncate"><Marked text={titleOf(note)} query={query} /></span>
+        </span>
+        <span className="block text-xs text-muted truncate mt-0.5"><Marked text={snippet(note.text, query) || ' '} query={query} /></span>
+      </button>
+      <span className="hidden sm:flex flex-wrap justify-end gap-1 max-w-[40%]">
+        {f.tags.slice(0, 3).map((t) => <button key={t} type="button" onClick={() => onTag(t)} className="pill bg-page text-muted hover:text-ink border border-line">#{t}</button>)}
+      </span>
+      <span className="flex items-center gap-1.5 text-faint shrink-0 mt-0.5">
+        {f.pictures > 0 && <ImageIcon size={13} aria-label={`${f.pictures} picture${f.pictures === 1 ? '' : 's'}`} />}
+        {f.links > 0 && <Link2 size={13} aria-label={`${f.links} link${f.links === 1 ? '' : 's'}`} />}
+        {f.cards > 0 && <Brain size={13} aria-label={`${f.cards} flashcard${f.cards === 1 ? '' : 's'}`} />}
+        {d && isValid(d) && <time dateTime={when} className="text-[11px] font-semibold tnum ml-1">{format(d, 'd MMM')}</time>}
+      </span>
+    </li>
   )
 }
