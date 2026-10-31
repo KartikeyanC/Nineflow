@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react'
-import { Plus, Trash2, Download, Upload, Sparkles, AlertTriangle, CalendarPlus, CalendarCheck, Check, Loader2, RefreshCw, ChevronRight, UserRound, Layers, Smartphone, Tag, SlidersHorizontal, Columns3, Bookmark, Database, CalendarDays, Plug, FileSpreadsheet } from 'lucide-react'
+import { Plus, Trash2, Download, Upload, Sparkles, AlertTriangle, CalendarPlus, CalendarCheck, Check, Loader2, RefreshCw, ChevronRight, UserRound, Layers, Smartphone, Tag, SlidersHorizontal, Columns3, Bookmark, Database, CalendarDays, Plug, FileSpreadsheet, HardDrive } from 'lucide-react'
 import { usePhone } from '../lib/usePhone'
 import TaskImport from '../components/TaskImport'
 import HowToConnect from '../components/HowToConnect'
@@ -33,6 +33,7 @@ import { isNativeApp } from '../lib/platform'
 import { loadWork } from '../work/workStore'
 import { ConfirmDialog, Segmented, cx } from '../components/ui'
 import { TimeField } from '../components/TimePicker'
+import { NotesFolderSettings, notesFolderAvailable } from '../features/NotesFolder'
 
 // The things you saved: task templates (from a task's "Save as template") and
 // Board views (from Filters → Save view). Rename or delete them here.
@@ -666,6 +667,9 @@ export default function Settings() {
 
         {/* Templates and saved views */}
         <Group icon={Bookmark} title="Templates and saved views"><LibrarySection /></Group>
+
+        {/* Notes saved as files (Windows app only) */}
+        {notesFolderAvailable() && <Group icon={HardDrive} title="Notes on this computer"><NotesFolderSettings /></Group>}
 
         {/* Data */}
         <Group icon={Database} title="Your data">

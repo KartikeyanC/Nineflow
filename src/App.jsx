@@ -33,6 +33,7 @@ import Notes from './views/Notes'
 import Charts from './views/Charts'
 import Paused from './views/Paused'
 import CommandPalette from './components/CommandPalette'
+import { NotesFolderSync } from './features/NotesFolder'
 import Settings from './views/Settings'
 import Work from './work/Work'
 import Ntpc from './views/Ntpc'
@@ -108,6 +109,7 @@ function Shell() {
       </button>
 
       <CommandPalette open={palette} onClose={() => setPalette(false)} />
+      <NotesFolderSync />
       <QuickAddModal />
       <GoalPlanner />
       <FinishGate />

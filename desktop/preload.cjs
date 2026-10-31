@@ -29,6 +29,20 @@ contextBridge.exposeInMainWorld('nineflowDesktop', {
       return () => ipcRenderer.removeListener('reminders:open-task', listener)
     },
   },
+  // Notes saved as files in a folder on this computer (src/lib/notesFolder.js).
+  notesFolder: {
+    choose: () => ipcRenderer.invoke('notes-folder:choose'),
+    scan: (folder) => ipcRenderer.invoke('notes-folder:scan', folder),
+    apply: (folder, ops) => ipcRenderer.invoke('notes-folder:apply', folder, ops),
+    watch: (folder) => ipcRenderer.invoke('notes-folder:watch', folder),
+    unwatch: () => ipcRenderer.invoke('notes-folder:unwatch'),
+    open: (folder) => ipcRenderer.invoke('notes-folder:open', folder),
+    onChanged: (fn) => {
+      const listener = () => fn()
+      ipcRenderer.on('notes-folder:changed', listener)
+      return () => ipcRenderer.removeListener('notes-folder:changed', listener)
+    },
+  },
   // Renewed tokens (null after a sign-out or a revoked session).
   onToken: (fn) => {
     const listener = (_e, token) => fn(token)

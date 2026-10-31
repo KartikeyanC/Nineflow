@@ -16,6 +16,7 @@ const path = require('node:path')
 const { pathToFileURL } = require('node:url')
 const auth = require('./google-auth.cjs')
 const { createScheduler } = require('./reminders.cjs')
+const createNotesFolder = require('./notes-folder.cjs')
 
 const ORIGIN = 'app://nineflow'
 const DIST = path.join(__dirname, '..', 'dist')
@@ -302,6 +303,17 @@ ipcMain.handle('google:get-token', async (_e, opts) => {
   }
 })
 ipcMain.handle('google:sign-out', () => auth.signOut())
+
+// ---- Notes as files on this computer (see notes-folder.cjs) -----------------------------------------
+// Only the planner window may use it, never the "today" list window.
+const notesFolder = createNotesFolder({ readPrefs, writePrefs })
+const fromPlanner = (e) => win && e.sender === win.webContents
+ipcMain.handle('notes-folder:choose', (e) => (fromPlanner(e) ? notesFolder.choose(win) : { ok: false }))
+ipcMain.handle('notes-folder:scan', (e, folder) => (fromPlanner(e) ? notesFolder.scan(folder) : { ok: false }))
+ipcMain.handle('notes-folder:apply', (e, folder, ops) => (fromPlanner(e) ? notesFolder.apply(folder, ops) : { ok: false }))
+ipcMain.handle('notes-folder:watch', (e, folder) => (fromPlanner(e) ? notesFolder.watch(e.sender, folder) : { ok: false }))
+ipcMain.handle('notes-folder:unwatch', (e) => { notesFolder.unwatch(e.sender); return { ok: true } })
+ipcMain.handle('notes-folder:open', (e, folder) => (fromPlanner(e) ? notesFolder.open(folder) : { ok: false }))
 
 // ---- reminder schedule from the planner (see preload.cjs) ---------------------------
 ipcMain.on('reminders:set', (e, list) => {

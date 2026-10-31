@@ -6,6 +6,9 @@
 // a page usually comes out at 50-150 KB. A note holds up to MAX_IMAGES pictures and all the
 // notes together up to IMAGE_BUDGET of them, so the planner always has room to save.
 
+// How many notes there can be and how long each may be (the stored-data cleaner in lib/storage.js keeps the same).
+export const MAX_NOTES = 60
+export const MAX_NOTE_LENGTH = 2000
 export const MAX_IMAGES = 3
 export const IMAGE_BUDGET = 1_500_000 // characters of data URL across every note (~1.1 MB of pictures)
 const MAX_SIDE = 1024

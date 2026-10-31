@@ -4,12 +4,11 @@ import { Clock3, ExternalLink, ImagePlus, Link2, ListPlus, Pin, PinOff, Plus, St
 import { usePlanner } from '../store/PlannerContext'
 import { uid } from '../lib/storage'
 import { COLOR_IDS, colorOf } from '../lib/colors'
-import { IMAGE_BUDGET, MAX_IMAGES, imagesSize, linksIn, shrinkImage } from '../lib/noteImages'
+import { IMAGE_BUDGET, MAX_IMAGES, MAX_NOTES, MAX_NOTE_LENGTH, imagesSize, linksIn, shrinkImage } from '../lib/noteImages'
 import { EmptyState, Modal, cx } from '../components/ui'
+import { NotesFolderNotice } from '../features/NotesFolder'
 
 const NOTE_COLORS = COLOR_IDS.filter((c) => ['butter', 'mint', 'sky', 'rose', 'lav', 'peach'].includes(c))
-export const MAX_NOTES = 60
-export const MAX_NOTE_LENGTH = 2000
 
 // Quick notes that aren't tasks: a thought, a link, a list. They live in the settings (so they sync
 // like everything else). A note can be turned into a task with one click.
@@ -87,6 +86,8 @@ export default function Notes() {
           <Plus size={14} /> New note
         </button>
       </header>
+
+      <NotesFolderNotice />
 
       {ordered.length === 0 ? (
         <div className="card p-6"><EmptyState icon={StickyNote} title="No notes yet" hint="Jot down a thought, a link or a list." /></div>
