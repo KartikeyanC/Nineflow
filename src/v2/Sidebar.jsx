@@ -48,7 +48,7 @@ export default function Sidebar() {
 
       {/* Command pill: opens quick add */}
       <button type="button" onClick={() => setQuickAdd({})} data-tip="New task" data-tip-hint="Ctrl+K" aria-label="New task"
-        className="group mt-4 h-11 rounded-full bg-brand text-white inline-flex items-center justify-center wide:justify-start gap-2.5 pl-1.5 wide:pr-3 transition duration-300 hover:-translate-y-px active:scale-[0.97] shadow-[inset_0_1px_0_rgb(255_255_255/0.18),0_8px_20px_-8px_rgb(var(--shadow)/0.5)]">
+        className="group mt-4 h-11 rounded-full bg-brand text-white inline-flex items-center justify-center wide:justify-start gap-2.5 px-1.5 wide:pr-3 transition duration-300 hover:-translate-y-px active:scale-[0.97] shadow-[inset_0_1px_0_rgb(255_255_255/0.18),0_8px_20px_-8px_rgb(var(--shadow)/0.5)]">
         <span className="h-8 w-8 rounded-full bg-white/20 inline-flex items-center justify-center transition duration-500 group-hover:rotate-90 group-hover:scale-105">
           <Plus size={16} />
         </span>
