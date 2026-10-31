@@ -42,7 +42,7 @@ export default function Sidebar() {
       <SidebarToggle />
       {/* Logo and workspace stay put; only what is below them scrolls */}
       <div className="flex flex-col gap-3 shrink-0 mb-3">
-        <div className="flex items-center gap-2.5 px-1 wide:px-2 h-10">
+        <div className="flex items-center justify-center wide:justify-start gap-2.5 wide:px-2 h-10">
           <BrandMark size={32} />
           <Wordmark className="text-[17px] hidden wide:block" />
         </div>
