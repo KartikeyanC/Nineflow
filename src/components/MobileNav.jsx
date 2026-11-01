@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { LayoutDashboard, KanbanSquare, CalendarRange, CalendarDays, Grid2x2, Settings, Briefcase, ListTodo, Inbox, StickyNote, PauseCircle, MoreHorizontal, Search, X, Zap, GraduationCap, ChartColumn, Brain } from 'lucide-react'
+import { LayoutDashboard, KanbanSquare, CalendarRange, CalendarDays, Grid2x2, Settings, Briefcase, ListTodo, Inbox, StickyNote, PauseCircle, MoreHorizontal, Search, X, Zap, GraduationCap, ChartColumn, Brain, Mic } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
 import { cx } from './ui'
 import { openInterrupt } from '../features/Interrupt'
@@ -29,7 +29,7 @@ export const openPalette = () => window.dispatchEvent(new Event('nineflow:palett
 
 // Bottom tab bar, phones only (the sidebar takes over from 640px).
 export default function MobileNav() {
-  const { view, setView, settings } = usePlanner()
+  const { view, setView, settings, setPromptListOpen } = usePlanner()
   const [sheet, setSheet] = useState(false)
   const more = MORE.filter(({ id }) => (id !== 'work' || settings.modules?.work) && (id !== 'ntpc' || settings.modules?.ntpc))
   const inMore = more.some((m) => m.id === view)
@@ -78,6 +78,12 @@ export default function MobileNav() {
                 className="h-20 rounded-2xl flex flex-col items-center justify-center gap-1.5 text-xs font-semibold transition bg-peach text-peach-fg active:scale-95">
                 <Zap size={20} />
                 Interruption
+              </button>
+              {/* Speak tasks: Prompt to list, already listening */}
+              <button type="button" onClick={() => { setSheet(false); setPromptListOpen('voice') }}
+                className="h-20 rounded-2xl flex flex-col items-center justify-center gap-1.5 text-xs font-semibold transition bg-lav text-lav-fg active:scale-95">
+                <Mic size={20} />
+                Speak tasks
               </button>
               {more.map(({ id, label, icon: Icon }) => (
                 <button key={id} type="button" onClick={() => go(id)} aria-current={view === id ? 'page' : undefined}

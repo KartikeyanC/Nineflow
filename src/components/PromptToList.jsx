@@ -1,9 +1,13 @@
-import React, { useEffect, useState } from 'react'
-import { ArrowLeft, Info, Loader2, Sparkles } from 'lucide-react'
+import React, { useEffect, useRef, useState } from 'react'
+import { ArrowLeft, Info, Loader2, Mic, Sparkles, Square } from 'lucide-react'
 import { format, parseISO } from 'date-fns'
 import { usePlanner } from '../store/PlannerContext'
 import { fmtMinutes, todayKey } from '../lib/tasks'
 import { meetingToTasks, promptToTasks } from '../lib/aiTasks'
+import { hasNoSite } from '../lib/platform'
+import { listen, speechKind } from '../lib/speech'
+import { spokenToTasks } from '../lib/voiceTasks'
+import { describe as describeRepeat } from '../lib/recurrence'
 import { CheckCircle, Modal, Segmented, cx } from './ui'
 
 // "Prompt to list": write what's on your mind (or paste meeting notes), Claude
@@ -37,17 +41,54 @@ export default function PromptToList() {
   const [saveNote, setSaveNote] = useState(true)
   const [off, setOff] = useState(() => new Set())
   const [error, setError] = useState('')
-  const close = () => setPromptListOpen(false)
+  const [madeHere, setMadeHere] = useState(false) // made on this device, without AI
+  const close = () => { voice.current?.stop(); setPromptListOpen(false) }
   const meetingMode = mode === 'meeting'
 
+  // Speak tasks: the words land in the box as they're said; say "next" or "then" between tasks.
+  const kind = speechKind()
+  const voice = useRef(null)
+  const [listening, setListening] = useState(false)
+  const [heard, setHeard] = useState('') // what this listen has added so far
+  const typedBefore = useRef('')
+  const [voiceNote, setVoiceNote] = useState('')
+  const startVoice = async () => {
+    setVoiceNote('')
+    if (kind === 'windows') { setVoiceNote('windows'); document.querySelector('textarea[aria-label="What do you need to do?"]')?.focus(); return }
+    typedBefore.current = text.trim()
+    try {
+      setListening(true)
+      voice.current = await listen({
+        onText: (said) => { setHeard(said); setText(typedBefore.current ? `${typedBefore.current} ${said}` : said) },
+        onEnd: (err) => { setListening(false); setHeard(''); voice.current = null; if (err) setVoiceNote(err) },
+      })
+    } catch (e) { setListening(false); setVoiceNote(e.message) }
+  }
+  const stopVoice = () => voice.current?.stop()
+  useEffect(() => () => voice.current?.stop(), [])
+
   useEffect(() => {
-    if (open) { setMode('list'); setText(''); setStage('form'); setItems([]); setMeeting(null); setSaveNote(true); setOff(new Set()); setError('') }
-  }, [open])
+    if (open) {
+      setMode('list'); setText(''); setStage('form'); setItems([]); setMeeting(null); setSaveNote(true); setOff(new Set()); setError(''); setMadeHere(false); setVoiceNote('')
+      if (open === 'voice') setTimeout(startVoice, 250) // "Speak tasks" from search starts listening straight away
+    }
+  }, [open]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Tasks made on this device from the words alone (lib/voiceTasks.js), used where there's no AI.
+  const makeHere = () => {
+    const local = spokenToTasks(text.trim(), { categories: settings.categories, now: new Date() })
+    if (!local.length) return false
+    setItems(local); setMeeting(null); setMadeHere(true); setOff(new Set()); setStage('preview')
+    return true
+  }
 
   const make = async () => {
     if (!text.trim() || stage === 'loading') return
+    voice.current?.stop()
     setError('')
+    if (!meetingMode && hasNoSite()) { if (!makeHere()) setError('No tasks were found. Say or write each task, with "next" between them.'); return }
     setStage('loading')
+    setMadeHere(false)
     try {
       const opts = { today: todayKey(), categories: settings.categories }
       if (meetingMode) {
@@ -61,6 +102,8 @@ export default function PromptToList() {
       setOff(new Set())
       setStage('preview')
     } catch (e) {
+      // No AI right now: a to-do note can still be made into tasks on this device.
+      if (!meetingMode && makeHere()) return
       setError(e.message)
       setStage('form')
     }
@@ -77,6 +120,7 @@ export default function PromptToList() {
     const list = picked.map((t) => ({
       title: t.title, date: t.date || todayKey(), startTime: t.startTime, durationMinutes: t.durationMinutes,
       priority: t.priority, category: t.category || fallback,
+      ...(t.recurrence ? { recurrence: t.recurrence } : {}),
     }))
     if (writeNote) {
       // The summary is kept as a finished task, so it sits in the day's log.
@@ -92,7 +136,7 @@ export default function PromptToList() {
   }
 
   return (
-    <Modal open={open} onClose={close} width="max-w-xl" title={stage === 'preview' ? (meetingMode ? 'From your meeting' : 'Your list') : 'Prompt to list'}>
+    <Modal open={!!open} onClose={close} width="max-w-xl" title={stage === 'preview' ? (meetingMode ? 'From your meeting' : 'Your list') : 'Prompt to list'}>
       {stage !== 'preview' ? (
         <form onSubmit={(e) => { e.preventDefault(); make() }}>
           <Segmented size="sm" value={mode} onChange={(m) => { setMode(m); setText(''); setError('') }} options={MODES} className="mb-3" />
@@ -106,6 +150,20 @@ export default function PromptToList() {
             onKeyDown={(e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); make() } }}
             placeholder={meetingMode ? 'Ravi: we agreed to launch on the 24th. Priya will send the revised quote by Friday. I need to book the venue...' : EXAMPLES[0]}
             aria-label={meetingMode ? 'Meeting notes' : 'What do you need to do?'} />
+          {!meetingMode && kind && (
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <button type="button" onClick={listening ? stopVoice : startVoice} aria-pressed={listening}
+                className={cx('inline-flex items-center gap-1.5 h-9 rounded-full px-3.5 text-[13px] font-semibold transition', listening ? 'bg-brand text-white animate-pulse' : 'bg-page border border-line text-ink hover:bg-card')}>
+                {listening ? <><Square size={13} /> Stop listening</> : <><Mic size={14} /> Speak tasks</>}
+              </button>
+              <span className="text-[11px] text-faint">{listening ? (heard ? 'Listening… say "next" between tasks.' : 'Listening… start speaking.') : 'Say "next" or "then" between tasks.'}</span>
+            </div>
+          )}
+          {voiceNote === 'windows' ? (
+            <p role="status" className="mt-2 rounded-xl bg-sky text-sky-fg px-3 py-2 text-[13px]">
+              Press <span className="kbd text-ink">Windows</span> + <span className="kbd text-ink">H</span> to start Windows voice typing, then speak. Your words go into the box above. Say "next" between tasks.
+            </p>
+          ) : voiceNote ? <p role="alert" className="mt-2 text-[13px] text-coral-fg font-semibold">{voiceNote}</p> : null}
           {!text && !meetingMode && (
             <div className="mt-2 flex flex-wrap gap-1.5">
               {EXAMPLES.map((ex) => (
@@ -118,7 +176,7 @@ export default function PromptToList() {
             <p role="alert" className="mt-3 rounded-xl bg-coral/60 text-coral-fg px-3 py-2 text-[13px] inline-flex items-start gap-2"><Info size={14} className="mt-0.5 shrink-0" /> {error}</p>
           )}
           <div className="flex items-center justify-between mt-5 gap-3">
-            <span className="text-xs text-faint">{meetingMode ? 'Your notes are sent to Claude to find the tasks.' : 'Your note is sent to Claude to make the list.'} Nothing is added until you confirm.</span>
+            <span className="text-xs text-faint">{meetingMode ? 'Your notes are sent to Claude to find the tasks.' : hasNoSite() ? 'Your list is made on this device.' : 'Your note is sent to Claude to make the list.'} Nothing is added until you confirm.</span>
             <button type="submit" disabled={text.trim().length < (meetingMode ? 20 : 1) || stage === 'loading'} className={cx('btn-black shrink-0', (text.trim().length < (meetingMode ? 20 : 1) || stage === 'loading') && 'opacity-40')}>
               {stage === 'loading' ? <><Loader2 size={14} className="animate-spin" /> {meetingMode ? 'Reading…' : 'Making your list…'}</> : <>{meetingMode ? 'Find the tasks' : 'Make my list'} <Sparkles size={14} /></>}
             </button>
@@ -145,6 +203,7 @@ export default function PromptToList() {
           <p className="text-sm text-muted">
             {items.length === 0 ? 'No action items were found in these notes.' : `${items.length} ${items.length === 1 ? 'task' : 'tasks'}. Untick any you don't want.`}
           </p>
+          {madeHere && <p className="mt-1 text-[11px] text-faint">Made on this device from your words: days, times, "high priority" and lengths like "for an hour" were picked up.</p>}
           <ul className="mt-3 max-h-[40vh] overflow-y-auto -mx-1 px-1 space-y-0.5" aria-label="Tasks from your note">
             {items.map((t, i) => {
               const on = !off.has(i)
@@ -155,9 +214,9 @@ export default function PromptToList() {
                   <span className="w-[4.5rem] shrink-0 text-[12px] font-semibold tnum text-muted">{t.date ? format(parseISO(t.date), 'EEE d MMM') : 'Today'}</span>
                   <span className="min-w-0 flex-1">
                     <span className={cx('block text-[13px] font-semibold truncate', !on && 'line-through')} title={t.title}>{t.title}</span>
-                    <span className="block text-[10px] font-semibold text-faint">{[cat?.name, t.priority === 'high' && 'High priority'].filter(Boolean).join(' · ')}</span>
+                    <span className="block text-[10px] font-semibold text-faint">{[cat?.name, t.priority === 'high' && 'High priority', t.priority === 'low' && 'Low priority', t.recurrence && describeRepeat(t.recurrence)].filter(Boolean).join(' · ')}</span>
                   </span>
-                  <span className="shrink-0 text-[11px] text-faint tnum">{t.startTime ? `${t.startTime} · ` : ''}{fmtMinutes(t.durationMinutes)}</span>
+                  <span className="shrink-0 text-[11px] text-faint tnum">{[t.startTime, t.durationMinutes && fmtMinutes(t.durationMinutes)].filter(Boolean).join(' · ')}</span>
                 </li>
               )
             })}

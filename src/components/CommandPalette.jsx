@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { Search, LayoutDashboard, KanbanSquare, CalendarRange, CalendarDays, Grid2x2, Inbox, Settings, Briefcase, Plus, Target, Sparkles, MessageCircle, Moon, CornerDownLeft, ListTodo, StickyNote, PauseCircle, GraduationCap, ChartColumn, Brain } from 'lucide-react'
+import { Search, LayoutDashboard, KanbanSquare, CalendarRange, CalendarDays, Grid2x2, Inbox, Settings, Briefcase, Plus, Target, Sparkles, MessageCircle, Moon, CornerDownLeft, ListTodo, StickyNote, PauseCircle, GraduationCap, ChartColumn, Brain, Mic } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
 import { Modal, cx } from './ui'
 import { showNote } from '../views/Notes'
@@ -35,6 +35,7 @@ export default function CommandPalette({ open, onClose }) {
       { label: 'New task', icon: Plus, run: () => setQuickAdd({}) },
       { label: 'Plan a goal', icon: Target, run: () => setGoalPlannerOpen(true) },
       { label: 'Prompt to list', icon: Sparkles, run: () => setPromptListOpen(true) },
+      { label: 'Speak tasks', icon: Mic, run: () => setPromptListOpen('voice') },
       { label: 'Ask NineFlow', icon: MessageCircle, run: () => setAskOpen(true) },
       { label: settings.theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode', icon: Moon, run: () => updateSettings({ theme: settings.theme === 'dark' ? 'light' : 'dark' }) },
     ].map((x) => ({ ...x, group: 'Actions' }))

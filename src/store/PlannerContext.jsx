@@ -152,7 +152,7 @@ export function PlannerProvider({ children }) {
   const addTasks = useCallback((list, undoLabel) => {
     if (!list.length) return []
     offerUndo(undoLabel || `Added ${list.length} tasks`)
-    const made = list.map((fields) => createTask(fields))
+    const made = list.map((fields) => { const t = createTask(fields); if (t.recurrence) t.seriesId = t.id; return t })
     setTasks((ts) => [...ts, ...made])
     return made
   }, [offerUndo])

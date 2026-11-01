@@ -80,6 +80,20 @@ if (!process.argv.includes('--skip-web')) {
   addScriptPolicy()
   run('cap sync android', 'npx', ['cap', 'sync', 'android'])
 }
+// The speech plugin (Speak tasks) was written for an older Android build tool: it asks Gradle to fetch
+// its own copy (8.7.2) and uses the old lintOptions block. Point it at the app's build tool instead,
+// before Gradle reads it. Done here because node_modules is replaced on every npm install.
+function fixSpeechPlugin() {
+  const file = path.join(root, 'node_modules', '@capacitor-community', 'speech-recognition', 'android', 'build.gradle')
+  if (!fs.existsSync(file)) return
+  const before = fs.readFileSync(file, 'utf8')
+  const after = before
+    .replace(/buildscript\s*\{[\s\S]*?\n\}\n/, '')
+    .replace(/lintOptions\s*\{/, 'lint {')
+  if (after !== before) { fs.writeFileSync(file, after); console.log('\n> speech plugin pointed at the app\'s Android build tool') }
+}
+fixSpeechPlugin()
+
 // Gradle finds the SDK through this file (it is git-ignored).
 fs.writeFileSync(path.join(root, 'android', 'local.properties'), `sdk.dir=${sdk.replace(/\\/g, '/')}\n`)
 run('gradle assembleRelease', `"${gradle}"`, ['assembleRelease', '--no-daemon', '-q'], path.join(root, 'android'))

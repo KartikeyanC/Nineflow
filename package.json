@@ -21,6 +21,7 @@
     "test:import": "rolldown -c scripts/import-test/rolldown.config.mjs && node node_modules/.cache/import-test.mjs"
   },
   "dependencies": {
+    "@capacitor-community/speech-recognition": "^7.0.1",
     "@capacitor/app": "^8.1.2",
     "@capacitor/browser": "^8.0.5",
     "@capacitor/core": "^8.5.3",
