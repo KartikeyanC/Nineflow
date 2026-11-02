@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react'
+import React, { useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { addDays, differenceInCalendarDays, endOfDay, format, isAfter, isSameDay, isValid, parseISO, startOfDay } from 'date-fns'
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { ChartColumn, ChevronLeft, ChevronRight, Table2 } from 'lucide-react'
@@ -52,9 +52,10 @@ export default function Charts() {
         </div>
       </header>
 
-      {/* Range: presets, then the stretch shown with ‹ › to step through it */}
-      <div className="card p-3 flex flex-wrap items-center gap-2">
-        <div role="group" aria-label="Range" className="inline-flex flex-wrap rounded-full p-1 gap-0.5 bg-ink/5 dark:bg-ink/10">
+      {/* Range: presets, then the stretch shown with ‹ › to step through it. It stays in view while you scroll
+          down to the charts; on a phone the presets are one row you can swipe. */}
+      <div className="card p-3 flex flex-wrap items-center gap-2 sticky top-[max(0.5rem,env(safe-area-inset-top))] z-20 shadow-lift">
+        <div role="group" aria-label="Range" className="inline-flex flex-nowrap max-w-full overflow-x-auto rounded-full p-1 gap-0.5 bg-ink/5 dark:bg-ink/10 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {RANGES.map((r) => (
             <button key={r.id} type="button" aria-pressed={range === r.id} onClick={() => setRange(r.id)}
               className={cx('rounded-full px-3 py-1.5 text-sm font-semibold transition whitespace-nowrap', range === r.id ? 'bg-brand text-white shadow-sm' : 'text-ink/70 hover:text-ink')}>
@@ -158,18 +159,32 @@ const minuteTicks = (max) => {
 
 // One measure, one colour, one axis. Bars are rounded at the top and sit on the baseline.
 function BarsChart({ rows, dataKey, color, height, yFormat, tip, allowDecimals = true, ticks }) {
-  const many = rows.length > 16
+  // Only as many date labels as fit the chart's width (about one per 44px), so they never run together on a phone.
+  const box = useRef(null)
+  const [width, setWidth] = useState(0)
+  // Measured before the first paint, then kept up to date (rotating a phone, resizing a window).
+  useLayoutEffect(() => {
+    const el = box.current
+    if (!el) return undefined
+    setWidth(el.clientWidth)
+    if (typeof ResizeObserver === 'undefined') return undefined
+    const ro = new ResizeObserver(([e]) => setWidth(e.contentRect.width))
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+  const fit = Math.max(2, Math.floor((width - 40) / 44))
+  const every = Math.max(1, Math.ceil(rows.length / fit))
   return (
-    <div style={{ height }}>
+    <div ref={box} style={{ height }}>
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={rows} margin={{ top: 4, right: 4, left: 0, bottom: 0 }} barCategoryGap={rows.length > 40 ? 1 : 3}>
+        <BarChart data={rows} margin={{ top: 4, right: 8, left: 0, bottom: 0 }} barCategoryGap={rows.length > 40 ? 1 : 3}>
           <CartesianGrid vertical={false} stroke={cssVar('--line')} />
-          <XAxis dataKey="tick" axisLine={false} tickLine={false} interval={many ? 'preserveStartEnd' : 0} minTickGap={8}
+          <XAxis dataKey="tick" axisLine={false} tickLine={false} interval={every - 1}
             tick={{ fontSize: 10, fill: cssVar('--faint') }} />
           <YAxis axisLine={false} tickLine={false} width={34} allowDecimals={allowDecimals} tickFormatter={yFormat}
             ticks={ticks} domain={ticks ? [0, ticks[ticks.length - 1]] : undefined}
             tick={{ fontSize: 10, fill: cssVar('--faint') }} />
-          <Tooltip cursor={{ fill: cssVar('--page') }} content={({ active, payload }) => (active && payload?.length ? (
+          <Tooltip cursor={{ fill: cssVar('--ink', 0.05) }} content={({ active, payload }) => (active && payload?.length ? (
             <div className="card px-2.5 py-1.5 text-xs shadow-lift">
               <p className="font-semibold">{payload[0].payload.title}</p>
               <p className="text-muted">{tip(payload[0].payload)}</p>

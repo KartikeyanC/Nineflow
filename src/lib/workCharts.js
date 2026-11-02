@@ -12,6 +12,7 @@ export const RANGES = [
   { id: 'week', label: 'Week', days: 7 },
   { id: '15d', label: '15 days', days: 15 },
   { id: 'month', label: '1 month', days: 30 },
+  { id: '3m', label: '3 months', months: 3 },
   { id: '6m', label: '6 months', months: 6 },
   { id: 'year', label: '1 year', months: 12 },
   { id: 'custom', label: 'Custom' },
@@ -87,7 +88,8 @@ export function workSeries(tasks, from, to, categories = [], now = new Date()) {
   const dayMs = new Set() // local midnights of days with any work
   const byCat = new Map()
   const fromKey = format(from, 'yyyy-MM-dd'), toKey = format(to, 'yyyy-MM-dd')
-  let totalMs = 0, planned = 0, plannedMs = 0, done = 0
+  let taskTotalMs = 0, planned = 0, plannedMs = 0, done = 0
+  const spans = [] // every stretch of work, from every task
 
   for (const t of tasks) {
     let taskMs = 0
@@ -98,14 +100,10 @@ export function workSeries(tasks, from, to, categories = [], now = new Date()) {
       const b = Math.min(sessionEnd(s, start, now).getTime(), hi)
       if (b <= a) continue
       taskMs += b - a
-      for (let i = barAt(a); i < rows.length && starts[i] < b; i++) {
-        const end = rows[i].end.getTime()
-        rows[i].ms += Math.min(b, end) - Math.max(a, starts[i])
-      }
-      for (let d = startOfDay(new Date(a)); d.getTime() < b; d = addDays(d, 1)) dayMs.add(d.getTime())
+      spans.push([a, b])
     }
     if (taskMs > 0) {
-      totalMs += taskMs
+      taskTotalMs += taskMs
       const cat = categories.find((c) => c.id === t.category)
       const key = cat ? cat.id : 'other'
       const cur = byCat.get(key) || { id: key, name: cat ? cat.name : 'Other', color: cat ? cat.color : null, ms: 0 }
@@ -118,12 +116,31 @@ export function workSeries(tasks, from, to, categories = [], now = new Date()) {
     if (f && f.getTime() >= lo && f.getTime() < hi) { done++; rows[barAt(f.getTime())].done++ }
   }
 
+  // Two tasks left in Working at the same time are still one stretch of your time: overlapping
+  // stretches are merged before they're counted, so no day can show more than 24 hours.
+  spans.sort((x, y) => x[0] - y[0])
+  const merged = []
+  for (const [a, b] of spans) {
+    const last = merged[merged.length - 1]
+    if (last && a <= last[1]) last[1] = Math.max(last[1], b)
+    else merged.push([a, b])
+  }
+  for (const [a, b] of merged) {
+    for (let i = barAt(a); i < rows.length && starts[i] < b; i++) {
+      const end = rows[i].end.getTime()
+      rows[i].ms += Math.min(b, end) - Math.max(a, starts[i])
+    }
+    for (let d = startOfDay(new Date(a)); d.getTime() < b; d = addDays(d, 1)) dayMs.add(d.getTime())
+  }
+
   const toMin = (ms) => Math.round(ms / 60000)
   for (const r of rows) { r.minutes = toMin(r.ms); delete r.ms }
   // The total is the bars added up, so the headline and the chart always agree.
   const minutes = rows.reduce((s, r) => s + r.minutes, 0)
-  // Tasks in a category that no longer exists count as Other; largest first.
-  const categoriesWorked = [...byCat.values()].map(({ ms, ...c }) => ({ ...c, minutes: toMin(ms) })).sort((a, b) => b.minutes - a.minutes)
+  // Each category's share of that time, in proportion to its tasks' own time (so overlapping work is
+  // shared out, and the categories add up to the total). Tasks in a deleted category count as Other.
+  const scale = taskTotalMs ? (minutes * 60000) / taskTotalMs : 0
+  const categoriesWorked = [...byCat.values()].map(({ ms, ...c }) => ({ ...c, minutes: toMin(ms * scale) })).sort((a, b) => b.minutes - a.minutes)
   const best = rows.reduce((m, r) => (r.minutes > (m?.minutes || 0) ? r : m), null)
   return { unit, rows, minutes, done, activeDays: dayMs.size, planned, workedOnPlanned: toMin(plannedMs), categories: categoriesWorked, best }
 }
