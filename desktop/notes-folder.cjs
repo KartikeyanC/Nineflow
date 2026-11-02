@@ -85,7 +85,9 @@ module.exports = function notesFolder({ readPrefs, writePrefs }) {
           const p = name && inside(folder, name)
           if (!p || !fs.existsSync(p)) { results.push({ ok: true }); continue }
           fs.mkdirSync(path.join(folder, 'deleted'), { recursive: true })
-          const stamp = new Date().toISOString().slice(0, 16).replace('T', ' ').replace(':', '.')
+          // Local time, as the clock on the computer shows it (e.g. "2026-11-02 13.59").
+          const d = new Date(), two = (n) => String(n).padStart(2, '0')
+          const stamp = `${d.getFullYear()}-${two(d.getMonth() + 1)}-${two(d.getDate())} ${two(d.getHours())}.${two(d.getMinutes())}`
           const to = op.trash ? inside(folder, 'deleted', `${name.slice(0, -3)} (deleted ${stamp}).md`) : null
           if (to) fs.renameSync(p, to)
           else fs.rmSync(p)
