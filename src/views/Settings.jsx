@@ -723,6 +723,7 @@ export default function Settings() {
           </div>
         </section>
         </Group>
+        <p className="text-[11px] text-faint text-center pt-2">NineFlow · © 2026 Kartikeyan. All rights reserved.</p>
       </div>
 
       {importing && <TaskImport onClose={() => setImporting(false)} />}

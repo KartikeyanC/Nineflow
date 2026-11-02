@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.29",
   "description": "NineFlow: plan better, flow forward.",
-  "author": "NineFlow",
+  "author": "Kartikeyan",
   "main": "desktop/main.cjs",
   "type": "module",
   "scripts": {
@@ -11,14 +11,15 @@
     "build": "vite build",
     "preview": "vite preview",
     "desktop": "vite build && electron .",
-    "desktop:win": "vite build && electron-builder --win",
-    "desktop:mac": "vite build && electron-builder --mac",
+    "desktop:win": "vite build && node scripts/minify-desktop.mjs && electron-builder --win",
+    "desktop:mac": "vite build && node scripts/minify-desktop.mjs && electron-builder --mac",
     "postbuild": "node scripts/security-headers.mjs",
     "android:sync": "vite build && cap sync android",
     "android:build": "node scripts/build-android.mjs",
     "android:test": "rolldown -c scripts/android-bridge-test/rolldown.config.mjs && node node_modules/.cache/android-bridge-test.mjs",
     "test:ntpc": "rolldown -c scripts/ntpc-test/rolldown.config.mjs && node node_modules/.cache/ntpc-test.mjs",
-    "test:import": "rolldown -c scripts/import-test/rolldown.config.mjs && node node_modules/.cache/import-test.mjs"
+    "test:import": "rolldown -c scripts/import-test/rolldown.config.mjs && node node_modules/.cache/import-test.mjs",
+    "licence": "node scripts/licence.mjs"
   },
   "dependencies": {
     "@capacitor-community/speech-recognition": "^7.0.1",
@@ -32,6 +33,7 @@
     "@fontsource-variable/inter": "^5.3.0",
     "@fontsource-variable/plus-jakarta-sans": "^5.3.0",
     "@fontsource/instrument-serif": "^5.3.0",
+    "@noble/ed25519": "^3.2.0",
     "@supabase/supabase-js": "^2.117.3",
     "date-fns": "^4.4.0",
     "lucide-react": "^1.52.0",
@@ -49,6 +51,8 @@
     "electron-builder": "^26.15.3",
     "postcss": "^8.5.29",
     "tailwindcss": "^3.4.19",
+    "terser": "^5.51.2",
     "vite": "^8.3.3"
-  }
+  },
+  "license": "UNLICENSED"
 }

@@ -3,18 +3,24 @@
 #   npm run desktop:mac   -> release/NineFlow-<version>-<arch>.dmg   (on a Mac)
 appId: app.nineflow.desktop
 productName: NineFlow
-copyright: Copyright © 2026 NineFlow
+copyright: Copyright © 2026 Kartikeyan. All rights reserved.
 directories:
   output: release
   buildResources: build
 # The window runs the Vite build in dist/; the main process only uses
-# Electron's own modules, so no node_modules are shipped.
+# Electron's own modules, so no node_modules are shipped. The desktop/*.cjs
+# files are scrambled by scripts/minify-desktop.mjs into release/desktop-min/
+# first (run by npm run desktop:win / desktop:mac); that's what ships, at the
+# same "desktop/" path the readable source lives at in this repo.
 files:
   - dist/**/*
-  - desktop/**/*
-  - "!desktop/oauth.example.json"
+  - "!desktop/**/*"
   - package.json
   - "!node_modules/**/*"
+  - from: release/desktop-min
+    to: desktop
+    filter:
+      - "**/*"
 asar: true
 win:
   target: nsis
