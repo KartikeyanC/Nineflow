@@ -32,7 +32,7 @@ export function CategoryTag({ category, className }) {
 // labels read the theme variables, so they follow light / dark on their own; the gradient
 // (bg-brand, see the Tailwind config) is the logo's and is the same in both themes.
 export function Segmented({ value, onChange, options, size = 'md', className }) {
-  const pad = size === 'sm' ? 'px-2.5 py-1 text-xs' : 'px-3.5 py-1.5 text-sm'
+  const pad = size === 'sm' ? 'px-2.5 py-1 max-sm:py-2 text-xs' : 'px-3.5 py-1.5 max-sm:py-2.5 text-sm'
   return (
     <div className={cx('inline-flex rounded-full p-1 gap-0.5 bg-ink/5 dark:bg-ink/10', className)}>
       {options.map((o) => {

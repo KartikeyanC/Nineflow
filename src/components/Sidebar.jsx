@@ -2,6 +2,7 @@ import React, { useMemo } from 'react'
 import { LayoutDashboard, KanbanSquare, CalendarRange, CalendarDays, Grid2x2, Inbox, ListTodo, StickyNote, PauseCircle, Settings, Plus, Moon, Sun, Briefcase, GraduationCap, ChartColumn, Brain } from 'lucide-react'
 import { BrandMark, Wordmark } from './Brand'
 import { usePlanner } from '../store/PlannerContext'
+import { isDark } from '../lib/themes'
 import { dateKey, dayStats } from '../lib/tasks'
 import { cardsInNotes, dueCards } from '../lib/flashcards'
 import { cx, ProgressBar } from './ui'
@@ -35,7 +36,7 @@ export default function Sidebar() {
   const today = dayStats(tasks, now, now)
   const todayKey = dateKey(now)
   const cardsDue = useMemo(() => dueCards(cardsInNotes(settings.notes), settings.revision, todayKey).length, [settings.notes, settings.revision, todayKey])
-  const dark = settings.theme === 'dark'
+  const dark = isDark(settings)
 
   return (
     <aside className="card sticky z-20 top-4 h-[calc(100vh-2rem)] w-[72px] wide:w-[232px] shrink-0 hidden sm:flex flex-col p-3 wide:p-4 transition-[width] duration-200">
@@ -61,6 +62,7 @@ export default function Sidebar() {
               key={id}
               type="button"
               onClick={() => setView(id)}
+              aria-current={active ? 'page' : undefined}
               data-tip={label}
               data-tip-hint={badge ? `${badge} card${badge === 1 ? '' : 's'} to revise today` : undefined}
               aria-label={badge ? `${label}, ${badge} cards due` : label}

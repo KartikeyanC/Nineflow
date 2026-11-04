@@ -14,6 +14,8 @@ import { useHolidays } from '../lib/holidays'
 const LEVEL_ALPHA = [0, 0.1, 0.25, 0.45, 0.75]
 const HOUR_STEPS = [2, 4.5, 7]
 const COUNT_STEPS = [2, 4, 6]
+// Said and shown as dots too, so the load never depends on colour alone.
+const LEVEL_NAME = ['', 'light', 'moderate', 'busy', 'very busy']
 const levelOf = (value, steps) => (value <= 0 ? 0 : steps.findIndex((s) => value <= s) + 1 || 4)
 
 export default function Month() {
@@ -148,7 +150,7 @@ function Tile({ cell, onOpen }) {
   const { day, list, level, holiday, inMonth, today, selected } = cell
   const strong = level === 4
   return (
-    <button type="button" onClick={onOpen} aria-label={`${format(day, 'EEEE, MMMM d')}${holiday ? `, ${holiday}` : ''}${list.length ? `, ${list.length} task${list.length === 1 ? '' : 's'}` : ''}. Open this day`}
+    <button type="button" onClick={onOpen} aria-label={`${format(day, 'EEEE, MMMM d')}${holiday ? `, ${holiday}` : ''}${list.length ? `, ${list.length} task${list.length === 1 ? '' : 's'}` : ''}${level ? `, ${LEVEL_NAME[level]}` : ''}. Open this day`}
       aria-current={today ? 'date' : undefined} title={holiday || undefined}
       className={cx(
         'relative text-left rounded-xl sm:rounded-2xl p-1.5 sm:p-2 min-h-[60px] sm:min-h-[104px] flex flex-col transition duration-200 hover:-translate-y-0.5 hover:shadow-lift max-sm:p-1 max-sm:min-h-[54px] max-sm:rounded-lg',
@@ -165,7 +167,14 @@ function Tile({ cell, onOpen }) {
             {list.length}<span className="hidden sm:inline"> task{list.length === 1 ? '' : 's'}</span>
           </span>
         ) : <span />}
-        <span className={cx('text-sm font-bold leading-none', today && 'text-coral-fg')}>{format(day, 'd')}</span>
+        <span className="flex items-center gap-1.5">
+          {level > 0 && (
+            <span aria-hidden="true" className="hidden sm:flex gap-0.5">
+              {[1, 2, 3, 4].map((i) => <span key={i} className={cx('h-1.5 w-1.5 rounded-full', i <= level ? (strong ? 'bg-white' : 'bg-lav-fg') : (strong ? 'bg-white/30' : 'bg-line'))} />)}
+            </span>
+          )}
+          <span className={cx('text-sm font-bold leading-none', today && 'text-coral-fg')}>{format(day, 'd')}</span>
+        </span>
       </div>
       <div className="mt-auto space-y-0.5 hidden sm:block">
         {holiday && <p className={cx('text-[10px] font-bold truncate inline-flex items-center gap-1 max-w-full', strong ? 'text-white' : 'text-peach-fg')}><PartyPopper size={10} className="shrink-0" />{holiday}</p>}

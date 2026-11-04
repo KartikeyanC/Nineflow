@@ -5,7 +5,7 @@ import TaskImport from '../components/TaskImport'
 import HowToConnect from '../components/HowToConnect'
 import { CHAT_GUIDES } from '../lib/connectGuides'
 import { downloadIcs } from '../lib/calendar'
-import { THEMES, themeId } from '../lib/themes'
+import { THEMES, themeId, TEXT_SIZES } from '../lib/themes'
 import { CLIMATES, detectClimate } from '../lib/climate'
 import { disablePush, enablePush, pushEnabled, pushSupported } from '../lib/webPush'
 import { reminderSchedule } from '../lib/taskMeta'
@@ -31,6 +31,7 @@ import { COLOR_IDS, colorOf } from '../lib/colors'
 import { uid, validateBackup } from '../lib/storage'
 import { isNativeApp } from '../lib/platform'
 import { loadWork } from '../work/workStore'
+import { loadNtpc } from '../exams/ntpc/store'
 import { ConfirmDialog, Segmented, cx } from '../components/ui'
 import { TimeField } from '../components/TimePicker'
 import { NotesFolderSettings, notesFolderAvailable } from '../features/NotesFolder'
@@ -493,11 +494,11 @@ export default function Settings() {
   }
 
   const exportData = () => {
-    // One file holds everything, Work OS included (it used to need its own backup).
-    const payload = { app: 'daily-planner', version: 2, exportedAt: new Date().toISOString(), tasks, settings, habits, work: loadWork() }
+    // One file holds everything, Work OS and NTPC included.
+    const payload = { app: 'daily-planner', version: 2, exportedAt: new Date().toISOString(), tasks, settings, habits, work: loadWork(), ntpc: loadNtpc() }
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
-    const a = Object.assign(document.createElement('a'), { href: url, download: `daily-planner-${new Date().toISOString().slice(0, 10)}.json` })
+    const a = Object.assign(document.createElement('a'), { href: url, download: `nineflow-${new Date().toISOString().slice(0, 10)}.json` })
     a.click()
     URL.revokeObjectURL(url)
   }
@@ -650,9 +651,13 @@ export default function Settings() {
               ))}
             </select>
           </Row>
-          <Row label="Appearance" hint="Light or dark, in any colour theme.">
+          <Row label="Appearance" hint="Light, dark, or the same as your device, in any colour theme.">
             <Segmented size="sm" value={settings.theme} onChange={(v) => updateSettings({ theme: v })}
-              options={[{ value: 'light', label: 'Light' }, { value: 'dark', label: 'Dark' }]} />
+              options={[{ value: 'light', label: 'Light' }, { value: 'dark', label: 'Dark' }, { value: 'system', label: 'Match system' }]} />
+          </Row>
+          <Row label="Text size" hint="Makes all text and buttons bigger.">
+            <Segmented size="sm" value={settings.textSize || 'normal'} onChange={(v) => updateSettings({ textSize: v })}
+              options={TEXT_SIZES.map(({ value, label }) => ({ value, label }))} />
           </Row>
         </section>
         </Group>
@@ -675,7 +680,7 @@ export default function Settings() {
         <Group icon={Database} title="Your data">
         <section className="card p-5">
           <h2 className="h-display text-base mb-1">Your data</h2>
-          <p className="text-sm text-muted mb-4">{tasks.length} tasks and {habits.length} habits, saved on this device and in your Google Drive. The backup file also includes your Work OS data. <b className="text-ink">Import tasks</b> adds a list from a CSV or Excel file next to your tasks; <b className="text-ink">Import JSON</b> restores a backup and replaces everything.</p>
+          <p className="text-sm text-muted mb-4">{tasks.length} tasks and {habits.length} habits, saved on this device and with your account. The backup file also includes your notes, Work OS and NTPC data. <b className="text-ink">Import tasks</b> adds a list from a CSV or Excel file next to your tasks; <b className="text-ink">Import JSON</b> restores a backup and replaces everything.</p>
           <button type="button" className="btn-black mb-3" onClick={() => setImporting(true)}><FileSpreadsheet size={14} /> Import tasks (CSV or Excel)</button>
           <div className="flex flex-wrap gap-2">
             <button type="button" className="btn-ghost" onClick={exportData}><Download size={14} /> Export JSON</button>
@@ -713,7 +718,7 @@ export default function Settings() {
         <Group icon={AlertTriangle} title="Danger zone" danger>
         <section className="rounded-card border border-coral-fg/30 bg-coral/40 p-5">
           <h2 className="h-display text-base text-coral-fg mb-1 inline-flex items-center gap-2"><AlertTriangle size={16} /> Danger zone</h2>
-          <p className="text-sm text-muted mb-3">Clearing removes every task, session and habit log. Type <b className="text-ink">DELETE</b> to confirm.</p>
+          <p className="text-sm text-muted mb-3">Clearing removes every task, session, habit log, note, Work OS entry and exam record, here and in your saved copy. Your settings stay. Type <b className="text-ink">DELETE</b> to confirm.</p>
           <div className="flex gap-2">
             <input className="input max-w-[200px] bg-card min-w-0 flex-1 sm:flex-none" placeholder="DELETE" value={deleteText} onChange={(e) => setDeleteText(e.target.value)} />
             <button type="button" disabled={!canDelete} onClick={() => { clearAll(); setDeleteText('') }}

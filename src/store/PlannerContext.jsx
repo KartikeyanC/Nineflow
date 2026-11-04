@@ -4,6 +4,7 @@ import {
   onSaveStatus, saveFocus, saveHabits, saveSettings, saveTasks, syncedKeys, uid,
 } from '../lib/storage'
 import { emptyWork, saveWork, workKey } from '../work/workStore'
+import { cleanNtpc, emptyNtpc, ntpcKey, saveNtpc } from '../exams/ntpc/store'
 import { DROP_KEEP_DAYS, carryForward, checkGate, createTask, dateKey, isParked, todayKey, withDate, withSessionPaused, withSessionResumed, withStatus } from '../lib/tasks'
 import { generateSample } from '../lib/sample'
 import { dueReminders, nagDue, reminderSchedule } from '../lib/taskMeta'
@@ -18,7 +19,7 @@ import { applyTheme } from '../lib/themes'
 import { removeTasksFromWorkspace, sendTasksToWorkspace } from '../lib/workspaces'
 import { ensureRecurrences } from '../lib/recurrence'
 import { planDay as planDayPure } from '../lib/schedule'
-import { hhmm, toMin } from '../lib/capacity'
+import { hhmm, toMin, workEnd } from '../lib/capacity'
 
 const PlannerContext = createContext(null)
 
@@ -73,6 +74,14 @@ export function PlannerProvider({ children }) {
     saveSettings(settings)
     applyTheme(document.documentElement, settings)
   }, [settings])
+  // 'Match system' follows the device when it switches between light and dark.
+  useEffect(() => {
+    if (settings.theme !== 'system' || typeof matchMedia !== 'function') return undefined
+    const mq = matchMedia('(prefers-color-scheme: dark)')
+    const on = () => applyTheme(document.documentElement, settingsRef.current || settings)
+    mq.addEventListener('change', on)
+    return () => mq.removeEventListener('change', on)
+  }, [settings.theme]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Latest tasks for callbacks that need them without re-creating themselves.
   const tasksRef = useRef(tasks)
@@ -229,7 +238,8 @@ export function PlannerProvider({ children }) {
   // planDay does both at once.
   const previewPlan = useCallback((key) => {
     const h = settings.workHours
-    return planDayPure(tasks, key, new Date(), { start: toMin(h.start), end: toMin(h.end), busy: busyFor(key) })
+    // A night shift is planned up to midnight; the rest belongs to the next day.
+    return planDayPure(tasks, key, new Date(), { start: toMin(h.start), end: Math.min(workEnd(h), 1440), busy: busyFor(key) })
   }, [tasks, settings.workHours])
   const applyPlan = useCallback((plan) => {
     if (!plan?.patches.length) return
@@ -274,8 +284,12 @@ export function PlannerProvider({ children }) {
 
   // Replace everything with a backup or sample set. A full backup also
   // carries Work OS, which loads from storage when its section opens.
+  // Other screens (Work OS, NTPC) reload their own copy when told their key changed.
+  const announce = (key) => { try { window.dispatchEvent(new StorageEvent('storage', { key })) } catch { /* ignore */ } }
+
   const importData = useCallback((data) => {
     if (data.work && typeof data.work === 'object') saveWork(data.work)
+    if (data.ntpc && typeof data.ntpc === 'object') { saveNtpc(cleanNtpc(data.ntpc)); announce(ntpcKey()) }
     setTasks(normalizeTasks(data.tasks || []))
     if (data.settings) setSettings((s) => ({ ...DEFAULT_SETTINGS, ...s, ...data.settings }))
     if (Array.isArray(data.habits)) setHabits(data.habits)
@@ -289,14 +303,18 @@ export function PlannerProvider({ children }) {
     setSelectedId(null)
   }, [settings.categories])
 
-  // Everything in this profile, Work OS included (it used to survive this).
+  // Everything in this profile: tasks, habits, notes, Work OS and NTPC. Settings stay.
   const clearAll = useCallback(() => {
     setTasks([])
     setHabits([])
     setSelectedId(null)
     saveWork(emptyWork())
+    saveNtpc(emptyNtpc())
+    // Notes and their flashcard progress live in settings; the rest of settings stays.
+    setSettings((s) => ({ ...s, notes: [], revision: { cards: {}, days: {} } }))
     forgetAllConnections() // the tokens for Todoist, Notion, Telegram and the rest go with it
-    try { window.dispatchEvent(new StorageEvent('storage', { key: workKey() })) } catch { /* ignore */ }
+    announce(workKey())
+    announce(ntpcKey())
   }, [])
 
   // Replace a task's time log (edit or delete entries), with undo when labelled.

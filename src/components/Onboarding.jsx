@@ -7,7 +7,7 @@ import {
   NEEDS, OCCUPATIONS, REASONS, ensureAccountProfile, accountProfileId, isEmailAccount, isEmailProfile, signIn, currentProfile, updateProfile, legacyProfiles,
   moveProfileData, checkPin, migrateLegacyInto, hasLegacyData, initials, firstName,
 } from '../lib/profiles'
-import { loadSettings, saveSettings, saveTasks, saveHabits, markOnboarded, isOnboarded, DEFAULT_CATEGORIES } from '../lib/storage'
+import { loadSettings, saveSettings, loadTasks, saveTasks, saveHabits, markOnboarded, isOnboarded, DEFAULT_CATEGORIES } from '../lib/storage'
 import { loadWork, saveWork, SATURDAY_RULES } from '../work/workStore'
 import { generateSample } from '../lib/sample'
 import { isNativeApp } from '../lib/platform'
@@ -25,7 +25,7 @@ const NEED_STYLE = {
   habits: { icon: Flame, tone: 'peach' }, work: { icon: Briefcase, tone: 'coral' }, report: { icon: Send, tone: 'butter' },
 }
 const DAYS = [['Mo', 1], ['Tu', 2], ['We', 3], ['Th', 4], ['Fr', 5], ['Sa', 6], ['Su', 0]]
-const PRESETS = [['9 – 5', '09:00', '17:00'], ['9:30 – 6:30', '09:30', '18:30'], ['10 – 7', '10:00', '19:00']]
+const PRESETS = [['9 – 5', '09:00', '17:00'], ['9:30 – 6:30', '09:30', '18:30'], ['10 – 7', '10:00', '19:00'], ['Night 10 – 6', '22:00', '06:00']]
 const STEP_LABEL = ['Your goals', 'Your rhythm', 'About you', 'All set']
 const toMin = (t) => { const [h, m] = t.split(':').map(Number); return h * 60 + m }
 
@@ -711,8 +711,10 @@ function Import({ onFresh }) {
 // ---- 3. Setup questions (new accounts) --------------------------------------
 function Setup() {
   const me = currentProfile()
+  // Sample data starts on for an empty planner (so no screen opens empty) and never replaces brought-in tasks.
+  const [hasTasks] = useState(() => loadTasks().length > 0)
   const [step, setStep] = useState(0)
-  const [a, setA] = useState({ needs: [], startTime: '09:30', endTime: '18:30', days: [1, 2, 3, 4, 5], saturdayRule: 'all', name: me?.name || '', occupation: '', occupationOther: '', reasons: [], sample: false })
+  const [a, setA] = useState({ needs: [], startTime: '09:30', endTime: '18:30', days: [1, 2, 3, 4, 5], saturdayRule: 'all', breakMinutes: 60, name: me?.name || '', occupation: '', occupationOther: '', reasons: [], sample: !hasTasks })
   const set = (p) => setA((x) => ({ ...x, ...p }))
   const toggle = (k, v) => setA((x) => ({ ...x, [k]: x[k].includes(v) ? x[k].filter((y) => y !== v) : [...x[k], v] }))
   const TOTAL = STEP_LABEL.length
@@ -728,14 +730,17 @@ function Setup() {
   }) // eslint-disable-line react-hooks/exhaustive-deps
 
   const wantsWork = a.needs.includes('work') || a.needs.includes('report') || ['Marketer', 'Content creator'].includes(a.occupation)
-  const dayHours = Math.max(0, (toMin(a.endTime) - toMin(a.startTime) - 60) / 60)
+  // A night shift (end before start) runs past midnight into the next day.
+  const startMin = toMin(a.startTime)
+  const span = ((toMin(a.endTime) - startMin) + 1440) % 1440
+  const dayHours = Math.max(0, (span - a.breakMinutes) / 60)
   const summary = useMemo(() => [
     a.needs.includes('plan') && ['Quick list docked on the right', ListChecks, 'lav'],
     a.needs.includes('focus') && ['Pomodoro focus mode on every task', Timer, 'sky'],
     a.needs.includes('hours') && ['Estimate vs actual on finished tasks', BarChart3, 'mint'],
     a.needs.includes('habits') && ['Habit tracker on the dashboard', Flame, 'peach'],
     wantsWork && ['Work OS: task log, social calendar, ad tracker, reports', Briefcase, 'coral'],
-    [`${a.startTime}–${a.endTime}, ${a.days.length} days a week (${dayHours.toFixed(1).replace('.0', '')} h/day after lunch)${a.days.includes(6) && a.saturdayRule !== 'all' ? ` · ${SATURDAY_RULES.find((r) => r.id === a.saturdayRule)?.label}` : ''}`, Clock3, 'butter'],
+    [`${a.startTime}–${a.endTime}, ${a.days.length} days a week (${dayHours.toFixed(1).replace('.0', '')} h/day after breaks)${a.days.includes(6) && a.saturdayRule !== 'all' ? ` · ${SATURDAY_RULES.find((r) => r.id === a.saturdayRule)?.label}` : ''}`, Clock3, 'butter'],
     [`Saved to ${savedWhere(me)} automatically`, HardDrive, 'sky'],
   ].filter(Boolean), [a, wantsWork, dayHours, me])
 
@@ -744,10 +749,10 @@ function Setup() {
     // Email accounts keep the name with the account, so other devices know it.
     if (isEmailProfile(me)) await Promise.race([supa.setName(a.name.trim()), new Promise((r) => setTimeout(r, 3000))]).catch(() => {})
     const s = loadSettings()
-    saveSettings({ ...s, modules: { ...s.modules, work: wantsWork }, quickList: { ...s.quickList, position: a.needs.includes('plan') ? 'right' : 'off' }, weekStart: a.days.includes(0) && !a.days.includes(1) ? 0 : s.weekStart, workHours: { start: a.startTime, end: a.endTime, breakMinutes: 60 } })
+    saveSettings({ ...s, modules: { ...s.modules, work: wantsWork }, quickList: { ...s.quickList, position: a.needs.includes('plan') ? 'right' : 'off' }, weekStart: a.days.includes(0) && !a.days.includes(1) ? 0 : s.weekStart, workHours: { start: a.startTime, end: a.endTime, breakMinutes: a.breakMinutes } })
     const w = loadWork()
     saveWork({ ...w, settings: { ...w.settings, startTime: a.startTime, workingDays: a.days, saturdayRule: a.saturdayRule } })
-    if (a.sample) { const { tasks, habits } = generateSample(s.categories || DEFAULT_CATEGORIES); saveTasks(tasks); saveHabits(habits) }
+    if (a.sample && !hasTasks) { const { tasks, habits } = generateSample(s.categories || DEFAULT_CATEGORIES); saveTasks(tasks); saveHabits(habits) }
     markOnboarded()
     window.location.reload()
   }
@@ -787,11 +792,17 @@ function Setup() {
               <label className="block"><span className="block text-xs font-semibold text-muted mb-1">Start</span><TimeField value={a.startTime} onChange={(v) => v && set({ startTime: v })} allowClear={false} className="w-32" /></label>
               <span className="text-faint pb-3">→</span>
               <label className="block"><span className="block text-xs font-semibold text-muted mb-1">End</span><TimeField value={a.endTime} onChange={(v) => v && set({ endTime: v })} allowClear={false} className="w-32" /></label>
-              <p className="pb-2.5 text-sm text-muted"><b className="text-ink">{dayHours.toFixed(1).replace('.0', '')} h</b> of work a day, with an hour for lunch</p>
+              <p className="pb-2.5 text-sm text-muted"><b className="text-ink">{dayHours.toFixed(1).replace('.0', '')} h</b> of work a day{startMin + span > 1440 ? ', ending the next morning' : ''}</p>
+            </div>
+            <div className="mt-4 flex flex-wrap items-center gap-1.5" role="group" aria-label="Break">
+              <span className="text-xs font-semibold text-muted mr-1">Break</span>
+              {[0, 30, 45, 60].map((m) => <button key={m} type="button" onClick={() => set({ breakMinutes: m })} aria-pressed={a.breakMinutes === m} className={cx('pill border transition', a.breakMinutes === m ? ORANGE_ON : 'bg-card text-muted border-line hover:text-ink')}>{m ? `${m} min` : 'None'}</button>)}
             </div>
             <div className="mt-5 rounded-2xl border border-line bg-page p-4">
               <div className="relative h-3 rounded-full bg-line overflow-hidden">
-                <div className="absolute inset-y-0 rounded-full bg-lav-fg/80" style={{ left: `${(toMin(a.startTime) / 1440) * 100}%`, width: `${Math.max(0, (toMin(a.endTime) - toMin(a.startTime)) / 1440) * 100}%` }} />
+                {/* A night shift wraps: one piece to midnight, the rest from 00:00 */}
+                <div className="absolute inset-y-0 rounded-full bg-lav-fg/80" style={{ left: `${(startMin / 1440) * 100}%`, width: `${(Math.min(span, 1440 - startMin) / 1440) * 100}%` }} />
+                {startMin + span > 1440 && <div className="absolute inset-y-0 left-0 rounded-full bg-lav-fg/80" style={{ width: `${((startMin + span - 1440) / 1440) * 100}%` }} />}
               </div>
               <div className="flex justify-between text-[10px] font-bold text-faint mt-1.5"><span>00:00</span><span>06:00</span><span>12:00</span><span>18:00</span><span>24:00</span></div>
             </div>
@@ -853,11 +864,13 @@ function Setup() {
                 <li key={text} className={cx('flex items-start gap-3 rounded-2xl p-3.5', c.bg)}><span className={cx('h-9 w-9 rounded-xl bg-card flex items-center justify-center shrink-0', c.text)}><Icon size={16} /></span><span className={cx('text-sm font-semibold', c.text)}>{text}</span></li>
               ) })}
             </ul>
+            {!hasTasks && (
             <label className="mt-5 flex items-center gap-3 rounded-2xl border-2 border-line p-3.5 cursor-pointer hover:border-faint transition">
               <button type="button" role="switch" aria-checked={a.sample} aria-label="Start with sample data" onClick={() => set({ sample: !a.sample })}
                 className={cx('h-6 w-11 shrink-0 rounded-full p-0.5 transition', a.sample ? ORANGE_ON : 'bg-line')}><span className={cx('block h-5 w-5 rounded-full bg-card transition', a.sample && 'translate-x-5')} /></button>
               <span><span className="block text-sm font-bold">Start with sample data</span><span className="block text-xs text-muted">Six weeks of example tasks so every screen has something to show. Clear it in Settings whenever you like.</span></span>
             </label>
+            )}
           </>
         )}
       </div>

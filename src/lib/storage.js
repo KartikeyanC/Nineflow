@@ -25,7 +25,8 @@ export const DEFAULT_SETTINGS = {
   categories: DEFAULT_CATEGORIES,
   weekStart: 1, // 0 Sun | 1 Mon
   heatmapMeasure: 'hours', // 'hours' | 'count'
-  theme: 'light', // 'light' | 'dark'
+  theme: 'light', // 'light' | 'dark' | 'system'
+  textSize: 'normal', // 'normal' | 'large' | 'larger' (lib/themes.js)
   palette: 'default', // colour theme: see lib/themes.js
   pomodoro: { focus: 25, short: 5, long: 15, every: 4 }, // minutes; long break every N focus blocks
   quickList: { position: 'right', collapsed: false, filter: 'today' }, // position: 'right' | 'top' | 'bottom' | 'off'

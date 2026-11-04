@@ -20,7 +20,8 @@
         var ws = id ? localStorage.getItem('daily-planner:workspace:' + id) : null;
         var key = id ? 'daily-planner:' + id + ':' + (ws && ws !== 'main' && /^[a-z0-9]+$/.test(ws) ? 'ws_' + ws + '.' : '') + 'settings' : 'daily-planner:settings';
         var s = JSON.parse(localStorage.getItem(key) || '{}');
-        if ((s.theme || 'light') === 'dark') document.documentElement.classList.add('dark');
+        if (s.theme === 'dark' || (s.theme === 'system' && matchMedia('(prefers-color-scheme: dark)').matches)) document.documentElement.classList.add('dark');
+        if (s.textSize === 'large' || s.textSize === 'larger') document.documentElement.style.zoom = s.textSize === 'large' ? '1.12' : '1.25';
         if (/^[a-z]+$/.test(s.palette || '') && s.palette !== 'default') document.documentElement.setAttribute('data-theme', s.palette);
       } catch (e) {}
     </script>

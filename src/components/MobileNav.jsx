@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { LayoutDashboard, KanbanSquare, CalendarRange, CalendarDays, Grid2x2, Settings, Briefcase, ListTodo, Inbox, StickyNote, PauseCircle, MoreHorizontal, Search, X, Zap, GraduationCap, ChartColumn, Brain, Mic } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
-import { cx } from './ui'
+import { cx, useDialogFocus } from './ui'
 import { openInterrupt } from '../features/Interrupt'
 
 const NAV = [
@@ -31,6 +31,8 @@ export const openPalette = () => window.dispatchEvent(new Event('nineflow:palett
 export default function MobileNav() {
   const { view, setView, settings, setPromptListOpen } = usePlanner()
   const [sheet, setSheet] = useState(false)
+  const sheetRef = useRef(null)
+  useDialogFocus(sheetRef, sheet)
   const more = MORE.filter(({ id }) => (id !== 'work' || settings.modules?.work) && (id !== 'ntpc' || settings.modules?.ntpc))
   const inMore = more.some((m) => m.id === view)
   const go = (id) => { setSheet(false); setView(id) }
@@ -44,7 +46,7 @@ export default function MobileNav() {
 
   const tab = (active, Icon, label, onClick, extra = {}) => (
     <button type="button" onClick={onClick} {...extra}
-      className={cx('flex-1 h-16 flex flex-col items-center justify-center gap-1 text-[10px] font-semibold transition', active ? 'text-lav-fg' : 'text-faint')}>
+      className={cx('flex-1 h-16 flex flex-col items-center justify-center gap-1 text-[11px] font-semibold transition', active ? 'text-lav-fg' : 'text-faint')}>
       <span className={cx('h-7 w-10 rounded-full inline-flex items-center justify-center', active && 'bg-lav')}><Icon size={18} /></span>
       {label}
     </button>
@@ -53,14 +55,14 @@ export default function MobileNav() {
   return (
     <>
       <nav className="sm:hidden fixed bottom-0 inset-x-0 z-30 bg-card border-t border-line flex" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-        {NAV.map(({ id, label, icon }) => <React.Fragment key={id}>{tab(view === id, icon, label, () => go(id))}</React.Fragment>)}
+        {NAV.map(({ id, label, icon }) => <React.Fragment key={id}>{tab(view === id, icon, label, () => go(id), { 'aria-current': view === id ? 'page' : undefined })}</React.Fragment>)}
         {tab(inMore || sheet, MoreHorizontal, inMore ? more.find((m) => m.id === view).label : 'More', () => setSheet((o) => !o),
           { 'aria-expanded': sheet, 'aria-haspopup': 'dialog' })}
       </nav>
 
       {sheet && (
         <div className="sm:hidden fixed inset-0 z-40 bg-ink/30 animate-fade-in" onClick={() => setSheet(false)}>
-          <div role="dialog" aria-label="More" onClick={(e) => e.stopPropagation()}
+          <div ref={sheetRef} tabIndex={-1} role="dialog" aria-modal="true" aria-label="More" onClick={(e) => e.stopPropagation()}
             className="absolute inset-x-0 bottom-0 rounded-t-3xl bg-card shadow-lift p-4 animate-modal-in"
             style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}>
             <div className="flex items-center justify-between mb-3">

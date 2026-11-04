@@ -34,6 +34,7 @@ import Charts from './views/Charts'
 import Revise from './views/Revise'
 import Paused from './views/Paused'
 import CommandPalette from './components/CommandPalette'
+import Shortcuts from './components/Shortcuts'
 import { NotesFolderSync } from './features/NotesFolder'
 import Settings from './views/Settings'
 import Work from './work/Work'
@@ -45,6 +46,7 @@ function Shell() {
   const { view, setView, setQuickAdd } = usePlanner()
   const View = VIEWS[view] || Dashboard
   const [palette, setPalette] = useState(false)
+  const [shortcuts, setShortcuts] = useState(false)
 
   // Cmd/Ctrl+K opens the command palette anywhere (the + button opens quick add).
   useEffect(() => {
@@ -52,14 +54,28 @@ function Shell() {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault()
         setPalette((o) => !o)
+        return
       }
+      // Single keys only when nothing is being typed and no dialog is open.
+      if (e.metaKey || e.ctrlKey || e.altKey || e.defaultPrevented) return
+      const el = e.target
+      if (el?.closest?.('input, textarea, select, [contenteditable=""], [contenteditable="true"], [aria-modal="true"]')) return
+      if (document.querySelector('[aria-modal="true"]')) return
+      if (e.key === 'n' || e.key === 'N') { e.preventDefault(); setQuickAdd({}) }
+      else if (e.key === '?') { e.preventDefault(); setShortcuts(true) }
     }
     // Phones (no keyboard) open it from the "More" sheet in MobileNav.
     const onAsk = () => setPalette(true)
+    const onShortcuts = () => setShortcuts(true)
     window.addEventListener('keydown', onKey)
     window.addEventListener('nineflow:palette', onAsk)
-    return () => { window.removeEventListener('keydown', onKey); window.removeEventListener('nineflow:palette', onAsk) }
-  }, [])
+    window.addEventListener('nineflow:shortcuts', onShortcuts)
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      window.removeEventListener('nineflow:palette', onAsk)
+      window.removeEventListener('nineflow:shortcuts', onShortcuts)
+    }
+  }, [setQuickAdd])
 
   // Phone app: the Back button (src/native/androidBridge.js) closes what is open first; with nothing open it
   // goes back to Home from any other screen, and only on Home does it leave the app.
@@ -92,7 +108,7 @@ function Shell() {
       <button
         type="button"
         onClick={() => setQuickAdd({})}
-        title="New task"
+        title="New task (N)"
         // On phones it floats just above the tab bar (4rem, plus the gesture bar's inset).
         // Phones don't show it on Settings, where there is nothing to add.
         className={`fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] sm:bottom-6 right-4 sm:right-6 z-30 h-14 w-14 rounded-full bg-brand text-white shadow-lift flex items-center justify-center transition hover:scale-105 active:scale-95${view === 'settings' ? ' max-sm:hidden' : ''}`}
@@ -110,6 +126,7 @@ function Shell() {
       </button>
 
       <CommandPalette open={palette} onClose={() => setPalette(false)} />
+      <Shortcuts open={shortcuts} onClose={() => setShortcuts(false)} />
       <NotesFolderSync />
       <QuickAddModal />
       <GoalPlanner />

@@ -18,7 +18,7 @@ export function buildInsights({ tasks, day, now, categories }) {
 
   if (list.length === 0) {
     out.push({ tone: 'lav', icon: 'sparkles', text: isToday
-      ? 'Nothing is planned for today. A clean slate: press ⌘K to add a task.'
+      ? 'Nothing is planned for today. A clean slate: press N or the + button to add a task.'
       : 'Nothing was planned for this day.' })
   }
 

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { dateKey } from '../lib/tasks'
-import { toMin } from '../lib/capacity'
+import { toMin, workEnd } from '../lib/capacity'
 import { storageKey } from '../lib/profiles'
 
 // Shared state for the plan / shutdown ritual, kept apart from the UI so any
@@ -33,8 +33,16 @@ export function dueRitual(now, hours, state) {
   const today = dateKey(now)
   const m = now.getHours() * 60 + now.getMinutes()
   if (state.dismissed === today) return null
-  if (state.shutdown !== today && m >= toMin(hours.end) - 90) return 'shutdown'
-  if (state.plan !== today && m < toMin(hours.start) + 180) return 'plan'
+  const start = toMin(hours.start), end = workEnd(hours)
+  if (end <= 1440) {
+    if (state.shutdown !== today && m >= end - 90) return 'shutdown'
+    if (state.plan !== today && m < start + 180) return 'plan'
+    return null
+  }
+  // Night shift: after midnight it is still the shift that began the evening before.
+  const t = m < start ? m + 1440 : m
+  if (state.shutdown !== today && t >= end - 90 && t < end + 360) return 'shutdown'
+  if (state.plan !== today && (m >= start - 180 || t < start + 180)) return 'plan'
   return null
 }
 

@@ -61,7 +61,7 @@ export default function FocusMode() {
   }
 
   return (
-    <div className="fixed inset-0 z-[60] bg-page flex flex-col animate-fade-in">
+    <div role="dialog" aria-modal="true" aria-label="Focus mode" className="fixed inset-0 z-[60] bg-page flex flex-col animate-fade-in">
       <header className="flex items-center justify-between px-6 py-4">
         <button type="button" onClick={() => setFocusOpen(false)} className="btn-ghost h-9 py-0" title="Minimize (Esc)">
           <ChevronDown size={16} /> Minimize

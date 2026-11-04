@@ -11,9 +11,18 @@ export const THEMES = [
 
 export const themeId = (settings) => (THEMES.some((t) => t.id === settings?.palette) ? settings.palette : 'default')
 
-// Put the mode (dark class) and the colour theme (data-theme) on an <html> element.
+// 'system' follows the device's light/dark setting.
+export const isDark = (settings) => settings?.theme === 'dark'
+  || (settings?.theme === 'system' && typeof matchMedia === 'function' && matchMedia('(prefers-color-scheme: dark)').matches)
+
+// Text size scales the whole page, px sizes included.
+export const TEXT_SIZES = [{ value: 'normal', label: 'Normal', zoom: 1 }, { value: 'large', label: 'Large', zoom: 1.12 }, { value: 'larger', label: 'Larger', zoom: 1.25 }]
+
+// Put the mode (dark class), the colour theme (data-theme) and the text size on an <html> element.
 export function applyTheme(root, settings) {
-  root.classList.toggle('dark', settings?.theme === 'dark')
+  root.classList.toggle('dark', isDark(settings))
+  const zoom = TEXT_SIZES.find((t) => t.value === settings?.textSize)?.zoom || 1
+  root.style.zoom = zoom === 1 ? '' : String(zoom)
   const id = themeId(settings)
   if (id === 'default') root.removeAttribute('data-theme')
   else root.setAttribute('data-theme', id)

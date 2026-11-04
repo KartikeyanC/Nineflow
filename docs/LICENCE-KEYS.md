@@ -16,6 +16,9 @@ installed file someone can pass around, so there's nothing to gate there.
 - Signing in with a different, unlicensed account shows the lock screen
   (`src/features/LicenceLock.jsx`) instead of the planner. "Use a different account" there signs
   that account out of the device; it doesn't touch that account's data in Drive.
+- The lock screen has "Copy key request", which copies a ready message with the person's email.
+  Set `VITE_LICENCE_CONTACT=you@example.com` in `.env.local` before building to also show
+  "Request a key by email", which opens an email to that address. Without it no address is shown.
 
 ## Giving someone a key
 

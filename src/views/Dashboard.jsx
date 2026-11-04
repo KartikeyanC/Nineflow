@@ -307,11 +307,11 @@ function TaskList({ day, dayKey, isToday }) {
         <div className="flex items-center gap-2">
           <div className="inline-flex rounded-full bg-page p-0.5 gap-0.5">
             {['all', 'today', 'upcoming'].map((k) => (
-              <button key={k} type="button" onClick={() => setTab(k)}
-                className={cx('rounded-full px-2.5 py-1 text-xs font-semibold capitalize transition', tab === k ? 'bg-lav text-lav-fg' : 'text-muted hover:text-ink')}>{k}</button>
+              <button key={k} type="button" onClick={() => setTab(k)} aria-pressed={tab === k}
+                className={cx('rounded-full px-2.5 py-1 max-sm:py-2 text-xs font-semibold capitalize transition', tab === k ? 'bg-lav text-lav-fg' : 'text-muted hover:text-ink')}>{k}</button>
             ))}
           </div>
-          <button type="button" aria-label="Add task" onClick={() => setQuickAdd({ date: dayKey })} className="h-7 w-7 rounded-full bg-lav text-lav-fg inline-flex items-center justify-center hover:opacity-90 transition"><Plus size={15} /></button>
+          <button type="button" aria-label="Add task" onClick={() => setQuickAdd({ date: dayKey })} className="h-7 w-7 max-sm:h-10 max-sm:w-10 rounded-full bg-lav text-lav-fg inline-flex items-center justify-center hover:opacity-90 transition"><Plus size={15} /></button>
         </div>
       }>
       {rows.length === 0 ? (
@@ -544,7 +544,7 @@ function Habits({ dayKey, day }) {
 
   return (
     <Card title="Habits" span="xl:col-span-5"
-      right={<button type="button" aria-label="Add habit" onClick={() => setAdding(true)} className="h-7 w-7 rounded-full bg-lav text-lav-fg inline-flex items-center justify-center hover:opacity-90 transition"><Plus size={15} /></button>}>
+      right={<button type="button" aria-label="Add habit" onClick={() => setAdding(true)} className="h-7 w-7 max-sm:h-10 max-sm:w-10 rounded-full bg-lav text-lav-fg inline-flex items-center justify-center hover:opacity-90 transition"><Plus size={15} /></button>}>
       {habits.length === 0 && !adding && <p className="text-sm text-faint">Track small daily wins. Add your first habit.</p>}
       <ul className="space-y-2">
         {habits.map((h) => {
@@ -605,7 +605,7 @@ function Countdowns() {
   }
   return (
     <Card title="Countdowns" span="xl:col-span-4"
-      right={<button type="button" aria-label="Add countdown" onClick={() => setAdding(true)} className="h-7 w-7 rounded-full bg-lav text-lav-fg inline-flex items-center justify-center hover:opacity-90 transition"><Plus size={15} /></button>}>
+      right={<button type="button" aria-label="Add countdown" onClick={() => setAdding(true)} className="h-7 w-7 max-sm:h-10 max-sm:w-10 rounded-full bg-lav text-lav-fg inline-flex items-center justify-center hover:opacity-90 transition"><Plus size={15} /></button>}>
       {list.length === 0 && !adding && <p className="text-sm text-faint">Count down to a deadline, launch or birthday.</p>}
       <ul className="space-y-2">
         {list.map((c) => {

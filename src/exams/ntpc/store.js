@@ -16,6 +16,7 @@ import { CHECKPOINT_IDS, DEFAULT_INTERVALS, DEFAULT_REQUIRED } from './calc'
 import { CA_CATEGORIES, CATEGORIES, SUBJECTS } from './syllabus'
 
 const KEY = () => storageKey('ntpc')
+export const ntpcKey = () => KEY()
 const DATE = /^\d{4}-\d{2}-\d{2}$/
 const str = (v, max) => (typeof v === 'string' ? v.slice(0, max) : '')
 const num = (v, max = 100000) => (Number.isFinite(Number(v)) && Number(v) >= 0 ? Math.min(max, Math.round(Number(v) * 10) / 10) : 0)

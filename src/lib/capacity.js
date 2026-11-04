@@ -6,6 +6,8 @@ import { dateKey, tasksOn, totalMinutes } from './tasks'
 export const DEFAULT_WORK_HOURS = { start: '09:00', end: '18:00', breakMinutes: 60 }
 
 export const toMin = (hhmm) => { const [h, m] = hhmm.split(':').map(Number); return h * 60 + m }
+// End of the working day in minutes from its start's midnight: a night shift (22:00-06:00) ends past 1440.
+export const workEnd = (hours) => { const s = toMin(hours.start), e = toMin(hours.end); return e < s ? e + 1440 : e }
 export const hhmm = (min) => {
   const m = ((Math.round(min) % 1440) + 1440) % 1440
   return `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`
@@ -23,7 +25,7 @@ export const remainingMinutes = (t, now = new Date()) =>
 //   over      - left - available (positive = more than fits)
 //   finish    - minute of day you'd finish if you started now and kept going
 export function dayLoad(tasks, key, now = new Date(), hours = DEFAULT_WORK_HOURS) {
-  const start = toMin(hours.start), end = Math.max(toMin(hours.end), toMin(hours.start))
+  const start = toMin(hours.start), end = workEnd(hours)
   const brk = Math.min(hours.breakMinutes || 0, end - start)
   const capacity = end - start - brk
   const list = tasksOn(tasks, key)

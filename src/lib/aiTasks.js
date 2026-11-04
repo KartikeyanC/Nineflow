@@ -18,10 +18,21 @@ function endpoint(name) {
   return `/api/${name}`
 }
 
+// The first AI request on a device asks before any task text leaves it.
+const CONSENT_KEY = 'nineflow:ai-consent'
+function aiConsent() {
+  try { if (localStorage.getItem(CONSENT_KEY) === 'yes') return true } catch { /* storage blocked: ask each time */ }
+  const ok = window.confirm('The AI helper sends the text you give it (and, for Ask NineFlow, your task list) to Claude, an AI service by Anthropic, to work out an answer. OK to send?')
+  if (ok) { try { localStorage.setItem(CONSENT_KEY, 'yes') } catch { /* ignore */ } }
+  return ok
+}
+
 // POST to one of the AI endpoints; throws an Error with a message fit to show.
 export async function callApi(name, body) {
   const url = endpoint(name)
-  if (!url) throw new Error('The AI helper needs an internet connection to the NineFlow site. Set VITE_API_BASE for the desktop app.')
+  if (!url) throw new Error("The AI helpers aren't available in this app yet. You can use them on the NineFlow website.")
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) throw new Error('The AI helper needs the internet. Connect and try again; everything else works offline.')
+  if (!aiConsent()) throw new Error('Nothing was sent.')
   let res
   try {
     res = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })

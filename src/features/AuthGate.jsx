@@ -39,7 +39,9 @@ export default function AuthGate({ children }) {
   }, [ready]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (recovering) return <Onboarding key="reset" initial="reset" />
-  if (signedIn && licensed === 'checking') return null
+  if (signedIn && licensed === 'checking') {
+    return <div role="status" className="dark min-h-screen bg-page text-muted flex items-center justify-center text-sm">Checking your licence…</div>
+  }
   if (signedIn && licensed === false) return <LicenceLock account={account} onUnlocked={() => setLicensed(true)} />
   return ready ? children : <Onboarding key="main" />
 }
