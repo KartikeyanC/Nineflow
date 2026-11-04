@@ -6,7 +6,7 @@ import { cleanNtpc, emptyNtpc, loadNtpc, saveNtpc, topicsOf } from '../../src/ex
 import { loadTasks, saveTasks } from '../../src/lib/storage.js'
 import { ensureRecurrences } from '../../src/lib/recurrence.js'
 import { createTask } from '../../src/lib/tasks.js'
-import { PLAN_ROWS, planTasks } from '../../src/exams/ntpc/plan40.js'
+import { PLAN_ROWS, planRows, planTasks, startForExam } from '../../src/exams/ntpc/plan40.js'
 
 let pass = 0, fail = 0
 const ok = (cond, label, extra = '') => { if (cond) pass += 1; else fail += 1; console.log(`${cond ? 'PASS' : 'FAIL'}  ${label}${!cond && extra ? `  -> ${extra}` : ''}`) }
@@ -107,6 +107,14 @@ const sources = ['Rajesh Verma', 'R.S. Aggarwal', 'Kiran', 'NCERT', 'Lucent', 'A
 ok(sources.every((s) => PLAN_ROWS.some((r) => r.notes.includes(s))), 'all ten sources are named in the notes')
 const late = planTasks({ category: 'learning', fromDate: '2026-10-28' })
 ok(late.length === PLAN_ROWS.filter((r) => r.date >= '2026-10-28').length && late.every((t) => t.date >= '2026-10-28' && t.exam.id === 'rrb-ntpc'), 'added late, days already past are left out')
+
+// A plan from the exam date: 40 days ending the day before it, same ids, months counted back from its start.
+const exam = planRows(startForExam('2027-03-15'))
+ok(exam[0].date === '2027-02-03' && exam.at(-1).date === '2027-03-14', 'exam on 15 Mar 2027: plan runs 3 Feb to 14 Mar', `${exam[0].date}..${exam.at(-1).date}`)
+ok(same(exam.map((r) => r.id), PLAN_ROWS.map((r) => r.id)), 'the same task ids whatever the start date')
+ok(exam.some((r) => r.title === 'Current affairs: Feb 2027') && exam.some((r) => r.title === 'Revise CA: Jan-Feb 2027'), 'current-affairs months follow the start date')
+ok(planRows(startForExam('2026-12-05')).every((r, i) => r.date === PLAN_ROWS[i].date && r.title === PLAN_ROWS[i].title), 'an exam on 5 Dec 2026 gives the first plan exactly')
+ok(cleanNtpc({ planStart: '2027-02-03' }).planStart === '2027-02-03' && cleanNtpc({ planStart: 'x' }).planStart === null, 'the saved plan start is kept, and cleaned')
 
 console.log(`\n${pass} passed, ${fail} failed`)
 process.exit(fail ? 1 : 0)

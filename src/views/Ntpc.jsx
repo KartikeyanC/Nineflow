@@ -7,7 +7,7 @@ import { CheckCircle, EmptyState, Modal, ProgressBar, Segmented, cx } from '../c
 import { CA_CATEGORIES, CATEGORIES, EXAM_ID, EXAM_NAME, subjectById } from '../exams/ntpc/syllabus'
 import { CHECKPOINTS, DEFAULT_INTERVALS, STATUSES, accuracy, examTasks, isWeak, planRevisions, practiceTotals, statusLabel, studyMinutes, summarize, topicCompletion, topicStatus } from '../exams/ntpc/calc'
 import { DIFFICULTIES, PRACTICE_LEVELS, PRIORITY_LEVELS, topicsOf, useNtpc } from '../exams/ntpc/store'
-import { PLAN_NAME, PLAN_ROWS, planTasks } from '../exams/ntpc/plan40'
+import { PLAN_NAME, PLAN_ROWS, planRows, planTasks, startForExam } from '../exams/ntpc/plan40'
 import { rowId } from '../lib/taskImport'
 
 // RRB NTPC study planner (Settings → Preferences → RRB NTPC). The syllabus comes from
@@ -205,36 +205,64 @@ function Overview({ ctx, planner, goSyllabus }) {
 // ---- The 40-day plan (exams/ntpc/plan40.js) ------------------------------------------------
 // One press adds the whole plan to the planner open now (account and workspace), from today on.
 // Every task has a fixed id, so pressing again only adds what is missing; one Undo removes them.
+// The plan's 40 days end the day before the exam date. Its start is saved when it is added, so
+// changing the exam date later never moves a plan already in the planner; a plan added before
+// that was saved keeps the first plan's dates (PLAN_START).
+function matchPlan(rows, allTasks) {
+  // The plan's tasks in this planner, however they came: the Add button (ids ntpc-40-…), or the CSV
+  // through Import tasks (ids made from each row, see lib/taskImport.js rowId). Matching on ids, not
+  // dates, still finds a task that was carried over to a later day or renamed.
+  const byRow = new Map()
+  for (const r of rows) { byRow.set(r.id, r); byRow.set(rowId(r.title, r.date, r.time), r) }
+  const found = new Map() // row id -> task
+  for (const t of allTasks) { const r = byRow.get(t.id); if (r && !t.dropped && !found.has(r.id)) found.set(r.id, t) }
+  return found
+}
+
 function PlanCard({ ctx, planner }) {
-  const { today, taskCategory } = ctx
+  const { today, taskCategory, data, change } = ctx
   const { addTasks, removeTasks, allTasks, setView, setDashboardDate } = planner
   const [confirm, setConfirm] = useState(false)
   const [removing, setRemoving] = useState(false)
   const [alsoDone, setAlsoDone] = useState(false)
-  // The plan's tasks in this planner, however they came: the Add button (ids ntpc-40-…), or the CSV
-  // through Import tasks (ids made from each row, see lib/taskImport.js rowId). Matching on ids, not
-  // dates, still finds a task that was carried over to a later day or renamed.
-  const mine = useMemo(() => {
-    const byRow = new Map()
-    for (const r of PLAN_ROWS) { byRow.set(r.id, r); byRow.set(rowId(r.title, r.date, r.time), r) }
-    const found = new Map() // row id -> task
-    for (const t of allTasks) { const r = byRow.get(t.id); if (r && !t.dropped && !found.has(r.id)) found.set(r.id, t) }
-    return found
-  }, [allTasks])
-  const inPlanner = PLAN_ROWS.filter((r) => mine.has(r.id))
+  const { start, rows, mine } = useMemo(() => {
+    const pick = (s) => { const r = planRows(s); return { start: s, rows: r, mine: matchPlan(r, allTasks) } }
+    if (data.planStart) return pick(data.planStart)
+    const first = { start: PLAN_ROWS[0].date, rows: PLAN_ROWS, mine: matchPlan(PLAN_ROWS, allTasks) }
+    if (first.mine.size) return first
+    return data.examDate ? pick(startForExam(data.examDate)) : { start: null, rows: [], mine: new Map() }
+  }, [data.planStart, data.examDate, allTasks])
+
+  if (!start) {
+    return (
+      <section className="card p-5">
+        <h2 className="h-display text-base flex items-center gap-2"><CalendarClock size={16} /> {PLAN_NAME}</h2>
+        <p className="text-sm text-muted mt-1">Set your exam date and the plan is laid out over the 40 days before it: mornings 5:00 to 7:30, evenings 8:00 to 9:30, with times, sources and topics.</p>
+        <label className="mt-3 inline-flex items-center gap-2 text-sm font-semibold">
+          Exam date
+          <input type="date" className="input w-auto py-1.5" min={today} value="" onChange={(e) => e.target.value && change(() => ({ examDate: e.target.value }))} />
+        </label>
+      </section>
+    )
+  }
+
+  const inPlanner = rows.filter((r) => mine.has(r.id))
   const done = inPlanner.filter((r) => mine.get(r.id).status === 'completed').length
-  const toAdd = planTasks({ category: taskCategory, fromDate: today }).filter((t) => !mine.has(t.id))
-  const skipped = PLAN_ROWS.filter((r) => r.date < today && !mine.has(r.id)).length
+  const toAdd = planTasks({ category: taskCategory, fromDate: today, start }).filter((t) => !mine.has(t.id))
+  const skipped = rows.filter((r) => r.date < today && !mine.has(r.id)).length
   const toRemove = inPlanner.map((r) => mine.get(r.id)).filter((t) => alsoDone || t.status !== 'completed')
   const remove = () => {
     removeTasks(toRemove.map((t) => t.id), `Removed the 40-day plan (${toRemove.length} tasks)`)
+    // Nothing of the plan left: the next one is laid out from the exam date again.
+    if (toRemove.length === inPlanner.length) change(() => ({ planStart: null }))
     setRemoving(false); setAlsoDone(false)
   }
-  const first = PLAN_ROWS[0].date, last = PLAN_ROWS.at(-1).date
+  const first = rows[0].date, last = rows.at(-1).date
   if (today > last && !inPlanner.length) return null
   const nice = (k) => format(parseISO(k), 'EEE d MMM')
   const add = () => {
     addTasks(toAdd, `Added the 40-day plan (${toAdd.length} tasks)`)
+    if (data.planStart !== start) change(() => ({ planStart: start }))
     setConfirm(false)
     setDashboardDate(toAdd[0]?.date || today)
   }
@@ -243,7 +271,7 @@ function PlanCard({ ctx, planner }) {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <h2 className="h-display text-base flex items-center gap-2"><CalendarClock size={16} /> {PLAN_NAME}</h2>
-          <p className="text-sm text-muted mt-1">{format(parseISO(first), 'd MMM')} to {format(parseISO(last), 'd MMM yyyy')} · mornings 5:00 to 7:30, evenings 8:00 to 9:30 · {PLAN_ROWS.length} tasks with times, sources and topics</p>
+          <p className="text-sm text-muted mt-1">{format(parseISO(first), 'd MMM')} to {format(parseISO(last), 'd MMM yyyy')} · mornings 5:00 to 7:30, evenings 8:00 to 9:30 · {rows.length} tasks with times, sources and topics</p>
           {inPlanner.length > 0 && <p className="text-xs text-faint mt-1 tnum">{inPlanner.length} in your planner · {done} done</p>}
         </div>
         <div className="flex flex-wrap gap-2">
@@ -253,7 +281,7 @@ function PlanCard({ ctx, planner }) {
           {inPlanner.length > 0 && <button type="button" className="btn-ghost text-coral-fg" onClick={() => setRemoving(true)}><Trash2 size={14} /> Remove the plan</button>}
         </div>
       </div>
-      {inPlanner.length > 0 && <ProgressBar value={done / PLAN_ROWS.length} tone="bg-mint-fg" className="mt-3" />}
+      {inPlanner.length > 0 && <ProgressBar value={done / rows.length} tone="bg-mint-fg" className="mt-3" />}
       <Modal open={confirm} onClose={() => setConfirm(false)} title="Add the 40-day plan?">
         <p className="text-sm text-muted">
           {toAdd.length} tasks go into this planner, from {nice(toAdd[0]?.date || today)} to {nice(last)}, each at its time with its notes and syllabus topic.
@@ -764,7 +792,7 @@ function Setup({ ctx, planner }) {
         <Row label="Exam level" hint="Patterns differ by level and notification; check the official RRB notice.">
           <Segmented size="sm" value={data.category || ''} onChange={(v) => change(() => ({ category: v }))} options={CATEGORIES.map((c) => ({ value: c.id, label: c.label.replace('NTPC ', '') }))} />
         </Row>
-        <Row label="Exam date" hint="Optional. Shows the days left.">
+        <Row label="Exam date" hint="Shows the days left, and sets the dates of the 40-day plan (a plan already added keeps its dates).">
           <input type="date" className="input w-auto py-1.5" value={data.examDate || ''} onChange={(e) => change(() => ({ examDate: e.target.value || null }))} />
         </Row>
         <Row label="Daily study time" hint="Planned revisions don't go over this on any day.">

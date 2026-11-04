@@ -14,6 +14,7 @@ export const NEEDS = [
   { id: 'habits', label: 'Build habits', hint: 'Daily check-ins and streaks' },
   { id: 'work', label: 'Run my whole job', hint: 'Task log, social posts, ad campaigns, reports' },
   { id: 'report', label: 'Report to my manager', hint: 'A ready daily message' },
+  { id: 'exam', label: 'Prepare for an exam', hint: 'Syllabus tracker, flashcards, a 40-day plan' },
 ]
 export const REASONS = ['Works offline and keeps my data private', 'Everything in one place', 'Time tracking built in', 'Pomodoro focus mode', 'A friend recommended it', 'Just trying it out']
 export const AVATAR_COLORS = ['lav', 'sky', 'mint', 'peach', 'coral', 'butter', 'rose', 'teal']

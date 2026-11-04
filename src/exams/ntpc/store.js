@@ -3,7 +3,7 @@
 // Only what they record lives here; the syllabus itself is in syllabus.js. Reading cleans every
 // field, so an older or hand-edited copy can never break the screen.
 //
-// { category, examDate, required: [checkpoint ids], revision: { auto, intervals, minutes },
+// { category, examDate, planStart, required: [checkpoint ids], revision: { auto, intervals, minutes },
 //   dailyMinutes, taskCategory,
 //   topics: { [topicId]: { checks: {concept: true…}, priority, difficulty, notes, flag, hidden,
 //                         practice: [{ id, date, attempted, correct, incorrect, unanswered, minutes, level, score, mistakes }] } },
@@ -28,7 +28,7 @@ export const PRACTICE_LEVELS = ['basic', 'moderate', 'advanced']
 export const QUIZ_STATES = ['none', 'done']
 
 export const emptyNtpc = () => ({
-  category: null, examDate: null, required: [...DEFAULT_REQUIRED],
+  category: null, examDate: null, planStart: null, required: [...DEFAULT_REQUIRED],
   revision: { auto: false, intervals: [...DEFAULT_INTERVALS], minutes: 30 },
   dailyMinutes: 240, taskCategory: null,
   topics: {}, custom: [], ca: [], caMonths: {},
@@ -66,6 +66,7 @@ export function cleanNtpc(raw) {
   return {
     category: oneOf(raw.category, CATEGORIES.map((c) => c.id)),
     examDate: DATE.test(raw.examDate || '') ? raw.examDate : null,
+    planStart: DATE.test(raw.planStart || '') ? raw.planStart : null, // when the 40-day plan was added (Ntpc.jsx PlanCard)
     required: Array.isArray(raw.required) ? CHECKPOINT_IDS.filter((c) => raw.required.includes(c)) : base.required,
     revision: { auto: raw.revision?.auto === true, intervals: intervals.length ? intervals : base.revision.intervals, minutes: num(raw.revision?.minutes, 240) || 30 },
     dailyMinutes: num(raw.dailyMinutes, 1440) || 240,

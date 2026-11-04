@@ -1,13 +1,13 @@
 import React, { useEffect, useId, useMemo, useRef, useState } from 'react'
 import {
-  Sparkles, ArrowRight, ArrowLeft, Check, ListChecks, Timer, BarChart3, Briefcase, Flame, Send,
+  Sparkles, ArrowRight, ArrowLeft, Check, ListChecks, Timer, BarChart3, Briefcase, Flame, Send, GraduationCap,
   Clock3, CalendarDays, KeyRound, Cloud, HardDrive, AlertTriangle, Loader2, FolderInput, Mail, Eye, EyeOff, MailCheck,
 } from 'lucide-react'
 import {
   NEEDS, OCCUPATIONS, REASONS, ensureAccountProfile, accountProfileId, isEmailAccount, isEmailProfile, signIn, currentProfile, updateProfile, legacyProfiles,
   moveProfileData, checkPin, migrateLegacyInto, hasLegacyData, initials, firstName,
 } from '../lib/profiles'
-import { loadSettings, saveSettings, loadTasks, saveTasks, saveHabits, markOnboarded, isOnboarded, DEFAULT_CATEGORIES } from '../lib/storage'
+import { loadSettings, saveSettings, loadTasks, saveTasks, saveHabits, markOnboarded, isOnboarded, DEFAULT_CATEGORIES, uid } from '../lib/storage'
 import { loadWork, saveWork, SATURDAY_RULES } from '../work/workStore'
 import { generateSample } from '../lib/sample'
 import { isNativeApp } from '../lib/platform'
@@ -23,6 +23,7 @@ import { TimeField } from './TimePicker'
 const NEED_STYLE = {
   plan: { icon: ListChecks, tone: 'lav' }, focus: { icon: Timer, tone: 'sky' }, hours: { icon: BarChart3, tone: 'mint' },
   habits: { icon: Flame, tone: 'peach' }, work: { icon: Briefcase, tone: 'coral' }, report: { icon: Send, tone: 'butter' },
+  exam: { icon: GraduationCap, tone: 'teal' },
 }
 const DAYS = [['Mo', 1], ['Tu', 2], ['We', 3], ['Th', 4], ['Fr', 5], ['Sa', 6], ['Su', 0]]
 const PRESETS = [['9 – 5', '09:00', '17:00'], ['9:30 – 6:30', '09:30', '18:30'], ['10 – 7', '10:00', '19:00'], ['Night 10 – 6', '22:00', '06:00']]
@@ -740,6 +741,7 @@ function Setup() {
     a.needs.includes('hours') && ['Estimate vs actual on finished tasks', BarChart3, 'mint'],
     a.needs.includes('habits') && ['Habit tracker on the dashboard', Flame, 'peach'],
     wantsWork && ['Work OS: task log, social calendar, ad tracker, reports', Briefcase, 'coral'],
+    a.needs.includes('exam') && ['RRB NTPC syllabus and 40-day plan, and Revise flashcards with an example note', GraduationCap, 'teal'],
     [`${a.startTime}–${a.endTime}, ${a.days.length} days a week (${dayHours.toFixed(1).replace('.0', '')} h/day after breaks)${a.days.includes(6) && a.saturdayRule !== 'all' ? ` · ${SATURDAY_RULES.find((r) => r.id === a.saturdayRule)?.label}` : ''}`, Clock3, 'butter'],
     [`Saved to ${savedWhere(me)} automatically`, HardDrive, 'sky'],
   ].filter(Boolean), [a, wantsWork, dayHours, me])
@@ -749,7 +751,10 @@ function Setup() {
     // Email accounts keep the name with the account, so other devices know it.
     if (isEmailProfile(me)) await Promise.race([supa.setName(a.name.trim()), new Promise((r) => setTimeout(r, 3000))]).catch(() => {})
     const s = loadSettings()
-    saveSettings({ ...s, modules: { ...s.modules, work: wantsWork }, quickList: { ...s.quickList, position: a.needs.includes('plan') ? 'right' : 'off' }, weekStart: a.days.includes(0) && !a.days.includes(1) ? 0 : s.weekStart, workHours: { start: a.startTime, end: a.endTime, breakMinutes: a.breakMinutes } })
+    // Exam prep: the NTPC section, and one note showing how flashcards are written (Revise reads `question :: answer`).
+    const exam = a.needs.includes('exam')
+    const notes = exam && !(s.notes || []).length ? [{ id: uid(), text: ['How flashcards work', 'Write a question, two colons, then the answer. Revise asks them back on a schedule.', 'Capital of India :: New Delhi', '1 km is how many metres? :: 1000'].join('\n'), color: 'mint', pinned: true, createdAt: Date.now(), updatedAt: Date.now(), images: [] }] : s.notes
+    saveSettings({ ...s, notes, modules: { ...s.modules, work: wantsWork, ntpc: exam || !!s.modules?.ntpc }, quickList: { ...s.quickList, position: a.needs.includes('plan') ? 'right' : 'off' }, weekStart: a.days.includes(0) && !a.days.includes(1) ? 0 : s.weekStart, workHours: { start: a.startTime, end: a.endTime, breakMinutes: a.breakMinutes } })
     const w = loadWork()
     saveWork({ ...w, settings: { ...w.settings, startTime: a.startTime, workingDays: a.days, saturdayRule: a.saturdayRule } })
     if (a.sample && !hasTasks) { const { tasks, habits } = generateSample(s.categories || DEFAULT_CATEGORIES); saveTasks(tasks); saveHabits(habits) }
@@ -759,7 +764,7 @@ function Setup() {
 
   const titles = [
     ['What do you want to get better at?', 'Tap everything that fits — this arranges the app for you. Change it any time.'],
-    ['When do you usually work?', 'Sets your time plan and how many hours a day count as capacity.'],
+    ['When do you usually work or study?', 'Sets your time plan and how many hours a day count as capacity.'],
     ['Tell us a little about you.', isEmailProfile(me) ? 'What should the planner call you?' : 'Your name is filled in from Google; change it if you like.'],
     [`Hi ${firstName(a.name)}, you’re all set.`, 'Here’s how your planner is arranged:'],
   ]

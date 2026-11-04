@@ -1,4 +1,4 @@
-// A 40-day RRB NTPC (Graduate, CEN 06/2026) plan, written to the person's brief:
+// A 40-day RRB NTPC (Graduate) plan, first written to one person's brief (CEN 06/2026):
 //   26 Oct 2026 (day 1, evening only) to 4 Dec 2026 (day 40)
 //   morning 05:00-07:30 and evening 20:00-21:30, every day ending with 5 minutes on the error notebook
 //   days 1-14 basics, days 15-28 the next topics + two mocks a week, days 29-40 a mock every second day
@@ -8,9 +8,24 @@
 // Each task has a fixed id, so adding the plan twice never duplicates anything.
 
 export const PLAN_ID = 'ntpc-40'
-export const PLAN_NAME = '40-day plan · Graduate, CEN 06/2026'
-export const PLAN_START = '2026-10-26'
+export const PLAN_NAME = '40-day plan · RRB NTPC'
+export const PLAN_START = '2026-10-26' // the first plan's start; a plan added later starts from the exam date
 export const PLAN_DAYS = 40
+
+const addDays = (key, n) => { const d = new Date(`${key}T00:00:00Z`); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10) }
+// Day 40 is the day before the exam.
+export const startForExam = (examDate) => addDays(examDate, -PLAN_DAYS)
+export const planEnd = (start) => addDays(start, PLAN_DAYS - 1)
+
+// Current-affairs months count back from the plan's start month: the 12 months up to and including it.
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+function monthLabel(start, back) {
+  const [y, m] = start.split('-').map(Number)
+  const i = y * 12 + (m - 1) - back
+  return { mon: MONTHS[i % 12], year: Math.floor(i / 12) }
+}
+const one = (start, back) => { const { mon, year } = monthLabel(start, back); return `${mon} ${year}` }
+const two = (start, back) => { const a = monthLabel(start, back), b = monthLabel(start, back - 1); return `${a.mon}${a.year === b.year ? '' : ` ${a.year}`}-${b.mon} ${b.year}` }
 
 const S = {
   maths: 'Rakesh Yadav Sir (YouTube) for the concept; practise from R.S. Aggarwal',
@@ -64,7 +79,8 @@ const REASON_1 = {
   11: ['Practice: Blood relations', 'reasoning:relationships', 'practice'], 12: ['Practice: Mathematical operations', 'reasoning:mathematical-operations', 'practice'],
   13: ['Mixed reasoning set', 'reasoning:analogies', 'practice'],
 }
-const CA_1 = { 1: 'Nov 2025', 2: 'Dec 2025', 3: 'Jan 2026', 4: 'Feb 2026', 5: 'Mar 2026', 6: 'Apr 2026', 8: 'May 2026', 9: 'Jun 2026', 10: 'Jul 2026', 11: 'Aug 2026', 12: 'Sep 2026', 13: 'Oct 2026' }
+const CA_1_DAYS = [1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13] // one month each, oldest first
+const caOne = (start) => Object.fromEntries(CA_1_DAYS.map((d, i) => [d, one(start, 11 - i)]))
 
 const MATHS_2 = {
   15: ['Time and Distance', 'maths:time-and-distance', 'learn', S.maths],
@@ -98,7 +114,8 @@ const REASON_2 = {
   24: ['Practice: Puzzles', 'reasoning:puzzles', 'practice'], 25: ['Mixed reasoning set', 'reasoning:puzzles', 'practice'],
   26: ['Reasoning PYQs: set 1', 'reasoning:syllogism', 'pyq'], 27: ['Reasoning PYQs: set 2', 'reasoning:puzzles', 'pyq'],
 }
-const CA_2 = { 15: 'Revise CA: Nov-Dec 2025', 17: 'Revise CA: Jan-Feb 2026', 19: 'Revise CA: Mar-Apr 2026', 22: 'Revise CA: May-Jun 2026', 24: 'Revise CA: Jul-Aug 2026', 26: 'Revise CA: Sep-Oct 2026' }
+const CA_2_DAYS = [15, 17, 19, 22, 24, 26] // two months each, oldest first
+const caTwo = (start) => Object.fromEntries(CA_2_DAYS.map((d, i) => [d, `Revise CA: ${two(start, 11 - 2 * i)}`]))
 
 const WEAK_3 = { 30: 'Weak topic: Percentage, Profit and Loss', 32: 'Weak topic: Time and Distance', 34: 'Weak topic: Mensuration', 36: 'Weak topic: Algebra', 38: 'Weak topic: Data Interpretation', 40: 'Final formula revision' }
 const WEAK_3_TOPIC = { 30: 'maths:percentage', 32: 'maths:time-and-distance', 34: 'maths:mensuration', 36: 'maths:elementary-algebra', 38: 'maths:elementary-statistics', 40: 'maths:number-system' }
@@ -116,16 +133,11 @@ const GATOPIC_3 = {
 const TEST_DAYS = new Set([7, 14, 21, 28, 35])
 const MOCK_DAYS = new Set([7, 14, 18, 21, 25, 28, 29, 31, 33, 35, 37, 39])
 
-function dateOf(day) {
-  const d = new Date(`${PLAN_START}T00:00:00Z`)
-  d.setUTCDate(d.getUTCDate() + day - 1)
-  return d.toISOString().slice(0, 10)
-}
-
 // One row: { day, date, time, minutes, title, subject, priority, notes, topic, kind }
-function rowsFor(day) {
+function rowsFor(day, start) {
   const rows = []
-  const add = (time, minutes, title, subject, priority, notes, topic, kind) => rows.push({ day, date: dateOf(day), time, minutes, title, subject, priority, notes, topic, kind })
+  const CA_1 = caOne(start), CA_2 = caTwo(start)
+  const add = (time, minutes, title, subject, priority, notes, topic, kind) => rows.push({ day, date: addDays(start, day - 1), time, minutes, title, subject, priority, notes, topic, kind })
   const mockNo = [...MOCK_DAYS].filter((d) => d <= day).length
   const mathsRow = (time, minutes, [title, topic, kind, notes]) => add(time, minutes, title, 'Maths', 'high', notes, topic, kind)
   const gaRow = (time, minutes, [title, topic, kind, notes]) => add(time, minutes, title, 'General Awareness', 'high', notes, topic, kind)
@@ -172,15 +184,17 @@ function rowsFor(day) {
   return rows
 }
 
-// Every row of the plan, in date and time order, each with a fixed id.
-export const PLAN_ROWS = Array.from({ length: PLAN_DAYS }, (_, i) => rowsFor(i + 1)).flatMap((rows) =>
+// Every row of a plan starting on `start`, in date and time order. The id is fixed by day and
+// order, never the date, so a task matches its row whichever date the plan started on.
+export const planRows = (start = PLAN_START) => Array.from({ length: PLAN_DAYS }, (_, i) => rowsFor(i + 1, start)).flatMap((rows) =>
   rows.map((r, j) => ({ ...r, id: `${PLAN_ID}-d${String(r.day).padStart(2, '0')}-${j + 1}` })))
+export const PLAN_ROWS = planRows()
 
 // As planner tasks (createTask fields). Days before `fromDate` are left out, so adding the plan
 // late doesn't fill today with overdue work.
 const SUBJECT_ID = { Maths: 'maths', Reasoning: 'reasoning', 'General Awareness': 'ga' }
-export function planTasks({ category, fromDate }) {
-  return PLAN_ROWS.filter((r) => !fromDate || r.date >= fromDate).map((r) => ({
+export function planTasks({ category, fromDate, start = PLAN_START }) {
+  return planRows(start).filter((r) => !fromDate || r.date >= fromDate).map((r) => ({
     id: r.id,
     title: r.title,
     description: `${r.notes}\n\nDay ${r.day} of 40 · ${PLAN_NAME}`,
