@@ -7,6 +7,9 @@ import { loadTasks, saveTasks } from '../../src/lib/storage.js'
 import { ensureRecurrences } from '../../src/lib/recurrence.js'
 import { createTask } from '../../src/lib/tasks.js'
 import { PLAN_ROWS, planRows, planTasks, startForExam } from '../../src/exams/ntpc/plan40.js'
+import { EXAMS, examById } from '../../src/exams/index.js'
+import { examPlanRows, examPlanTasks } from '../../src/exams/plan.js'
+import { examTasks } from '../../src/exams/ntpc/calc.js'
 
 let pass = 0, fail = 0
 const ok = (cond, label, extra = '') => { if (cond) pass += 1; else fail += 1; console.log(`${cond ? 'PASS' : 'FAIL'}  ${label}${!cond && extra ? `  -> ${extra}` : ''}`) }
@@ -115,6 +118,31 @@ ok(same(exam.map((r) => r.id), PLAN_ROWS.map((r) => r.id)), 'the same task ids w
 ok(exam.some((r) => r.title === 'Current affairs: Feb 2027') && exam.some((r) => r.title === 'Revise CA: Jan-Feb 2027'), 'current-affairs months follow the start date')
 ok(planRows(startForExam('2026-12-05')).every((r, i) => r.date === PLAN_ROWS[i].date && r.title === PLAN_ROWS[i].title), 'an exam on 5 Dec 2026 gives the first plan exactly')
 ok(cleanNtpc({ planStart: '2027-02-03' }).planStart === '2027-02-03' && cleanNtpc({ planStart: 'x' }).planStart === null, 'the saved plan start is kept, and cleaned')
+
+// ---- More exams (exams/index.js, exams/plan.js) ----
+ok(EXAMS.map((e) => e.id).join(',') === 'rrb-ntpc,ssc-cgl,ibps-po', 'three exams: RRB NTPC, SSC CGL, IBPS PO')
+ok(examById('nope').id === 'rrb-ntpc' && examById(undefined).id === 'rrb-ntpc', 'an unknown exam falls back to RRB NTPC')
+const allIds = EXAMS.flatMap((e) => e.subjects.flatMap((x) => x.topics.map((t) => `${e.id}|${t.id}`)))
+ok(new Set(allIds).size === allIds.length, 'topic ids are unique within each exam')
+ok(EXAMS.every((e) => e.subjects.some((x) => x.topics.some((t) => t.id === e.caTopic && t.recurring))), 'each exam links current affairs to a recurring topic')
+ok(new Set(EXAMS.map((e) => e.store)).size === 3 && EXAMS[0].store === 'ntpc', 'each exam saves under its own key; RRB NTPC keeps "ntpc"')
+const ssc = examById('ssc-cgl'), po = examById('ibps-po')
+saveNtpc(cleanNtpc({ examDate: '2027-03-15' }, ssc), ssc)
+ok(loadNtpc(ssc).examDate === '2027-03-15' && loadNtpc().examDate !== '2027-03-15', 'SSC progress is kept apart from NTPC progress')
+for (const e of [ssc, po]) {
+  const rows = examPlanRows(e, startForExam('2027-03-15'))
+  const learn = rows.filter((r) => r.kind === 'learn')
+  const covered = new Set(learn.flatMap((r) => r.title.split(' + ')))
+  const topics = e.subjects.flatMap((x) => x.topics).filter((t) => !t.recurring)
+  ok(rows[0].date === '2027-02-03' && rows.at(-1).date === '2027-03-14', `${e.name}: 40 days ending the day before the exam`)
+  ok(topics.every((t) => covered.has(t.name)), `${e.name}: every syllabus topic gets a learning slot`, topics.filter((t) => !covered.has(t.name)).map((t) => t.name).join('; '))
+  ok(new Set(rows.map((r) => r.id)).size === rows.length && rows.every((r) => r.id.startsWith(`${e.id}-plan40-`)), `${e.name}: fixed, unique task ids`)
+  ok(rows.every((r) => { const [h, m] = r.time.split(':').map(Number); const a = h * 60 + m, b = a + r.minutes; return (a >= 300 && b <= 450) || (a >= 1200 && b <= 1285) }), `${e.name}: every task inside the morning and evening slots`)
+  const tasks = examPlanTasks(e, { category: 'learning', fromDate: '2027-03-01', start: startForExam('2027-03-15') })
+  ok(tasks.every((t) => t.date >= '2027-03-01' && t.exam.id === e.id && t.tags.includes(e.tag)), `${e.name}: added late, past days left out; tasks belong to the exam`)
+  ok(examTasks(tasks, null, e.id).length === tasks.length && examTasks(tasks).length === 0, `${e.name}: its tasks never count as NTPC tasks`)
+}
+ok(revisionTaskId('cgl-quant:percentage', 1, ssc.revPrefix) === 'ssc-cgl-rev-cgl-quant-percentage-1' && revisionTaskId('maths:percentage', 1).startsWith('ntpc-rev-'), 'revision task ids carry the exam; NTPC keeps its own')
 
 console.log(`\n${pass} passed, ${fail} failed`)
 process.exit(fail ? 1 : 0)

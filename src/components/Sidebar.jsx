@@ -3,6 +3,7 @@ import { LayoutDashboard, KanbanSquare, CalendarRange, CalendarDays, Grid2x2, In
 import { BrandMark, Wordmark } from './Brand'
 import { usePlanner } from '../store/PlannerContext'
 import { isDark } from '../lib/themes'
+import { examById } from '../exams'
 import { GuestPill, isGuest } from '../features/Guest'
 import { dateKey, dayStats } from '../lib/tasks'
 import { cardsInNotes, dueCards } from '../lib/flashcards'
@@ -56,7 +57,8 @@ export default function Sidebar() {
       <div className="flex flex-col flex-1 min-h-0 overflow-y-auto gap-3 overflow-x-hidden [&>*]:shrink-0 -mx-1 px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {/* Nav */}
       <nav className="flex flex-col gap-1">
-        {NAV.filter(({ id }) => (id !== 'work' || settings.modules?.work) && (id !== 'ntpc' || settings.modules?.ntpc)).map(({ id, label, icon: Icon }) => {
+        {NAV.filter(({ id }) => (id !== 'work' || settings.modules?.work) && (id !== 'ntpc' || settings.modules?.ntpc)).map(({ id, label: name, icon: Icon }) => {
+          const label = id === 'ntpc' ? examById(settings.exam).short : name // the exam being prepared for
           const active = view === id
           const badge = id === 'revise' && cardsDue > 0 ? cardsDue : 0
           return (

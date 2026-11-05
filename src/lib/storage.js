@@ -37,7 +37,8 @@ export const DEFAULT_SETTINGS = {
   columns: DEFAULT_COLUMNS, // Board columns (see lib/columns.js)
   views: [], // saved Board filters: [{ id, name, text, crit }] (see lib/views.js)
   templates: [], // reusable tasks: [{ id, name, title, steps, ... }]
-  modules: { work: true, ntpc: false }, // which optional sections show in the navigation
+  modules: { work: true, ntpc: false }, // which optional sections show in the navigation (ntpc: Exam prep)
+  exam: 'rrb-ntpc', // the exam Exam prep is open on (exams/index.js)
   workHours: { start: '09:00', end: '18:00', breakMinutes: 60 }, // capacity and "Plan my day" use these
   reminders: { enabled: false, minutes: 5, repeat: 0 }, // browser notification before a timed task starts
   notes: [], // sticky notes: [{ id, text, color, pinned, createdAt, updatedAt, images: [{ id, src, w, h }] }] (lib/noteImages.js)

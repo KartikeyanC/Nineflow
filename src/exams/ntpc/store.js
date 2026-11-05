@@ -13,10 +13,11 @@ import { useCallback, useEffect, useState } from 'react'
 import { storageKey } from '../../lib/profiles'
 import { reportSave, uid } from '../../lib/storage'
 import { CHECKPOINT_IDS, DEFAULT_INTERVALS, DEFAULT_REQUIRED } from './calc'
-import { CA_CATEGORIES, CATEGORIES, SUBJECTS } from './syllabus'
+import { NTPC_EXAM } from '../index'
 
-const KEY = () => storageKey('ntpc')
-export const ntpcKey = () => KEY()
+// Each exam saves under its own key (RRB NTPC: 'ntpc', as before there were other exams).
+const KEY = (exam = NTPC_EXAM) => storageKey(exam.store)
+export const ntpcKey = (exam = NTPC_EXAM) => KEY(exam)
 const DATE = /^\d{4}-\d{2}-\d{2}$/
 const str = (v, max) => (typeof v === 'string' ? v.slice(0, max) : '')
 const num = (v, max = 100000) => (Number.isFinite(Number(v)) && Number(v) >= 0 ? Math.min(max, Math.round(Number(v) * 10) / 10) : 0)
@@ -54,17 +55,18 @@ function cleanTopic(t) {
   }
 }
 
-export function cleanNtpc(raw) {
+export function cleanNtpc(raw, exam = NTPC_EXAM) {
   const base = emptyNtpc()
   if (!raw || typeof raw !== 'object') return base
-  const subjects = SUBJECTS.map((s) => s.id)
+  const subjects = exam.subjects.map((s) => s.id)
+  const CA_CATEGORIES = exam.caCategories || NTPC_EXAM.caCategories
   const topics = {}
   for (const [id, t] of Object.entries(raw.topics || {})) { const c = cleanTopic(t); if (c && typeof id === 'string' && id.length < 120) topics[id] = c }
   const intervals = Array.isArray(raw.revision?.intervals) ? raw.revision.intervals.map((d) => Math.round(Number(d))).filter((d) => d >= 1 && d <= 365).slice(0, 8) : []
   const caMonths = {}
   for (const [m, v] of Object.entries(raw.caMonths || {})) if (/^\d{4}-\d{2}$/.test(m)) caMonths[m] = { revised: v?.revised === true, quiz: v?.quiz === true }
   return {
-    category: oneOf(raw.category, CATEGORIES.map((c) => c.id)),
+    category: oneOf(raw.category, exam.levels.map((c) => c.id)),
     examDate: DATE.test(raw.examDate || '') ? raw.examDate : null,
     planStart: DATE.test(raw.planStart || '') ? raw.planStart : null, // when the 40-day plan was added (Ntpc.jsx PlanCard)
     required: Array.isArray(raw.required) ? CHECKPOINT_IDS.filter((c) => raw.required.includes(c)) : base.required,
@@ -83,23 +85,24 @@ export function cleanNtpc(raw) {
   }
 }
 
-export function loadNtpc() {
-  try { return cleanNtpc(JSON.parse(localStorage.getItem(KEY()) || 'null')) } catch { return emptyNtpc() }
+export function loadNtpc(exam = NTPC_EXAM) {
+  try { return cleanNtpc(JSON.parse(localStorage.getItem(KEY(exam)) || 'null'), exam) } catch { return emptyNtpc() }
 }
-export function saveNtpc(data) {
-  try { localStorage.setItem(KEY(), JSON.stringify(data)); reportSave(true, KEY()) } catch { reportSave(false, KEY()) }
+export function saveNtpc(data, exam = NTPC_EXAM) {
+  try { localStorage.setItem(KEY(exam), JSON.stringify(data)); reportSave(true, KEY(exam)) } catch { reportSave(false, KEY(exam)) }
 }
 
 // The module's state and a way to change it. Another device's changes (arriving through sync)
 // and other tabs reload it, like Work OS does.
-export function useNtpc() {
-  const [data, setData] = useState(loadNtpc)
+// One exam at a time: the screen draws this afresh (a new key) when the exam changes.
+export function useNtpc(exam = NTPC_EXAM) {
+  const [data, setData] = useState(() => loadNtpc(exam))
   useEffect(() => {
-    const onStorage = (e) => { if (e.key === KEY()) setData(loadNtpc()) }
+    const onStorage = (e) => { if (e.key === KEY(exam)) setData(loadNtpc(exam)) }
     window.addEventListener('storage', onStorage)
     return () => window.removeEventListener('storage', onStorage)
-  }, [])
-  const change = useCallback((fn) => setData((d) => { const next = cleanNtpc({ ...d, ...fn(d) }); saveNtpc(next); return next }), [])
+  }, [exam])
+  const change = useCallback((fn) => setData((d) => { const next = cleanNtpc({ ...d, ...fn(d) }, exam); saveNtpc(next, exam); return next }), [exam])
   const changeTopic = useCallback((id, fn) => change((d) => {
     const cur = d.topics[id] || cleanTopic({})
     return { topics: { ...d.topics, [id]: { ...cur, ...fn(cur) } } }
@@ -108,8 +111,8 @@ export function useNtpc() {
 }
 
 // Built-in topics plus the person's own, per subject; hidden ones left out unless asked for.
-export function topicsOf(data, { withHidden = false } = {}) {
-  return SUBJECTS.map((s) => ({
+export function topicsOf(data, { withHidden = false } = {}, exam = NTPC_EXAM) {
+  return exam.subjects.map((s) => ({
     ...s,
     topics: [...s.topics, ...data.custom.filter((c) => c.subject === s.id).map((c, i) => ({ id: c.id, subject: s.id, name: c.name, order: 1000 + i, recurring: false, custom: true }))]
       .filter((t) => withHidden || !data.topics[t.id]?.hidden),

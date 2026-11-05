@@ -54,8 +54,8 @@ export function practiceTotals(entries = []) {
 export const isWeak = (totals) => totals.attempted >= WEAK_MIN_ATTEMPTED && totals.accuracy !== null && totals.accuracy < WEAK_BELOW
 
 // The planner's tasks that belong to this exam (dropped ones don't count), optionally for one topic.
-export const examTasks = (tasks, topicId) =>
-  tasks.filter((t) => t.exam?.id === EXAM_ID && !t.dropped && (!topicId || t.exam.topic === topicId))
+export const examTasks = (tasks, topicId, examId = EXAM_ID) =>
+  tasks.filter((t) => t.exam?.id === examId && !t.dropped && (!topicId || t.exam.topic === topicId))
 
 // Where a topic stands. `required` is the person's own definition of finished (a list of checkpoints).
 //   not-started - nothing ticked, practised or worked on
@@ -118,17 +118,17 @@ const plannedOn = (tasks, day) => examTasks(tasks)
   .reduce((m, t) => m + Math.max(0, (t.durationMinutes || 0) - totalMinutes(t)), 0)
 
 // Stable id of a topic's nth revision task, so the same revision is never created twice.
-export const revisionTaskId = (topicId, n) => `ntpc-rev-${topicId.replace(/[^a-z0-9-]/gi, '-')}-${n}`
+export const revisionTaskId = (topicId, n, prefix = 'ntpc-rev') => `${prefix}-${topicId.replace(/[^a-z0-9-]/gi, '-')}-${n}`
 
 // The revision tasks to create for a topic finished on `from`: one per interval, skipping any that
 // already exist (done, open or dropped). Each lands on its day, or the next day with room in the daily
 // study time, looking at most two weeks ahead, then takes the original day anyway.
-export function planRevisions({ topicId, from, intervals = DEFAULT_INTERVALS, minutes = 30, dailyMinutes = 240, tasks, existingIds }) {
+export function planRevisions({ topicId, from, intervals = DEFAULT_INTERVALS, minutes = 30, dailyMinutes = 240, tasks, existingIds, prefix }) {
   const have = existingIds || new Set(tasks.map((t) => t.id))
   const extra = {}
   const out = []
   intervals.forEach((days, i) => {
-    const id = revisionTaskId(topicId, i + 1)
+    const id = revisionTaskId(topicId, i + 1, prefix)
     if (have.has(id)) return
     const first = key(addDays(parseISO(from), days))
     let day = first

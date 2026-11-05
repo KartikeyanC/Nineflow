@@ -751,7 +751,7 @@ function Setup() {
     a.needs.includes('hours') && ['Estimate vs actual on finished tasks', BarChart3, 'mint'],
     a.needs.includes('habits') && ['Habit tracker on the dashboard', Flame, 'peach'],
     wantsWork && ['Work OS: task log, social calendar, ad tracker, reports', Briefcase, 'coral'],
-    a.needs.includes('exam') && ['RRB NTPC syllabus and 40-day plan, and Revise flashcards with an example note', GraduationCap, 'teal'],
+    a.needs.includes('exam') && ['Exam prep (RRB NTPC, SSC CGL or IBPS PO): syllabus, 40-day plan, and Revise flashcards with an example note', GraduationCap, 'teal'],
     [`${a.startTime}–${a.endTime}, ${a.days.length} days a week (${dayHours.toFixed(1).replace('.0', '')} h/day after breaks)${a.days.includes(6) && a.saturdayRule !== 'all' ? ` · ${SATURDAY_RULES.find((r) => r.id === a.saturdayRule)?.label}` : ''}`, Clock3, 'butter'],
     [isGuestProfile(me) ? 'Saved in this browser only, until you sign in' : `Saved to ${savedWhere(me)} automatically`, HardDrive, 'sky'],
   ].filter(Boolean), [a, wantsWork, dayHours, me])

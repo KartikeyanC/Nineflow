@@ -33,6 +33,7 @@ import { uid, validateBackup } from '../lib/storage'
 import { isNativeApp } from '../lib/platform'
 import { loadWork } from '../work/workStore'
 import { loadNtpc } from '../exams/ntpc/store'
+import { EXAMS, examById } from '../exams'
 import { ConfirmDialog, Segmented, cx } from '../components/ui'
 import { TimeField } from '../components/TimePicker'
 import { NotesFolderSettings, notesFolderAvailable } from '../features/NotesFolder'
@@ -497,7 +498,7 @@ export default function Settings() {
 
   const exportData = () => {
     // One file holds everything, Work OS and NTPC included.
-    const payload = { app: 'daily-planner', version: 2, exportedAt: new Date().toISOString(), tasks, settings, habits, work: loadWork(), ntpc: loadNtpc() }
+    const payload = { app: 'daily-planner', version: 2, exportedAt: new Date().toISOString(), tasks, settings, habits, work: loadWork(), ntpc: loadNtpc(), exams: Object.fromEntries(EXAMS.map((e) => [e.id, loadNtpc(e)])) }
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const a = Object.assign(document.createElement('a'), { href: url, download: `nineflow-${new Date().toISOString().slice(0, 10)}.json` })
@@ -638,9 +639,16 @@ export default function Settings() {
             <Segmented size="sm" value={settings.modules?.work ? 'on' : 'off'} onChange={(v) => updateSettings({ modules: { ...settings.modules, work: v === 'on' } })}
               options={[{ value: 'on', label: 'Shown' }, { value: 'off', label: 'Hidden' }]} />
           </Row>
-          <Row label="RRB NTPC study planner" hint="The NTPC syllabus with topic progress, practice, revisions and current affairs. Each workspace has its own.">
-            <Segmented size="sm" value={settings.modules?.ntpc ? 'on' : 'off'} onChange={(v) => updateSettings({ modules: { ...settings.modules, ntpc: v === 'on' } })}
-              options={[{ value: 'on', label: 'Shown' }, { value: 'off', label: 'Hidden' }]} />
+          <Row label="Exam prep" hint="A syllabus with topic progress, practice, revisions, current affairs and a 40-day plan. Each exam and each workspace keeps its own.">
+            <div className="flex flex-wrap items-center gap-2">
+              {settings.modules?.ntpc && (
+                <select className="input w-auto py-1.5" aria-label="Exam" value={examById(settings.exam).id} onChange={(e) => updateSettings({ exam: e.target.value })}>
+                  {EXAMS.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
+                </select>
+              )}
+              <Segmented size="sm" value={settings.modules?.ntpc ? 'on' : 'off'} onChange={(v) => updateSettings({ modules: { ...settings.modules, ntpc: v === 'on' } })}
+                options={[{ value: 'on', label: 'Shown' }, { value: 'off', label: 'Hidden' }]} />
+            </div>
           </Row>
           <Row label="Colour theme" hint="Works in light and dark. Changes the page, cards and accent colour.">
             <div className="flex flex-wrap justify-end gap-2" role="radiogroup" aria-label="Colour theme">

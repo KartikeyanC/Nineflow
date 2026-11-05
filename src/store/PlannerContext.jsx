@@ -5,6 +5,7 @@ import {
 } from '../lib/storage'
 import { emptyWork, saveWork, workKey } from '../work/workStore'
 import { cleanNtpc, emptyNtpc, ntpcKey, saveNtpc } from '../exams/ntpc/store'
+import { EXAMS } from '../exams'
 import { DROP_KEEP_DAYS, carryForward, checkGate, createTask, dateKey, isParked, todayKey, withDate, withSessionPaused, withSessionResumed, withStatus } from '../lib/tasks'
 import { generateSample } from '../lib/sample'
 import { dueReminders, nagDue, reminderSchedule } from '../lib/taskMeta'
@@ -293,6 +294,11 @@ export function PlannerProvider({ children }) {
   const importData = useCallback((data) => {
     if (data.work && typeof data.work === 'object') saveWork(data.work)
     if (data.ntpc && typeof data.ntpc === 'object') { saveNtpc(cleanNtpc(data.ntpc)); announce(ntpcKey()) }
+    // Every exam's progress (backups from before other exams have only data.ntpc, read above).
+    for (const exam of EXAMS) {
+      const d = data.exams?.[exam.id]
+      if (d && typeof d === 'object') { saveNtpc(cleanNtpc(d, exam), exam); announce(ntpcKey(exam)) }
+    }
     setTasks(normalizeTasks(data.tasks || []))
     if (data.settings) setSettings((s) => ({ ...DEFAULT_SETTINGS, ...s, ...data.settings }))
     if (Array.isArray(data.habits)) setHabits(data.habits)
@@ -312,12 +318,12 @@ export function PlannerProvider({ children }) {
     setHabits([])
     setSelectedId(null)
     saveWork(emptyWork())
-    saveNtpc(emptyNtpc())
+    for (const exam of EXAMS) saveNtpc(emptyNtpc(), exam)
     // Notes and their flashcard progress live in settings; the rest of settings stays.
     setSettings((s) => ({ ...s, notes: [], revision: { cards: {}, days: {} } }))
     forgetAllConnections() // the tokens for Todoist, Notion, Telegram and the rest go with it
     announce(workKey())
-    announce(ntpcKey())
+    for (const exam of EXAMS) announce(ntpcKey(exam))
   }, [])
 
   // Replace a task's time log (edit or delete entries), with undo when labelled.

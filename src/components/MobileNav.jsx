@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import { LayoutDashboard, KanbanSquare, CalendarRange, CalendarDays, Grid2x2, Settings, Briefcase, ListTodo, Inbox, StickyNote, PauseCircle, MoreHorizontal, Search, X, Zap, GraduationCap, ChartColumn, Brain, Mic } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
 import { cx, useDialogFocus } from './ui'
+import { examById } from '../exams'
 import { openInterrupt } from '../features/Interrupt'
 
 const NAV = [
@@ -34,6 +35,7 @@ export default function MobileNav() {
   const sheetRef = useRef(null)
   useDialogFocus(sheetRef, sheet)
   const more = MORE.filter(({ id }) => (id !== 'work' || settings.modules?.work) && (id !== 'ntpc' || settings.modules?.ntpc))
+    .map((m) => (m.id === 'ntpc' ? { ...m, label: examById(settings.exam).short } : m)) // the exam being prepared for
   const inMore = more.some((m) => m.id === view)
   const go = (id) => { setSheet(false); setView(id) }
 

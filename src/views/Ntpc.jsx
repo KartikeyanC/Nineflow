@@ -5,14 +5,16 @@ import { BookOpen, CalendarClock, Check, ChevronDown, ExternalLink, Eye, EyeOff,
 import { usePlanner } from '../store/PlannerContext'
 import { dateKey, fmtMinutes, totalMinutes } from '../lib/tasks'
 import { CheckCircle, EmptyState, Modal, ProgressBar, Segmented, cx } from '../components/ui'
-import { CA_CATEGORIES, CATEGORIES, EXAM_ID, EXAM_NAME, subjectById } from '../exams/ntpc/syllabus'
+import { EXAMS, examById, subjectOf } from '../exams'
+import { examPlanRows, examPlanTasks } from '../exams/plan'
 import { CHECKPOINTS, DEFAULT_INTERVALS, STATUSES, accuracy, examTasks, isWeak, planRevisions, practiceTotals, statusLabel, studyMinutes, summarize, topicCompletion, topicStatus } from '../exams/ntpc/calc'
 import { DIFFICULTIES, PRACTICE_LEVELS, PRIORITY_LEVELS, topicsOf, useNtpc } from '../exams/ntpc/store'
 import { PLAN_NAME, PLAN_ROWS, planRows, planTasks, startForExam } from '../exams/ntpc/plan40'
 import { rowId } from '../lib/taskImport'
 
-// RRB NTPC study planner (Settings → Preferences → RRB NTPC). The syllabus comes from
-// exams/ntpc/syllabus.js, the person's progress from exams/ntpc/store.js, and every study task is an
+// Exam prep (Settings → Preferences → Exam prep): one exam at a time (settings.exam), picked at the top.
+// The syllabus comes from the exam's definition (exams/index.js), the person's progress for that exam from
+// exams/ntpc/store.js, and every study task is an
 // ordinary planner task carrying `exam: { id, subject, topic, kind }`, so the timer, Board, reminders
 // and carry-forward all work on it unchanged.
 
@@ -26,7 +28,7 @@ const cap = (s) => (s ? s[0].toUpperCase() + s.slice(1) : '')
 const STATUS_TONE = {
   'not-started': 'bg-page text-muted border border-line', progress: 'bg-sky text-sky-fg', revise: 'bg-coral text-coral-fg', done: 'bg-mint text-mint-fg', ongoing: 'bg-lav text-lav-fg',
 }
-const SUBJECT_BAR = { sky: 'bg-sky-fg', lav: 'bg-lav-fg', mint: 'bg-mint-fg' }
+const SUBJECT_BAR = { sky: 'bg-sky-fg', lav: 'bg-lav-fg', mint: 'bg-mint-fg', peach: 'bg-peach-fg', butter: 'bg-butter-fg' }
 
 function StatusPill({ status, className }) {
   return <span className={cx('pill text-xs px-2 py-0.5 whitespace-nowrap', STATUS_TONE[status], className)}>{statusLabel(status)}</span>
@@ -35,34 +37,50 @@ function StatusPill({ status, className }) {
 const pct = (v) => `${Math.round((v || 0) * 100)}%`
 
 export default function Ntpc() {
+  const { settings } = usePlanner()
+  const exam = examById(settings.exam)
+  return <ExamScreen key={exam.id} exam={exam} />
+}
+
+function ExamPicker({ exam }) {
+  const { updateSettings } = usePlanner()
+  return (
+    <select className="input w-auto py-1 pl-2 pr-8 text-xs font-semibold uppercase tracking-[0.12em] text-faint bg-transparent border-0 -ml-2"
+      aria-label="Exam" value={exam.id} onChange={(e) => updateSettings({ exam: e.target.value })}>
+      {EXAMS.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
+    </select>
+  )
+}
+
+function ExamScreen({ exam }) {
   const planner = usePlanner()
   const { allTasks, now, settings } = planner
-  const { data, change, changeTopic } = useNtpc()
+  const { data, change, changeTopic } = useNtpc(exam)
   const [tab, setTab] = useState('overview')
   const [openTopic, setOpenTopic] = useState(null)
   const [filters, setFilters] = useState({ subject: 'all', status: 'all', priority: 'all', difficulty: 'all', when: 'any' })
   const today = dateKey(now)
 
-  const subjects = useMemo(() => topicsOf(data), [data])
+  const subjects = useMemo(() => topicsOf(data, {}, exam), [data, exam])
   const allTopics = useMemo(() => subjects.flatMap((s) => s.topics), [subjects])
-  const linkedAll = useMemo(() => examTasks(allTasks), [allTasks])
+  const linkedAll = useMemo(() => examTasks(allTasks, null, exam.id), [allTasks, exam])
   const statusOf = (t) => topicStatus(t, data.topics[t.id], linkedAll.filter((x) => x.exam.topic === t.id), data.required, today)
 
   // The category new study tasks go into: the chosen one, else Learning, else the first.
   const taskCategory = settings.categories.some((c) => c.id === data.taskCategory) ? data.taskCategory
     : settings.categories.find((c) => c.id === 'learning')?.id || settings.categories[0]?.id
 
-  const ctx = { data, change, changeTopic, statusOf, linkedAll, today, taskCategory, subjects, allTopics, setOpenTopic }
+  const ctx = { exam, data, change, changeTopic, statusOf, linkedAll, today, taskCategory, subjects, allTopics, setOpenTopic }
   const daysLeft = data.examDate ? differenceInCalendarDays(parseISO(data.examDate), now) : null
 
   return (
     <div className="animate-view-in max-w-5xl">
       <header className="mb-5 max-sm:mb-4 flex flex-wrap items-end justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-faint">Exams</p>
-          <h1 className="h-display text-3xl max-sm:text-2xl">{EXAM_NAME}</h1>
+          <ExamPicker exam={exam} />
+          <h1 className="h-display text-3xl max-sm:text-2xl">{exam.name}</h1>
           <p className="text-sm text-muted mt-0.5">
-            {CATEGORIES.find((c) => c.id === data.category)?.label || 'Choose your level in Setup'}
+            {exam.levels.find((c) => c.id === data.category)?.label || 'Choose your level in Setup'}
             {daysLeft !== null && <> · <b className="text-ink tnum">{daysLeft >= 0 ? `${daysLeft} days to the exam` : 'Exam date passed'}</b></>}
           </p>
         </div>
@@ -72,7 +90,7 @@ export default function Ntpc() {
         </div>
       </header>
 
-      {!data.category && tab !== 'setup' && <FirstRun change={change} />}
+      {!data.category && tab !== 'setup' && <FirstRun exam={exam} change={change} />}
       {tab === 'overview' && <Overview ctx={ctx} planner={planner} goSyllabus={(f) => { setFilters((x) => ({ ...x, ...f })); setTab('syllabus') }} />}
       {tab === 'syllabus' && <Syllabus ctx={ctx} filters={filters} setFilters={setFilters} />}
       {tab === 'ca' && <CurrentAffairs ctx={ctx} planner={planner} />}
@@ -83,13 +101,13 @@ export default function Ntpc() {
   )
 }
 
-function FirstRun({ change }) {
+function FirstRun({ exam, change }) {
   return (
     <section className="card p-5 mb-4">
-      <h2 className="h-display text-base">Which NTPC exam are you preparing for?</h2>
-      <p className="text-sm text-muted mt-1 max-w-prose">The stages and pattern differ between the Graduate and Undergraduate levels and between notifications. Check the official RRB notice for yours; you can change this any time in Setup.</p>
+      <h2 className="h-display text-base">Which {exam.name} stage are you preparing for?</h2>
+      <p className="text-sm text-muted mt-1 max-w-prose">The stages and pattern change between notifications. Check the official {exam.body} notice for yours; you can change this any time in Setup. Preparing for another exam? Pick it at the top.</p>
       <div className="mt-3 flex flex-wrap gap-2">
-        {CATEGORIES.map((c) => <button key={c.id} type="button" className="btn-black" onClick={() => change(() => ({ category: c.id }))}>{c.label}</button>)}
+        {exam.levels.map((c) => <button key={c.id} type="button" className="btn-black" onClick={() => change(() => ({ category: c.id }))}>{c.label}</button>)}
       </div>
     </section>
   )
@@ -145,7 +163,7 @@ function Overview({ ctx, planner, goSyllabus }) {
                   <CheckCircle checked={t.status === 'completed'} onToggle={() => toggleComplete(t.id)} size="sm" />
                   <button type="button" onClick={() => setSelectedId(t.id)} className="min-w-0 flex-1 text-left">
                     <span className={cx('block text-sm font-semibold truncate', t.status === 'completed' && 'line-through text-muted')}>{t.title}</span>
-                    <span className="block text-xs text-faint">{t.startTime ? `${clock(t.startTime)} · ` : ''}{subjectById(t.exam.subject)?.short || 'All subjects'} · {fmtMinutes(t.durationMinutes)}</span>
+                    <span className="block text-xs text-faint">{t.startTime ? `${clock(t.startTime)} · ` : ''}{subjectOf(ctx.exam, t.exam.subject)?.short || 'All subjects'} · {fmtMinutes(t.durationMinutes)}</span>
                   </button>
                 </li>
               ))}
@@ -221,23 +239,27 @@ function matchPlan(rows, allTasks) {
 }
 
 function PlanCard({ ctx, planner }) {
-  const { today, taskCategory, data, change } = ctx
+  const { exam, today, taskCategory, data, change } = ctx
   const { addTasks, removeTasks, allTasks, setView, setDashboardDate } = planner
   const [confirm, setConfirm] = useState(false)
   const [removing, setRemoving] = useState(false)
   const [alsoDone, setAlsoDone] = useState(false)
   const { start, rows, mine } = useMemo(() => {
-    const pick = (s) => { const r = planRows(s); return { start: s, rows: r, mine: matchPlan(r, allTasks) } }
+    const rowsFor = (s) => (exam.plan40 ? planRows(s) : examPlanRows(exam, s))
+    const pick = (s) => { const r = rowsFor(s); return { start: s, rows: r, mine: matchPlan(r, allTasks) } }
     if (data.planStart) return pick(data.planStart)
-    const first = { start: PLAN_ROWS[0].date, rows: PLAN_ROWS, mine: matchPlan(PLAN_ROWS, allTasks) }
-    if (first.mine.size) return first
+    if (exam.plan40) {
+      const first = { start: PLAN_ROWS[0].date, rows: PLAN_ROWS, mine: matchPlan(PLAN_ROWS, allTasks) }
+      if (first.mine.size) return first
+    }
     return data.examDate ? pick(startForExam(data.examDate)) : { start: null, rows: [], mine: new Map() }
-  }, [data.planStart, data.examDate, allTasks])
+  }, [exam, data.planStart, data.examDate, allTasks])
+  const planName = exam.plan40 ? PLAN_NAME : `40-day plan · ${exam.name}`
 
   if (!start) {
     return (
       <section className="card p-5">
-        <h2 className="h-display text-base flex items-center gap-2"><CalendarClock size={16} /> {PLAN_NAME}</h2>
+        <h2 className="h-display text-base flex items-center gap-2"><CalendarClock size={16} /> {planName}</h2>
         <p className="text-sm text-muted mt-1">Set your exam date and the plan is laid out over the 40 days before it: mornings 5:00 to 7:30, evenings 8:00 to 9:30, with times, sources and topics.</p>
         <label className="mt-3 inline-flex items-center gap-2 text-sm font-semibold">
           Exam date
@@ -249,7 +271,7 @@ function PlanCard({ ctx, planner }) {
 
   const inPlanner = rows.filter((r) => mine.has(r.id))
   const done = inPlanner.filter((r) => mine.get(r.id).status === 'completed').length
-  const toAdd = planTasks({ category: taskCategory, fromDate: today, start }).filter((t) => !mine.has(t.id))
+  const toAdd = (exam.plan40 ? planTasks({ category: taskCategory, fromDate: today, start }) : examPlanTasks(exam, { category: taskCategory, fromDate: today, start })).filter((t) => !mine.has(t.id))
   const skipped = rows.filter((r) => r.date < today && !mine.has(r.id)).length
   const toRemove = inPlanner.map((r) => mine.get(r.id)).filter((t) => alsoDone || t.status !== 'completed')
   const remove = () => {
@@ -271,8 +293,8 @@ function PlanCard({ ctx, planner }) {
     <section className="card p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <h2 className="h-display text-base flex items-center gap-2"><CalendarClock size={16} /> {PLAN_NAME}</h2>
-          <p className="text-sm text-muted mt-1">{format(parseISO(first), 'd MMM')} to {format(parseISO(last), 'd MMM yyyy')} · mornings 5:00 to 7:30, evenings 8:00 to 9:30 · {rows.length} tasks with times, sources and topics</p>
+          <h2 className="h-display text-base flex items-center gap-2"><CalendarClock size={16} /> {planName}</h2>
+          <p className="text-sm text-muted mt-1">{format(parseISO(first), 'd MMM')} to {format(parseISO(last), 'd MMM yyyy')} · mornings 5:00 to 7:30, evenings 8:00 to 9:30 · {rows.length} tasks with times{exam.plan40 ? ', sources' : ''} and topics</p>
           {inPlanner.length > 0 && <p className="text-xs text-faint mt-1 tnum">{inPlanner.length} in your planner · {done} done</p>}
         </div>
         <div className="flex flex-wrap gap-2">
@@ -297,7 +319,7 @@ function PlanCard({ ctx, planner }) {
       <Modal open={removing} onClose={() => { setRemoving(false); setAlsoDone(false) }} title="Remove the 40-day plan?">
         <p className="text-sm text-muted">
           {toRemove.length} task{toRemove.length === 1 ? '' : 's'} of the plan will be deleted from this planner{done && !alsoDone ? `. The ${done} you finished stay, so your study history is kept` : ''}.
-          {' '}Your other tasks, your RRB NTPC progress and your practice records are not touched. Undo, right after, brings the plan back.
+          {' '}Your other tasks, your {exam.name} progress and your practice records are not touched. Undo, right after, brings the plan back.
         </p>
         {done > 0 && (
           <label className="mt-3 flex items-center gap-2 text-sm cursor-pointer">
@@ -432,7 +454,7 @@ function Syllabus({ ctx, filters, setFilters }) {
 
 // ---- One topic --------------------------------------------------------------------------
 function TopicSheet({ topicId, ctx, planner, onClose }) {
-  const { data, change, changeTopic, statusOf, linkedAll, today, taskCategory, allTopics } = ctx
+  const { exam, data, change, changeTopic, statusOf, linkedAll, today, taskCategory, allTopics } = ctx
   const { addTask, addTasks, toggleComplete, updateTask, setSelectedId, allTasks, now } = planner
   const topic = allTopics.find((t) => t.id === topicId) || ctx.subjects.flatMap((s) => s.topics).find((t) => t.id === topicId)
   const st = data.topics[topicId] || { checks: {}, practice: [] }
@@ -443,13 +465,13 @@ function TopicSheet({ topicId, ctx, planner, onClose }) {
   if (!topic) return null
   const status = statusOf(topic)
   const totals = practiceTotals(st.practice)
-  const subject = subjectById(topic.subject)
+  const subject = subjectOf(exam, topic.subject)
 
-  const link = (kind, deadline = null) => ({ id: EXAM_ID, subject: topic.subject, topic: topic.id, kind, deadline })
-  const baseTask = (kind) => ({ category: taskCategory, tags: ['ntpc', topic.subject], priority: st.priority || 'medium' })
+  const link = (kind, deadline = null) => ({ id: exam.id, subject: topic.subject, topic: topic.id, kind, deadline })
+  const baseTask = (kind) => ({ category: taskCategory, tags: [exam.tag, topic.subject], priority: st.priority || 'medium' })
 
   const scheduleRevisions = (from = today) => {
-    const made = planRevisions({ topicId: topic.id, from, intervals: data.revision.intervals, minutes: data.revision.minutes, dailyMinutes: data.dailyMinutes, tasks: allTasks })
+    const made = planRevisions({ topicId: topic.id, from, intervals: data.revision.intervals, minutes: data.revision.minutes, dailyMinutes: data.dailyMinutes, tasks: allTasks, prefix: exam.revPrefix })
     if (!made.length) { setMsg('Its revisions are already planned.'); return }
     addTasks(made.map((r) => ({ ...baseTask('revision'), id: r.id, title: `Revision ${r.n}: ${topic.name}`, date: r.date, durationMinutes: data.revision.minutes, exam: link('revision') })),
       `Planned ${made.length} revision${made.length === 1 ? '' : 's'} for ${topic.name}`)
@@ -647,11 +669,12 @@ function TopicSheet({ topicId, ctx, planner, onClose }) {
 }
 
 // ---- Current affairs --------------------------------------------------------------------
-const DAILY_ID = 'ntpc-ca-daily'
-const MONTHLY_ID = 'ntpc-ca-monthly'
-
 function CurrentAffairs({ ctx, planner }) {
-  const { data, change, today, taskCategory } = ctx
+  const { exam, data, change, today, taskCategory } = ctx
+  // The repeating reading and revision tasks; RRB NTPC keeps the ids it had.
+  const DAILY_ID = `${exam.tag}-ca-daily`
+  const MONTHLY_ID = `${exam.tag}-ca-monthly`
+  const CA_CATEGORIES = exam.caCategories
   const { addTask, allTasks } = planner
   const thisMonth = today.slice(0, 7)
   const months = [...new Set([thisMonth, ...data.ca.map((r) => r.date.slice(0, 7))])].sort().reverse()
@@ -662,8 +685,8 @@ function CurrentAffairs({ ctx, planner }) {
   const has = (id) => allTasks.some((t) => (t.id === id || t.seriesId === id) && !t.dropped)
   const series = (id, freq, title, minutes, kind) => {
     if (has(id)) return
-    addTask({ id, title, date: today, durationMinutes: minutes, category: taskCategory, priority: 'medium', tags: ['ntpc', 'current-affairs'],
-      recurrence: { freq, until: null, skip: [] }, exam: { id: EXAM_ID, subject: 'ga', topic: 'ga:national-current-affairs', kind } })
+    addTask({ id, title, date: today, durationMinutes: minutes, category: taskCategory, priority: 'medium', tags: [exam.tag, 'current-affairs'],
+      recurrence: { freq, until: null, skip: [] }, exam: { id: exam.id, subject: exam.caSubject, topic: exam.caTopic, kind } })
   }
 
   const add = (e) => {
@@ -782,16 +805,16 @@ function Row({ label, hint, children }) {
 }
 
 function Setup({ ctx, planner }) {
-  const { data, change, changeTopic, taskCategory } = ctx
+  const { exam, data, change, changeTopic, taskCategory } = ctx
   const { settings } = planner
-  const hidden = topicsOf(data, { withHidden: true }).flatMap((s) => s.topics).filter((t) => data.topics[t.id]?.hidden)
+  const hidden = topicsOf(data, { withHidden: true }, exam).flatMap((s) => s.topics).filter((t) => data.topics[t.id]?.hidden)
   const [intervals, setIntervals] = useState(data.revision.intervals.join(', '))
   const parsed = intervals.split(/[\s,]+/).map(Number).filter((d) => Number.isInteger(d) && d >= 1 && d <= 365)
   return (
     <div className="grid gap-4 max-w-3xl">
       <section className="card p-5 grid gap-5">
-        <Row label="Exam level" hint="Patterns differ by level and notification; check the official RRB notice.">
-          <Segmented size="sm" value={data.category || ''} onChange={(v) => change(() => ({ category: v }))} options={CATEGORIES.map((c) => ({ value: c.id, label: c.label.replace('NTPC ', '') }))} />
+        <Row label="Stage" hint={`Patterns differ by stage and notification; check the official ${exam.body} notice.`}>
+          <Segmented size="sm" value={data.category || ''} onChange={(v) => change(() => ({ category: v }))} options={exam.levels.map((c) => ({ value: c.id, label: c.label.replace('NTPC ', '') }))} />
         </Row>
         <Row label="Exam date" hint="Shows the days left, and sets the dates of the 40-day plan (a plan already added keeps its dates).">
           <input type="date" className="input w-auto py-1.5" value={data.examDate || ''} onChange={(e) => change(() => ({ examDate: e.target.value || null }))} />
@@ -801,7 +824,7 @@ function Setup({ ctx, planner }) {
             {[60, 90, 120, 180, 240, 300, 360, 480, 600].map((m) => <option key={m} value={m}>{fmtMinutes(m)}</option>)}
           </select>
         </Row>
-        <Row label="Category for study tasks" hint="Which planner category NTPC tasks go into.">
+        <Row label="Category for study tasks" hint={`Which planner category ${exam.name} tasks go into.`}>
           <select className="input w-auto py-1.5" value={taskCategory} onChange={(e) => change(() => ({ taskCategory: e.target.value }))}>
             {settings.categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
