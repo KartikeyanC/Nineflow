@@ -24,6 +24,7 @@ import { feedAvailable, feedUrl, newFeedToken, removeFeed, useFeedStatus } from 
 import { COUNTRIES, countryFromBrowser } from '../lib/holidays'
 import { format } from '../lib/dateFormat'
 import AccountSection from '../features/Account'
+import { GuestAccount, isGuest } from '../features/Guest'
 import InstallApp from '../features/InstallApp'
 import { WorkspacesSection } from '../features/Workspaces'
 import { usePlanner } from '../store/PlannerContext'
@@ -527,7 +528,7 @@ export default function Settings() {
       </header>
 
       <div className="space-y-4 max-sm:space-y-2.5">
-        <Group icon={UserRound} title="Your account" open><AccountSection /></Group>
+        <Group icon={UserRound} title="Your account" open>{isGuest() ? <GuestAccount /> : <AccountSection />}</Group>
         <Group icon={Layers} title="Workspaces"><WorkspacesSection /></Group>
         {!isNativeApp() && <Group icon={Smartphone} title="Install the app"><InstallApp /></Group>}
         {/* Categories */}

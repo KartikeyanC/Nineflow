@@ -3,6 +3,7 @@ import { LayoutDashboard, KanbanSquare, CalendarRange, CalendarDays, Grid2x2, In
 import { BrandMark, Wordmark } from './Brand'
 import { usePlanner } from '../store/PlannerContext'
 import { isDark } from '../lib/themes'
+import { GuestPill, isGuest } from '../features/Guest'
 import { dateKey, dayStats } from '../lib/tasks'
 import { cardsInNotes, dueCards } from '../lib/flashcards'
 import { cx, ProgressBar } from './ui'
@@ -37,6 +38,7 @@ export default function Sidebar() {
   const todayKey = dateKey(now)
   const cardsDue = useMemo(() => dueCards(cardsInNotes(settings.notes), settings.revision, todayKey).length, [settings.notes, settings.revision, todayKey])
   const dark = isDark(settings)
+  const guest = isGuest()
 
   return (
     <aside className="card sticky z-20 top-4 h-[calc(100vh-2rem)] w-[72px] wide:w-[232px] shrink-0 hidden sm:flex flex-col p-3 wide:p-4 transition-[width] duration-200">
@@ -106,8 +108,8 @@ export default function Sidebar() {
         </div>
       </div>
 
-      <div className="hidden wide:flex"><CloudStatusPill /></div>
-      <div className="flex wide:hidden justify-center"><CloudStatusPill iconOnly /></div>
+      <div className="hidden wide:flex">{guest ? <GuestPill /> : <CloudStatusPill />}</div>
+      <div className="flex wide:hidden justify-center">{guest ? <GuestPill iconOnly /> : <CloudStatusPill iconOnly />}</div>
       <button
         type="button"
         onClick={() => setQuickAdd({})}

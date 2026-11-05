@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useSyncExternalStore } from 'react'
-import { currentProfile, accountProfileId } from '../lib/profiles'
+import { currentProfile, accountProfileId, isGuestProfile } from '../lib/profiles'
 import { rememberedAccount } from '../lib/google'
 import { isOnboarded } from '../lib/storage'
 import { startSync, stopSync } from '../lib/cloud'
@@ -8,7 +8,7 @@ import { hasLicence, needsLicence } from '../lib/licence'
 import Onboarding from '../components/Onboarding'
 import LicenceLock from './LicenceLock'
 
-// Sign-in is required. The planner opens only for an account (Google, or
+// Sign-in is required, except for a guest planner on the website. The planner opens for an account (Google, or
 // email + password) that has finished setup on this device; everything else
 // goes through Onboarding (sign in, bring local data, setup). Once open, the
 // account's data is kept in sync with its Google Drive or its email account.
@@ -19,6 +19,8 @@ export default function AuthGate({ children }) {
   const account = rememberedAccount()
   const p = currentProfile()
   const signedIn = !!account && !!p && p.id === accountProfileId(account) && isOnboarded()
+  // A guest planner (website only): opens without an account, saved in this browser, never synced.
+  const guest = isGuestProfile(p) && !needsLicence() && isOnboarded()
 
   // 'checking' | true | false, for the signed-in account.
   const email = signedIn ? account.email : null
@@ -31,9 +33,9 @@ export default function AuthGate({ children }) {
     return () => { live = false }
   }, [email])
 
-  const ready = signedIn && licensed === true
+  const ready = (signedIn && licensed === true) || guest
   useEffect(() => {
-    if (!ready) return undefined
+    if (!ready || guest) return undefined
     startSync(p.id)
     return () => stopSync()
   }, [ready]) // eslint-disable-line react-hooks/exhaustive-deps

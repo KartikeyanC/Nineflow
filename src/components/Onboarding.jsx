@@ -5,8 +5,9 @@ import {
 } from 'lucide-react'
 import {
   NEEDS, OCCUPATIONS, REASONS, ensureAccountProfile, accountProfileId, isEmailAccount, isEmailProfile, signIn, currentProfile, updateProfile, legacyProfiles,
-  moveProfileData, checkPin, migrateLegacyInto, hasLegacyData, initials, firstName,
+  moveProfileData, checkPin, migrateLegacyInto, hasLegacyData, initials, firstName, isGuestProfile, startGuest, GUEST_ID,
 } from '../lib/profiles'
+import { needsLicence } from '../lib/licence'
 import { loadSettings, saveSettings, loadTasks, saveTasks, saveHabits, markOnboarded, isOnboarded, DEFAULT_CATEGORIES, uid } from '../lib/storage'
 import { loadWork, saveWork, SATURDAY_RULES } from '../work/workStore'
 import { generateSample } from '../lib/sample'
@@ -43,7 +44,7 @@ const ORANGE_ON = 'bg-brand text-white border-transparent'
 
 const GOOGLE_ON = isConfigured()
 const EMAIL_ON = supa.isConfigured()
-const savedWhere = (p) => (isEmailProfile(p) ? 'your account' : 'your Google Drive')
+const savedWhere = (p) => (isGuestProfile(p) ? 'this browser only' : isEmailProfile(p) ? 'your account' : 'your Google Drive')
 
 // After any sign-in: load the account's planner from its store (Drive or
 // the email account), keep this device's copy if it has one, or carry on
@@ -74,7 +75,7 @@ export default function Onboarding({ initial }) {
   const account = rememberedAccount()
   const p = currentProfile()
   const signedIn = account && p?.id === accountProfileId(account)
-  const [screen, setScreen] = useState(initial || (signedIn ? (importable().length ? 'import' : 'setup') : 'signin'))
+  const [screen, setScreen] = useState(initial || (signedIn ? (importable().length ? 'import' : 'setup') : isGuestProfile(p) && !needsLicence() ? 'setup' : 'signin'))
   return (
     // Sign-in and setup are always dark, to sit with the black and orange poster
     // (the app itself follows the theme chosen in Settings; the colour theme's accent still applies here). The page and card
@@ -399,6 +400,15 @@ function SignIn({ onNext }) {
         </p>
         <a href="/privacy.html" target="_blank" rel="noopener" className="text-xs font-semibold text-faint hover:text-ink">Privacy</a>
       </div>
+      {!needsLicence() && (
+        <p className="mt-4 text-sm text-muted">
+          Just looking?{' '}
+          <button type="button" className="font-semibold text-ink underline underline-offset-4 decoration-line hover:decoration-ink" onClick={() => { startGuest(); onNext('setup') }}>
+            Try it without an account
+          </button>
+          <span className="block text-xs text-faint mt-0.5">Your planner stays in this browser. Sign in any time to keep it.</span>
+        </p>
+      )}
     </Frame>
   )
 }
@@ -678,7 +688,7 @@ function Import({ onFresh }) {
     window.location.reload()
   }
   return (
-    <Frame kicker={`Signed in as ${me?.email || ''}`} title="Bring your existing planner?" lead={`This browser has planner data from before sign-in. Move it into your account and it will be saved to ${savedWhere(me)}.`}>
+    <Frame kicker={`Signed in as ${me?.email || ''}`} title="Bring your existing planner?" lead={`This browser has a planner made without an account. Move it into your account and it will be saved to ${savedWhere(me)}.`}>
       <div className="grid gap-2 mt-6">
         {list.map((p) => {
           const c = colorOf(p.color || 'lav')
@@ -686,7 +696,7 @@ function Import({ onFresh }) {
             <button key={p.id} type="button" onClick={() => { setError(null); setPin(''); if (p.pin) setPicked(p); else bring(p) }}
               className={cx('group flex items-center gap-4 rounded-2xl border-2 p-3 text-left transition hover:-translate-y-0.5 hover:shadow-lift', picked?.id === p.id ? 'border-ink bg-page' : 'border-line')}>
               <span className={cx('h-12 w-12 rounded-2xl flex items-center justify-center font-black text-lg', c.bg, c.text)}>{p.id === '__legacy' ? <FolderInput size={20} /> : initials(p.name)}</span>
-              <span className="min-w-0 flex-1"><span className="block font-bold truncate">{p.name}</span><span className="block text-sm text-muted truncate">{p.email || (isNativeApp() ? 'Saved on this phone' : 'Saved in this browser')}</span></span>
+              <span className="min-w-0 flex-1"><span className="block font-bold truncate">{p.id === GUEST_ID ? `${p.name ? `${p.name}'s ` : 'Your '}guest planner` : p.name}</span><span className="block text-sm text-muted truncate">{p.email || (isNativeApp() ? 'Saved on this phone' : 'Saved in this browser')}</span></span>
               <span className="h-9 w-9 rounded-full flex items-center justify-center bg-page text-faint group-hover:text-ink">{p.pin ? <KeyRound size={15} /> : <ArrowRight size={16} />}</span>
             </button>
           )
@@ -743,7 +753,7 @@ function Setup() {
     wantsWork && ['Work OS: task log, social calendar, ad tracker, reports', Briefcase, 'coral'],
     a.needs.includes('exam') && ['RRB NTPC syllabus and 40-day plan, and Revise flashcards with an example note', GraduationCap, 'teal'],
     [`${a.startTime}–${a.endTime}, ${a.days.length} days a week (${dayHours.toFixed(1).replace('.0', '')} h/day after breaks)${a.days.includes(6) && a.saturdayRule !== 'all' ? ` · ${SATURDAY_RULES.find((r) => r.id === a.saturdayRule)?.label}` : ''}`, Clock3, 'butter'],
-    [`Saved to ${savedWhere(me)} automatically`, HardDrive, 'sky'],
+    [isGuestProfile(me) ? 'Saved in this browser only, until you sign in' : `Saved to ${savedWhere(me)} automatically`, HardDrive, 'sky'],
   ].filter(Boolean), [a, wantsWork, dayHours, me])
 
   async function finish() {
@@ -765,7 +775,7 @@ function Setup() {
   const titles = [
     ['What do you want to get better at?', 'Tap everything that fits — this arranges the app for you. Change it any time.'],
     ['When do you usually work or study?', 'Sets your time plan and how many hours a day count as capacity.'],
-    ['Tell us a little about you.', isEmailProfile(me) ? 'What should the planner call you?' : 'Your name is filled in from Google; change it if you like.'],
+    ['Tell us a little about you.', isEmailProfile(me) || isGuestProfile(me) ? 'What should the planner call you?' : 'Your name is filled in from Google; change it if you like.'],
     [`Hi ${firstName(a.name)}, you’re all set.`, 'Here’s how your planner is arranged:'],
   ]
 
@@ -842,10 +852,12 @@ function Setup() {
                 <input id="setup-name" autoFocus className="input h-12 text-lg font-semibold" value={a.name} onChange={(e) => set({ name: e.target.value })} />
               </div>
             </div>
-            <div>
-              <span className="block text-xs font-bold text-muted mb-1">Email</span>
-              <p className="input h-11 flex items-center gap-2 bg-page text-muted">{isEmailProfile(me) ? <Mail size={16} /> : <GoogleMark />} {me?.email}</p>
-            </div>
+            {!isGuestProfile(me) && (
+              <div>
+                <span className="block text-xs font-bold text-muted mb-1">Email</span>
+                <p className="input h-11 flex items-center gap-2 bg-page text-muted">{isEmailProfile(me) ? <Mail size={16} /> : <GoogleMark />} {me?.email}</p>
+              </div>
+            )}
             <div>
               <span className="block text-xs font-bold text-muted mb-1.5">What do you do? <span className="text-faint font-medium">· optional</span></span>
               <div className="flex flex-wrap gap-1.5">{OCCUPATIONS.map((o) => (

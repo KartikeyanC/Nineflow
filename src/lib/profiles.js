@@ -75,6 +75,18 @@ export function ensureAccountProfile(account) {
   return profile
 }
 
+// A guest planner: tried without an account, saved only in this browser (website only; the installed
+// apps need an account for their licence). It is a local profile, so signing in later offers to bring
+// it into the account, like the profiles from before sign-in.
+export const GUEST_ID = 'guest'
+export const isGuestProfile = (p) => p?.id === GUEST_ID
+export function startGuest() {
+  if (!listProfiles().some((p) => p.id === GUEST_ID)) {
+    write(PROFILES_KEY, [...listProfiles(), { id: GUEST_ID, name: '', email: '', guest: true, occupation: '', occupationOther: '', reasons: [], needs: [], pin: '', createdAt: new Date().toISOString(), color: 'peach' }])
+  }
+  signIn(GUEST_ID)
+}
+
 // Profiles made before sign-in existed, which can be brought into an account.
 export const legacyProfiles = () => listProfiles().filter((p) => !isAccountProfile(p))
 

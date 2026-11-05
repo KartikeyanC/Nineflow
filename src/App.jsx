@@ -19,6 +19,7 @@ import CalendarSync from './features/CalendarSync'
 import TelegramInbox from './features/TelegramInbox'
 import CalendarFeed from './features/CalendarFeed'
 import Notices from './features/Notices'
+import { GuestBar } from './features/Guest'
 import Ritual from './features/Ritual'
 import WelcomeBack from './features/WelcomeBack'
 import Interrupt, { ResumePrompt } from './features/Interrupt'
@@ -108,6 +109,7 @@ function Shell() {
         {/* Bottom padding keeps content clear of the phone tab bar */}
         <main className="flex-1 min-w-0 py-1 sm:py-2 sm:pr-1 pb-24 sm:pb-2">
           {/* key forces the enter animation on every view change */}
+          <GuestBar />
           <div key={view} className="h-full">
             <View />
           </div>
