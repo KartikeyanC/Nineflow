@@ -2,12 +2,14 @@ import React, { useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { addDays, differenceInCalendarDays, endOfDay, isAfter, isSameDay, isValid, parseISO, startOfDay } from 'date-fns'
 import { format } from '../lib/dateFormat'
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { ChartColumn, ChevronLeft, ChevronRight, Download, Table2 } from 'lucide-react'
+import { ChartColumn, ChevronLeft, ChevronRight, Download, FileText, Table2 } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
 import { MAX_CUSTOM_DAYS, RANGES, rangeWindow, shiftEnd, workSeries } from '../lib/workCharts'
 import { dateKey, fmtMinutes, minutesInRange } from '../lib/tasks'
 import { colorOf, cssVar } from '../lib/colors'
 import { EmptyState, cx } from '../components/ui'
+import { buildInvoice, money, rateOf } from '../lib/billing'
+import InvoiceDialog from '../components/InvoiceDialog'
 
 // Working charts: hours worked and tasks finished over a day, a week, 15 days, a month, three or
 // six months, a year or any stretch you choose. The summary and each chart have their own range,
@@ -345,13 +347,21 @@ const csvCell = (v) => (/[",\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '
 const hoursOf = (m) => (Math.round((m / 60) * 100) / 100).toFixed(2)
 
 function ClientChart({ now }) {
-  const { allTasks, tasks, settings } = usePlanner()
+  const { allTasks, tasks, settings, updateSettings } = usePlanner()
   const r = useRange('clients', now)
   const list = allTasks || tasks
   const data = useMemo(() => (r.win ? clientHours(list, r.win.from, r.win.to, now) : null), [list, r.win, now])
   const named = data ? data.clients.filter((c) => c.client) : []
   const total = data ? data.clients.reduce((s, c) => s + c.minutes, 0) : 0
   const billable = data ? data.clients.reduce((s, c) => s + c.billable, 0) : 0
+  const billing = settings.billing
+  // Before tax: each billable task's rounded hours × the client's rate (the same sums the invoice shows).
+  const amountOf = (client) => buildInvoice({ client, rows: data.rows, billing }).subtotal
+  const setRate = (client, rate) => {
+    const old = billing.clients[client] || { rate: 0, details: '' }
+    if (old.rate !== rate) updateSettings({ billing: { ...billing, clients: { ...billing.clients, [client]: { ...old, rate } } } })
+  }
+  const [invoiceFor, setInvoiceFor] = useState(null)
 
   const download = () => {
     const cat = (id) => settings.categories.find((c) => c.id === id)?.name || ''
@@ -381,7 +391,10 @@ function ClientChart({ now }) {
                 <th className="py-2 pr-3 font-semibold">Client</th>
                 <th className="py-2 px-3 font-semibold text-right">Hours</th>
                 <th className="py-2 px-3 font-semibold text-right">Billable</th>
-                <th className="py-2 pl-3 font-semibold text-right">Tasks</th>
+                <th className="py-2 px-3 font-semibold text-right">Tasks</th>
+                <th className="py-2 px-3 font-semibold text-right">Rate / h ({billing.currency})</th>
+                <th className="py-2 px-3 font-semibold text-right">Amount</th>
+                <th className="py-2 pl-3"><span className="sr-only">Invoice</span></th>
               </tr>
             </thead>
             <tbody>
@@ -390,13 +403,27 @@ function ClientChart({ now }) {
                   <td className={cx('py-2 pr-3 font-semibold', !c.client && 'text-muted font-medium')}>{c.client || 'No client'}</td>
                   <td className="py-2 px-3 text-right">{hoursOf(c.minutes)}</td>
                   <td className="py-2 px-3 text-right">{c.billable ? hoursOf(c.billable) : '—'}</td>
-                  <td className="py-2 pl-3 text-right text-muted">{c.tasks}</td>
+                  <td className="py-2 px-3 text-right text-muted">{c.tasks}</td>
+                  <td className="py-1 px-3 text-right">
+                    {c.client ? (
+                      <input key={`${c.client}:${rateOf(billing, c.client)}`} type="number" min={0} step="any" inputMode="decimal" aria-label={`Hourly rate for ${c.client}`}
+                        defaultValue={rateOf(billing, c.client) || ''} placeholder="Set"
+                        onBlur={(e) => setRate(c.client, Math.max(0, Number(e.target.value) || 0))}
+                        onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur() }}
+                        className="input h-8 py-0 w-24 text-right tnum ml-auto" />
+                    ) : '—'}
+                  </td>
+                  <td className="py-2 px-3 text-right font-semibold">{c.client && c.billable && rateOf(billing, c.client) ? money(amountOf(c.client), billing.currency) : '—'}</td>
+                  <td className="py-1 pl-3 text-right">
+                    {c.client && c.billable > 0 && <button type="button" className="btn-ghost h-8 py-0 text-xs" onClick={() => setInvoiceFor(c.client)}><FileText size={13} /> Invoice</button>}
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       )}
+      {invoiceFor && data && <InvoiceDialog client={invoiceFor} rows={data.rows} win={r.win} onClose={() => setInvoiceFor(null)} />}
     </section>
   )
 }

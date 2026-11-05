@@ -7,6 +7,7 @@ import { cleanImages } from './noteImages'
 import { cleanRevision } from './flashcards'
 import { cleanTags } from './taskMeta'
 import { THEMES } from './themes'
+import { cleanBilling } from './billing'
 import { COLUMNS_VERSION, DEFAULT_COLUMNS, LEGACY_REVIEW_ID, cleanColumns, migrateColumns } from './columns'
 
 // Keys live inside the signed-in profile's namespace (see profiles.js).
@@ -159,6 +160,7 @@ export function loadSettings() {
       : [],
     views: Array.isArray(stored.views) ? stored.views : [],
     templates: Array.isArray(stored.templates) ? stored.templates : [],
+    billing: cleanBilling(stored.billing), // rates, tax and invoice details (lib/billing.js)
   }
   if (!Array.isArray(settings.categories) || settings.categories.length === 0) {
     settings.categories = DEFAULT_CATEGORIES

@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react'
-import { Plus, Trash2, Download, Upload, Sparkles, AlertTriangle, CalendarPlus, CalendarCheck, Check, Loader2, RefreshCw, ChevronRight, UserRound, Layers, Smartphone, Tag, SlidersHorizontal, Columns3, Bookmark, Database, CalendarDays, Plug, FileSpreadsheet, HardDrive } from 'lucide-react'
+import { Plus, Trash2, Download, Upload, Sparkles, AlertTriangle, CalendarPlus, CalendarCheck, Check, Loader2, RefreshCw, ChevronRight, UserRound, Layers, Smartphone, Tag, SlidersHorizontal, Columns3, Bookmark, Database, CalendarDays, Plug, FileSpreadsheet, HardDrive, Receipt } from 'lucide-react'
 import { usePhone } from '../lib/usePhone'
 import TaskImport from '../components/TaskImport'
 import HowToConnect from '../components/HowToConnect'
@@ -36,6 +36,7 @@ import { loadNtpc } from '../exams/ntpc/store'
 import { ConfirmDialog, Segmented, cx } from '../components/ui'
 import { TimeField } from '../components/TimePicker'
 import { NotesFolderSettings, notesFolderAvailable } from '../features/NotesFolder'
+import { CURRENCIES } from '../lib/billing'
 
 // The things you saved: task templates (from a task's "Save as template") and
 // Board views (from Filters → Save view). Rename or delete them here.
@@ -671,6 +672,11 @@ export default function Settings() {
         </section>
         </Group>
 
+        {/* Billing */}
+        <Group icon={Receipt} title="Billing and invoices">
+        <BillingSection settings={settings} updateSettings={updateSettings} />
+        </Group>
+
         {/* Board columns */}
         <Group icon={Columns3} title="Board columns">
         <section className="card p-5">
@@ -900,5 +906,41 @@ function EmailInbox() {
     </Row>
     <HowToConnect ids="email" />
     </div>
+  )
+}
+
+// Billing (lib/billing.js): the currency, your details for the invoice header, an optional tax and the
+// next invoice number. Each client's rate is set in Working charts → Hours by client.
+function BillingSection({ settings, updateSettings }) {
+  const b = settings.billing
+  const set = (patch) => updateSettings({ billing: { ...b, ...patch } })
+  const [from, setFrom] = useState(b.from)
+  return (
+    <section className="card p-5 space-y-5">
+      <p className="text-sm text-muted">For invoicing clients. Set each client's hourly rate in <b className="text-ink">Working charts → Hours by client</b>, then make an invoice from there.</p>
+      <Row label="Currency" hint="Used for every rate and invoice.">
+        <select className="input w-auto py-1.5" value={b.currency} onChange={(e) => set({ currency: e.target.value })}>
+          {CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
+        </select>
+      </Row>
+      <label className="block">
+        <span className="block text-sm font-semibold">Your details</span>
+        <span className="block text-xs text-muted mt-0.5 mb-1.5">The top of each invoice: your name or business, address, phone, email, GSTIN or tax number, bank or UPI details.</span>
+        <textarea className="input h-28 resize-y" value={from} placeholder={'Your name or business\nAddress\nGSTIN …\nUPI …'}
+          onChange={(e) => setFrom(e.target.value)} onBlur={() => from !== b.from && set({ from })} />
+      </label>
+      <Row label="Tax" hint="Added to every invoice total. Leave at 0 if you don't charge tax.">
+        <div className="flex items-center gap-2">
+          <input className="input w-24 py-1.5" aria-label="Tax name" value={b.taxLabel} maxLength={20} onChange={(e) => set({ taxLabel: e.target.value })} />
+          <input type="number" min={0} max={100} step={0.5} className="input w-20 py-1.5" aria-label="Tax percent" value={b.taxRate}
+            onChange={(e) => set({ taxRate: Math.max(0, Math.min(100, Number(e.target.value) || 0)) })} />
+          <span className="text-sm text-muted">%</span>
+        </div>
+      </Row>
+      <Row label="Next invoice number" hint="Counts up by one with each invoice you save.">
+        <input type="number" min={1} className="input w-28 py-1.5" value={b.nextNumber}
+          onChange={(e) => set({ nextNumber: Math.max(1, Math.round(Number(e.target.value) || 1)) })} />
+      </Row>
+    </section>
   )
 }
