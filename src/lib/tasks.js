@@ -57,6 +57,8 @@ export function createTask(fields = {}) {
     nagEvery: null, // keep reminding after the start: null = the Settings default; 0 = once; 5/10/15/30 = every N minutes
     files: [], // Drive files attached to the task: [{ id, name, url, icon }] (lib/taskFiles.js)
     tags: [], // ['client-a', 'q4']: free labels, any number per task (up to 6)
+    client: null, // who the work is for, e.g. 'Acme' (Charts: Hours by client)
+    billable: false, // the time on it can be charged to the client
     seriesId: null,
     recurrence: null, // { freq, until, skip } | null
     interruption: null, // { by, at, resume, resumeMode, resolved } | null

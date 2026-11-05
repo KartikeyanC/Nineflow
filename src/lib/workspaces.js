@@ -64,6 +64,13 @@ export function switchWorkspace(pid, id) {
   emit()
 }
 
+// Opens the workspace this device is now in. The planner reads its data when it starts, so the app is
+// started again (main.jsx draws it afresh on this event) rather than the whole page reloaded.
+export const WORKSPACE_EVENT = 'nineflow:workspace'
+export function reopenPlanner() {
+  try { window.dispatchEvent(new Event(WORKSPACE_EVENT)) } catch { window.location.reload() }
+}
+
 export class WorkspaceError extends Error {}
 const cleanName = (name) => String(name || '').replace(/\s+/g, ' ').trim()
 function checkName(list, name, exceptId) {

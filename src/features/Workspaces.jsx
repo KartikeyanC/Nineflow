@@ -3,14 +3,14 @@ import { Check, ChevronsUpDown, Pencil, Plus, Trash2, X, Layers } from 'lucide-r
 import { currentProfileId } from '../lib/profiles'
 import {
   MAIN, NAME_MAX, WORKSPACE_LIMIT, WorkspaceError, addWorkspace, currentWorkspaceId, listWorkspaces,
-  onWorkspacesChange, removeWorkspace, renameWorkspace, switchWorkspace,
+  onWorkspacesChange, removeWorkspace, renameWorkspace, reopenPlanner, switchWorkspace,
 } from '../lib/workspaces'
 import { colorOf } from '../lib/colors'
 import { cx, useDialogFocus } from '../components/ui'
 
-// Up to six separate planners under one sign-in. Switching reloads the page:
-// the planner reads its data once on load, so a reload is what guarantees
-// nothing from the old workspace is left on screen.
+// Up to six separate planners under one sign-in. Switching starts the planner again
+// (reopenPlanner): it reads its data once when it starts, so nothing from the old
+// workspace is left on screen, without the wait of a page reload.
 
 // ---- state ------------------------------------------------------------------------
 const snapshot = () => {
@@ -30,10 +30,10 @@ function useWorkspaces() {
 
   // This workspace was deleted from another device: go back to the first one.
   useEffect(() => {
-    if (pid && list.length && !current) { switchWorkspace(pid, MAIN); window.location.reload() }
+    if (pid && list.length && !current) { switchWorkspace(pid, MAIN); reopenPlanner() }
   }, [pid, list, current])
 
-  const open = (id) => { if (id === currentId) return; switchWorkspace(pid, id); window.location.reload() }
+  const open = (id) => { if (id === currentId) return; switchWorkspace(pid, id); reopenPlanner() }
   return { pid, list, current: current || list[0], open }
 }
 
@@ -61,9 +61,9 @@ function WorkspaceList({ onClose }) {
   const saveRename = (w) => { if (text.trim() === w.name || run(() => renameWorkspace(pid, w.id, text))) { setEditing(null); setError(null) } }
   const create = () => {
     let made
-    if (run(() => { made = addWorkspace(pid, text) })) { switchWorkspace(pid, made.id); window.location.reload() }
+    if (run(() => { made = addWorkspace(pid, text) })) { switchWorkspace(pid, made.id); reopenPlanner() }
   }
-  const remove = (w) => { if (run(() => removeWorkspace(pid, w.id))) { setConfirm(null); if (w.id === current?.id) window.location.reload() } }
+  const remove = (w) => { if (run(() => removeWorkspace(pid, w.id))) { setConfirm(null); if (w.id === current?.id) reopenPlanner() } }
 
   return (
     <div>

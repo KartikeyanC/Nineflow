@@ -2,10 +2,10 @@ import React, { useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { addDays, differenceInCalendarDays, endOfDay, isAfter, isSameDay, isValid, parseISO, startOfDay } from 'date-fns'
 import { format } from '../lib/dateFormat'
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { ChartColumn, ChevronLeft, ChevronRight, Table2 } from 'lucide-react'
+import { ChartColumn, ChevronLeft, ChevronRight, Download, Table2 } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
 import { MAX_CUSTOM_DAYS, RANGES, rangeWindow, shiftEnd, workSeries } from '../lib/workCharts'
-import { dateKey, fmtMinutes } from '../lib/tasks'
+import { dateKey, fmtMinutes, minutesInRange } from '../lib/tasks'
 import { colorOf, cssVar } from '../lib/colors'
 import { EmptyState, cx } from '../components/ui'
 
@@ -146,6 +146,7 @@ export default function Charts() {
         <DoneChart now={now} />
         <CategoryChart now={now} />
       </div>
+      <ClientChart now={now} />
     </div>
   )
 }
@@ -315,5 +316,87 @@ function CategoryBars({ cats, total }) {
         )
       })}
     </ul>
+  )
+}
+
+// ---- Hours by client ------------------------------------------------------------------------
+// Time worked in the range for each client (the task's Client field), and how much of it is billable.
+// The CSV has one row per task, so it can go straight into an invoice or a spreadsheet.
+export function clientHours(tasks, from, to, now) {
+  const by = new Map()
+  const rows = []
+  for (const t of tasks) {
+    const minutes = minutesInRange(t, from, to, now)
+    if (!minutes) continue
+    const client = t.client || ''
+    const c = by.get(client) || { client, minutes: 0, billable: 0, tasks: 0 }
+    c.minutes += minutes
+    if (t.billable) c.billable += minutes
+    c.tasks += 1
+    by.set(client, c)
+    rows.push({ client, title: t.title || 'Untitled', minutes, billable: !!t.billable, category: t.category })
+  }
+  // Named clients first, biggest first; work with no client last.
+  const clients = [...by.values()].sort((a, b) => (!a.client) - (!b.client) || b.minutes - a.minutes)
+  return { clients, rows: rows.sort((a, b) => (!a.client) - (!b.client) || a.client.localeCompare(b.client) || b.minutes - a.minutes) }
+}
+
+const csvCell = (v) => (/[",\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : String(v))
+const hoursOf = (m) => (Math.round((m / 60) * 100) / 100).toFixed(2)
+
+function ClientChart({ now }) {
+  const { allTasks, tasks, settings } = usePlanner()
+  const r = useRange('clients', now)
+  const list = allTasks || tasks
+  const data = useMemo(() => (r.win ? clientHours(list, r.win.from, r.win.to, now) : null), [list, r.win, now])
+  const named = data ? data.clients.filter((c) => c.client) : []
+  const total = data ? data.clients.reduce((s, c) => s + c.minutes, 0) : 0
+  const billable = data ? data.clients.reduce((s, c) => s + c.billable, 0) : 0
+
+  const download = () => {
+    const cat = (id) => settings.categories.find((c) => c.id === id)?.name || ''
+    const lines = [['Client', 'Task', 'Category', 'Hours', 'Billable'], ...data.rows.map((x) => [x.client || 'No client', x.title, cat(x.category), hoursOf(x.minutes), x.billable ? 'Yes' : 'No'])]
+    const blob = new Blob([`${lines.map((l) => l.map(csvCell).join(',')).join('\r\n')}\r\n`], { type: 'text/csv;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    Object.assign(document.createElement('a'), { href: url, download: `nineflow-hours-by-client-${dateKey(r.win.from)}-to-${dateKey(r.win.to)}.csv` }).click()
+    setTimeout(() => URL.revokeObjectURL(url), 1000)
+  }
+
+  return (
+    <section className="card p-5">
+      <ChartHead title="Hours by client" r={r}
+        note={data && total ? `${fmtMinutes(total)} worked · ${fmtMinutes(billable)} billable` : null}
+        right={data?.rows.length ? <button type="button" className="btn-ghost h-8 py-0 text-xs" onClick={download}><Download size={13} /> CSV</button> : null} />
+      {data && !named.length && (
+        <p className="text-sm text-faint py-4">
+          {total ? 'None of this time has a client yet. ' : 'No hours worked in this stretch. '}
+          Open a task and fill in <b className="text-muted">Client</b>, and mark it <b className="text-muted">Billable</b> if you charge for it.
+        </p>
+      )}
+      {data && named.length > 0 && (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm tnum">
+            <thead>
+              <tr className="text-left text-xs text-muted border-b border-line">
+                <th className="py-2 pr-3 font-semibold">Client</th>
+                <th className="py-2 px-3 font-semibold text-right">Hours</th>
+                <th className="py-2 px-3 font-semibold text-right">Billable</th>
+                <th className="py-2 pl-3 font-semibold text-right">Tasks</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.clients.map((c) => (
+                <tr key={c.client || '-'} className="border-b border-line/60 last:border-0">
+                  <td className={cx('py-2 pr-3 font-semibold', !c.client && 'text-muted font-medium')}>{c.client || 'No client'}</td>
+                  <td className="py-2 px-3 text-right">{hoursOf(c.minutes)}</td>
+                  <td className="py-2 px-3 text-right">{c.billable ? hoursOf(c.billable) : '—'}</td>
+                  <td className="py-2 pl-3 text-right text-muted">{c.tasks}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
   )
 }

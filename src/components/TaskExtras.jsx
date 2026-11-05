@@ -99,6 +99,31 @@ export function TagsField({ task }) {
   )
 }
 
+// The "Client" row: who the work is for (suggesting clients already used), and whether its time is billable.
+export function ClientField({ task }) {
+  const { tasks, updateTask } = usePlanner()
+  const [text, setText] = useState(task.client || '')
+  const listId = useId()
+  const clients = [...new Set(tasks.map((t) => t.client).filter(Boolean))].sort((a, b) => a.localeCompare(b))
+  const save = () => {
+    const client = text.replace(/\s+/g, ' ').trim().slice(0, 60) || null
+    if (client !== (task.client || null)) updateTask(task.id, { client, ...(client ? {} : { billable: false }) })
+  }
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <input value={text} list={listId} aria-label="Client" placeholder="No client"
+        onChange={(e) => setText(e.target.value)} onBlur={save}
+        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur() } }}
+        className="input h-9 py-0 flex-1 min-w-[8rem]" />
+      <datalist id={listId}>{clients.map((c) => <option key={c} value={c} />)}</datalist>
+      <button type="button" role="switch" aria-checked={!!task.billable} onClick={() => updateTask(task.id, { billable: !task.billable })}
+        className={pill(task.billable)}>
+        {task.billable && <Check size={12} />} Billable
+      </button>
+    </div>
+  )
+}
+
 // "Save as template": keeps this task's title, notes, length, priority, category,
 // tags, reminders and checklist so a new task can start from it.
 export function SaveAsTemplate({ task }) {

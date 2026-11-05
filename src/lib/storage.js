@@ -202,6 +202,8 @@ function normalizeTask(t) {
     reminders: Array.isArray(t.reminders) ? t.reminders.filter((m) => Number.isFinite(m) && m >= 0).slice(0, 6) : null,
     nagEvery: Number.isFinite(t.nagEvery) && t.nagEvery >= 0 ? Math.min(240, t.nagEvery) : null,
     tags: cleanTags(t.tags),
+    client: typeof t.client === 'string' && t.client.trim() ? t.client.replace(/\s+/g, ' ').trim().slice(0, 60) : null, // who the work is for (Charts: Hours by client)
+    billable: t.billable === true,
     column: !wasInReview && typeof t.column === 'string' ? t.column : null,
     seriesId: t.seriesId ?? null,
     recurrence: t.recurrence && t.recurrence.freq ? { freq: t.recurrence.freq, until: t.recurrence.until ?? null, skip: t.recurrence.skip ?? [] } : null,

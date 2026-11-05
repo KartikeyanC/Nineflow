@@ -31,6 +31,8 @@ let snap = { events: [], from: null, to: null, state: 'idle', fetchedAt: 0, mess
 const listeners = new Set()
 const emit = () => listeners.forEach((f) => f())
 const set = (patch) => { snap = { ...snap, ...patch }; emit() }
+// Another workspace has its own calendar choices: start from nothing and load again.
+export function resetCalendarEvents() { snap = { events: [], from: null, to: null, state: 'idle', fetchedAt: 0, message: '', otherNeedsAuth: false }; emit() }
 const subscribe = (f) => { listeners.add(f); window.addEventListener('storage', f); return () => { listeners.delete(f); window.removeEventListener('storage', f) } }
 export const useShowEvents = () => useSyncExternalStore(subscribe, readShow)
 export const useCalendarEvents = () => useSyncExternalStore(subscribe, () => snap)
