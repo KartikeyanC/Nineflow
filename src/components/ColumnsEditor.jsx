@@ -57,7 +57,7 @@ export default function ColumnsEditor() {
                 className="bg-transparent text-[12px] font-semibold text-muted outline-none cursor-pointer">
                 {COLUMN_COLORS.map((k) => <option key={k} value={k}>{COLUMN_STYLE[k].label}</option>)}
               </select>
-              <span className="hidden sm:inline text-[11px] text-faint w-[5.5rem] text-right">counts as {BASE_LABEL[c.base]}</span>
+              <span className="hidden sm:inline text-xs text-faint w-[5.5rem] text-right">counts as {BASE_LABEL[c.base]}</span>
               <button type="button" aria-label={`Move ${c.name} up`} disabled={i === 0} onClick={() => move(i, -1)} className="h-7 w-7 rounded-full inline-flex items-center justify-center text-faint hover:bg-card hover:text-ink disabled:opacity-30"><ArrowUp size={13} /></button>
               <button type="button" aria-label={`Move ${c.name} down`} disabled={i === cols.length - 1} onClick={() => move(i, 1)} className="h-7 w-7 rounded-full inline-flex items-center justify-center text-faint hover:bg-card hover:text-ink disabled:opacity-30"><ArrowDown size={13} /></button>
               {isOriginal(c)

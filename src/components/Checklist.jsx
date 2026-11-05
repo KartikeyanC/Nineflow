@@ -88,13 +88,13 @@ export default function Checklist({ task }) {
       <div className="flex items-center gap-2 mb-1.5">
         <ListChecks size={14} className="text-faint" />
         <h3 className="text-xs font-semibold text-muted">Checklist</h3>
-        {total > 0 && <span className="text-[11px] font-semibold text-faint tnum">{done} of {total}</span>}
+        {total > 0 && <span className="text-xs font-semibold text-faint tnum">{done} of {total}</span>}
       </div>
       {total > 0 && <ProgressBar value={done / total} tone="bg-mint-fg" className="mb-2" />}
 
       {gate.explicit && (
         <div className="mb-2 flex flex-wrap items-center gap-2" role="group" aria-label="Required steps">
-          <span className="text-[11px] font-semibold text-lav-fg inline-flex items-center gap-1"><Lock size={11} /> {gate.required} required to finish</span>
+          <span className="text-xs font-semibold text-lav-fg inline-flex items-center gap-1"><Lock size={11} /> {gate.required} required to finish</span>
           {gate.required > 1 && (
             <Segmented size="sm" value={gate.rule} onChange={(requireRule) => updateTask(task.id, { requireRule })}
               options={[{ value: 'all', label: 'All needed' }, { value: 'any', label: 'Any one' }]} />

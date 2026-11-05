@@ -72,7 +72,7 @@ export default function ImportDialog({ service, onClose }) {
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="block text-sm font-semibold truncate">{c.title}</span>
-                      <span className="block text-[11px] text-faint font-medium">{added ? 'Already added' : when(c)}{!added && c.priority === 'high' ? ' · High' : ''}</span>
+                      <span className="block text-xs text-faint font-medium">{added ? 'Already added' : when(c)}{!added && c.priority === 'high' ? ' · High' : ''}</span>
                     </span>
                   </button>
                 </li>

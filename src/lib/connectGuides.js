@@ -119,7 +119,7 @@ export const GUIDES = {
     title: 'Google Sheets and Docs',
     steps: [
       'Press **All tasks to a Google Sheet** or **The day\'s report to a Google Doc**.',
-      'NineFlow makes the file in your Google Drive, in the Daily Planner folder.',
+      'NineFlow makes the file in your Google Drive, in the NineFlow folder.',
       'Press **Open it** to see it. It is a copy: it does not change when your tasks do, so export again for a fresh one.',
     ],
   },

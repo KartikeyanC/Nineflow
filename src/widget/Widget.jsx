@@ -67,7 +67,7 @@ export default function Widget() {
     <div className="h-screen flex flex-col bg-card text-ink font-sans select-none">
       <header className="flex items-start gap-2 px-4 pt-3.5 pb-2" style={drag}>
         <div className="min-w-0 flex-1">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-faint">{format(now, 'EEEE, MMM d')}</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-faint">{format(now, 'EEEE, MMM d')}</p>
           <h1 className="h-display text-lg leading-tight truncate">
             {signedIn ? (firstName(profile?.name) ? `${firstName(profile.name)}'s day` : 'Today') : <Wordmark />}
           </h1>
@@ -110,7 +110,7 @@ export default function Widget() {
             </ul>
             {done.length > 0 && (
               <>
-                <p className="px-2 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-faint">Done today</p>
+                <p className="px-2 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-faint">Done today</p>
                 <ul className="space-y-0.5">
                   {done.map((t) => <Row key={t.id} task={t} done onToggle={() => toggle(t.id)} />)}
                 </ul>
@@ -139,8 +139,8 @@ function Row({ task, sub, done = false, onToggle, held = false, onOpen }) {
       <div className="min-w-0 flex-1">
         <p className={cx('text-[13px] font-semibold truncate', done && 'line-through text-faint')} title={task.title}>{task.title}</p>
         {held
-          ? <p className="text-[10px] font-semibold text-lav-fg" role="status">Has unticked steps. {onOpen && <button type="button" onClick={onOpen} className="underline underline-offset-2">Open NineFlow to tick them</button>}</p>
-          : sub && <p className="text-[10px] truncate text-faint">{sub}</p>}
+          ? <p className="text-[11px] font-semibold text-lav-fg" role="status">Has unticked steps. {onOpen && <button type="button" onClick={onOpen} className="underline underline-offset-2">Open NineFlow to tick them</button>}</p>
+          : sub && <p className="text-[11px] truncate text-faint">{sub}</p>}
       </div>
     </li>
   )

@@ -25,7 +25,7 @@ export default function FrozenCard({ task, entry, layout = 'card' }) {
         className="flex items-center gap-3 px-5 py-2.5 cursor-pointer hover:bg-page focus-visible:bg-page outline-none transition opacity-80">
         <Snowflake size={15} className="text-sky-fg shrink-0" aria-hidden="true" />
         <p className="flex-1 min-w-0 text-sm font-semibold truncate text-muted">{task.title || 'Untitled'}</p>
-        <span className="text-[11px] text-faint shrink-0">was {STATUS_LABEL[entry.status]} · {movedOnLabel(task)}</span>
+        <span className="text-xs text-faint shrink-0">was {STATUS_LABEL[entry.status]} · {movedOnLabel(task)}</span>
       </li>
     )
   }
@@ -36,7 +36,7 @@ export default function FrozenCard({ task, entry, layout = 'card' }) {
         <Snowflake size={13} className="text-sky-fg shrink-0 mt-0.5" aria-hidden="true" />
         <span className="min-w-0">
           <span className="block text-[13px] font-semibold leading-snug text-muted">{task.title || 'Untitled'}</span>
-          <span className="block text-[11px] text-faint mt-0.5">Moved on · {movedOnLabel(task)}</span>
+          <span className="block text-xs text-faint mt-0.5">Moved on · {movedOnLabel(task)}</span>
         </span>
       </span>
     </button>

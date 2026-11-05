@@ -6,7 +6,7 @@ import {
   onWorkspacesChange, removeWorkspace, renameWorkspace, switchWorkspace,
 } from '../lib/workspaces'
 import { colorOf } from '../lib/colors'
-import { cx } from '../components/ui'
+import { cx, useDialogFocus } from '../components/ui'
 
 // Up to six separate planners under one sign-in. Switching reloads the page:
 // the planner reads its data once on load, so a reload is what guarantees
@@ -68,8 +68,8 @@ function WorkspaceList({ onClose }) {
   return (
     <div>
       <div className="flex items-baseline justify-between px-1 pb-2">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-faint">Workspaces</p>
-        <p className="text-[11px] font-semibold text-faint tnum">{list.length} of {WORKSPACE_LIMIT}</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-faint">Workspaces</p>
+        <p className="text-xs font-semibold text-faint tnum">{list.length} of {WORKSPACE_LIMIT}</p>
       </div>
 
       <ul className="space-y-1">
@@ -149,6 +149,8 @@ export function WorkspaceMenu({ compact = false, className }) {
   const { current } = useWorkspaces()
   const [open, setOpen] = useState(false)
   const root = useRef(null)
+  const panel = useRef(null)
+  useDialogFocus(panel, open)
 
   useEffect(() => {
     if (!open) return undefined
@@ -172,8 +174,8 @@ export function WorkspaceMenu({ compact = false, className }) {
       {/* Phones: dim the page behind the list, like the other sheets; a tap on it closes the list. */}
       {open && <div className="sm:hidden fixed inset-0 z-40 bg-ink/30 animate-fade-in" onClick={() => setOpen(false)} aria-hidden="true" />}
       {open && (
-        <div role="dialog" aria-label="Workspaces"
-          className="fixed inset-x-4 top-16 z-50 sm:absolute sm:inset-x-auto sm:left-0 sm:top-full sm:mt-2 sm:w-[280px] rounded-2xl bg-card p-2.5 shadow-lift ring-hair animate-modal-in">
+        <div ref={panel} tabIndex={-1} role="dialog" aria-label="Workspaces"
+          className="fixed inset-x-4 top-16 z-50 sm:absolute sm:inset-x-auto sm:left-0 sm:top-full sm:mt-2 sm:w-[280px] rounded-2xl bg-card p-2.5 shadow-lift ring-hair animate-modal-in outline-none">
           <WorkspaceList onClose={() => setOpen(false)} />
         </div>
       )}

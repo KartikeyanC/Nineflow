@@ -76,7 +76,7 @@ export default function Sidebar() {
                 {badge > 0 && <i className="wide:hidden absolute -top-1 -right-1 h-2 w-2 rounded-full bg-lav-fg" aria-hidden="true" />}
               </span>
               <span className="hidden wide:inline flex-1 text-left">{label}</span>
-              {badge > 0 && <span className="hidden wide:inline-flex min-w-[20px] h-5 px-1.5 rounded-full bg-lav-fg text-white text-[10px] font-bold items-center justify-center tnum" aria-hidden="true">{badge > 99 ? '99+' : badge}</span>}
+              {badge > 0 && <span className="hidden wide:inline-flex min-w-[20px] h-5 px-1.5 rounded-full bg-lav-fg text-white text-[11px] font-bold items-center justify-center tnum" aria-hidden="true">{badge > 99 ? '99+' : badge}</span>}
             </button>
           )
         })}
@@ -100,7 +100,7 @@ export default function Sidebar() {
               className="transition-all duration-500"
             />
           </svg>
-          <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold">
+          <span className="absolute inset-0 flex items-center justify-center text-[11px] font-bold">
             {today.done}
           </span>
         </div>

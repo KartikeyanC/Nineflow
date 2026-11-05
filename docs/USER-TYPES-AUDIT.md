@@ -140,7 +140,17 @@ Done: 1 (reduced motion, Text size setting, Match system theme), 3, 4 (except De
 workspace popovers) and 12. Also fixed: the export file is now `nineflow-*.json`, and the Focus
 screen is announced as a dialog.
 
-Still open: Delete account (an email account needs a server call to delete), the minimum 12 px text
-across the app, moving phone search into the top bar, the popover focus traps, and items 2, 8, 9,
-13 and 14. The installed apps also need `VITE_API_BASE` set before building, or the AI features
-can't work there.
+Done on 5 Nov 2026:
+- Item 8: the NTPC plan is built from the exam date, and setup has a "Prepare for an exam" goal.
+- Item 9: Dates and Clock settings, and Indian central government holidays for 2026 and 2027.
+- The date, time and workspace pickers now take focus and return it.
+- Matrix can be used from the keyboard (Space, arrow keys, Space).
+- One default language for voice input.
+- The phone search button steps aside while you scroll down.
+- The smallest text is one step larger: 10 px is now 11 px and 11 px is now 12 px.
+- The Drive folder is renamed from "Daily Planner" to NineFlow.
+- A sync conflict offers "Use this device's version".
+
+Still open: Delete account (an email account needs a server call to delete), and items 2, 13 and
+14. Item 2 (silent Google reconnect) needs a server. The installed apps also need `VITE_API_BASE`
+set before building, or the AI features can't work there.

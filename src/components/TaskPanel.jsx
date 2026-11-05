@@ -67,7 +67,7 @@ export default function TaskPanel() {
         <header className="flex items-center justify-between gap-2 px-4 sm:px-6 pt-5 max-sm:pt-[max(1.25rem,env(safe-area-inset-top))] pb-3">
           <div className="flex items-center gap-2 min-w-0 flex-wrap">
             <span className={cx('pill', STATUS_PILL[task.status])}>{cols.find((c) => c.id === columnOf(task, cols))?.name || STATUS_LABEL[task.status]}</span>
-            {overdue && <span className="pill bg-page text-muted border border-line text-[10px]">carried over {carriedLabel(task.date, now)}</span>}
+            {overdue && <span className="pill bg-page text-muted border border-line text-[11px]">carried over {carriedLabel(task.date, now)}</span>}
             {task.recurrence && <span className="pill bg-page text-muted border border-line"><Repeat size={11} /> {describe(task.recurrence)}</span>}
           </div>
           <div className="flex items-center gap-1 shrink-0">

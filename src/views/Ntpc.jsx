@@ -29,7 +29,7 @@ const STATUS_TONE = {
 const SUBJECT_BAR = { sky: 'bg-sky-fg', lav: 'bg-lav-fg', mint: 'bg-mint-fg' }
 
 function StatusPill({ status, className }) {
-  return <span className={cx('pill text-[11px] px-2 py-0.5 whitespace-nowrap', STATUS_TONE[status], className)}>{statusLabel(status)}</span>
+  return <span className={cx('pill text-xs px-2 py-0.5 whitespace-nowrap', STATUS_TONE[status], className)}>{statusLabel(status)}</span>
 }
 
 const pct = (v) => `${Math.round((v || 0) * 100)}%`
@@ -59,7 +59,7 @@ export default function Ntpc() {
     <div className="animate-view-in max-w-5xl">
       <header className="mb-5 max-sm:mb-4 flex flex-wrap items-end justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-faint">Exams</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-faint">Exams</p>
           <h1 className="h-display text-3xl max-sm:text-2xl">{EXAM_NAME}</h1>
           <p className="text-sm text-muted mt-0.5">
             {CATEGORIES.find((c) => c.id === data.category)?.label || 'Choose your level in Setup'}
@@ -130,7 +130,7 @@ function Overview({ ctx, planner, goSyllabus }) {
             className="card p-3.5 text-left hover:shadow-lift transition">
             <StatusPill status={st.id} />
             <p className="h-display text-2xl tnum mt-2">{all.counts[st.id]}</p>
-            <p className="text-[11px] text-faint">topics · show them</p>
+            <p className="text-xs text-faint">topics · show them</p>
           </button>
         ))}
       </section>
@@ -145,7 +145,7 @@ function Overview({ ctx, planner, goSyllabus }) {
                   <CheckCircle checked={t.status === 'completed'} onToggle={() => toggleComplete(t.id)} size="sm" />
                   <button type="button" onClick={() => setSelectedId(t.id)} className="min-w-0 flex-1 text-left">
                     <span className={cx('block text-sm font-semibold truncate', t.status === 'completed' && 'line-through text-muted')}>{t.title}</span>
-                    <span className="block text-[11px] text-faint">{t.startTime ? `${clock(t.startTime)} · ` : ''}{subjectById(t.exam.subject)?.short || 'All subjects'} · {fmtMinutes(t.durationMinutes)}</span>
+                    <span className="block text-xs text-faint">{t.startTime ? `${clock(t.startTime)} · ` : ''}{subjectById(t.exam.subject)?.short || 'All subjects'} · {fmtMinutes(t.durationMinutes)}</span>
                   </button>
                 </li>
               ))}
@@ -396,7 +396,7 @@ function Syllabus({ ctx, filters, setFilters }) {
                         <button type="button" onClick={() => setOpenTopic(t.id)} className="w-full px-4 py-3 flex items-center gap-3 text-left hover:bg-page transition">
                           <span className="min-w-0 flex-1">
                             <span className="block text-sm font-semibold">{t.name}</span>
-                            <span className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-faint">
+                            <span className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-faint">
                               <StatusPill status={status} />
                               {c !== null && <span className="tnum">{Math.round(c * data.required.length)}/{data.required.length} steps</span>}
                               {st.priority && st.priority !== 'medium' && <span className={st.priority === 'high' ? 'text-coral-fg font-semibold' : ''}>{cap(st.priority)} priority</span>}
@@ -528,22 +528,22 @@ function TopicSheet({ topicId, ctx, planner, onClose }) {
           <h3 className="text-sm font-bold flex items-center gap-2"><CalendarClock size={15} /> Plan a study task</h3>
           <p className="text-xs text-faint mt-0.5">It goes into your planner like any task: timer, reminders and moving unfinished work all work as usual.</p>
           <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
-            <label className="grid gap-1 text-[11px] font-semibold text-muted">Type
+            <label className="grid gap-1 text-xs font-semibold text-muted">Type
               <select className="input py-1.5 text-sm" value={plan.kind} onChange={(e) => setPlan((p) => ({ ...p, kind: e.target.value }))}>{KINDS.map((k) => <option key={k.id} value={k.id}>{k.label}</option>)}</select>
             </label>
-            <label className="grid gap-1 text-[11px] font-semibold text-muted">Day
+            <label className="grid gap-1 text-xs font-semibold text-muted">Day
               <input type="date" className="input py-1.5 text-sm" value={plan.date} min={today} onChange={(e) => setPlan((p) => ({ ...p, date: e.target.value || today }))} />
             </label>
-            <label className="grid gap-1 text-[11px] font-semibold text-muted">Time needed
+            <label className="grid gap-1 text-xs font-semibold text-muted">Time needed
               <select className="input py-1.5 text-sm" value={plan.minutes} onChange={(e) => setPlan((p) => ({ ...p, minutes: e.target.value }))}>{DURATIONS.map((m) => <option key={m} value={m}>{fmtMinutes(m)}</option>)}</select>
             </label>
-            <label className="grid gap-1 text-[11px] font-semibold text-muted">Priority
+            <label className="grid gap-1 text-xs font-semibold text-muted">Priority
               <select className="input py-1.5 text-sm" value={plan.priority} onChange={(e) => setPlan((p) => ({ ...p, priority: e.target.value }))}>{PRIORITY_LEVELS.map((p) => <option key={p} value={p}>{cap(p)}</option>)}</select>
             </label>
-            <label className="grid gap-1 text-[11px] font-semibold text-muted">Deadline (optional)
+            <label className="grid gap-1 text-xs font-semibold text-muted">Deadline (optional)
               <input type="date" className="input py-1.5 text-sm" value={plan.deadline} min={plan.date} onChange={(e) => setPlan((p) => ({ ...p, deadline: e.target.value }))} />
             </label>
-            <label className="grid gap-1 text-[11px] font-semibold text-muted col-span-2 sm:col-span-1">Notes
+            <label className="grid gap-1 text-xs font-semibold text-muted col-span-2 sm:col-span-1">Notes
               <input className="input py-1.5 text-sm" value={plan.notes} maxLength={500} placeholder="Chapter, book, video…" onChange={(e) => setPlan((p) => ({ ...p, notes: e.target.value }))} />
             </label>
           </div>
@@ -566,7 +566,7 @@ function TopicSheet({ topicId, ctx, planner, onClose }) {
                     <CheckCircle checked={!open} onToggle={() => toggleComplete(t.id)} size="sm" />
                     <button type="button" onClick={() => { setSelectedId(t.id); onClose() }} className="min-w-0 flex-1 text-left">
                       <span className={cx('block text-sm font-semibold truncate', !open && 'line-through text-muted')}>{t.title}</span>
-                      <span className={cx('block text-[11px] tnum', late ? 'text-coral-fg font-semibold' : 'text-faint')}>
+                      <span className={cx('block text-xs tnum', late ? 'text-coral-fg font-semibold' : 'text-faint')}>
                         {t.date ? (t.date === today ? 'Today' : format(parseISO(t.date), 'EEE d MMM')) : 'No day'} · {fmtMinutes(t.durationMinutes)} planned · {fmtMinutes(totalMinutes(t, now))} logged{t.exam.deadline ? ` · due ${format(parseISO(t.exam.deadline), 'd MMM')}` : ''}
                       </span>
                     </button>
@@ -587,21 +587,21 @@ function TopicSheet({ topicId, ctx, planner, onClose }) {
           </p>
           <form onSubmit={savePractice} className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2">
             {[['attempted', 'Attempted'], ['correct', 'Correct'], ['incorrect', 'Incorrect'], ['unanswered', 'Unanswered'], ['minutes', 'Minutes']].map(([k, label]) => (
-              <label key={k} className="grid gap-1 text-[11px] font-semibold text-muted">{label}
+              <label key={k} className="grid gap-1 text-xs font-semibold text-muted">{label}
                 <input type="number" inputMode="numeric" min={0} className="input py-1.5 text-sm tnum" value={practice[k]}
                   placeholder={k === 'incorrect' && att ? String(Math.max(0, att - cor)) : ''} onChange={(e) => setPractice((p) => ({ ...p, [k]: e.target.value }))} />
               </label>
             ))}
-            <label className="grid gap-1 text-[11px] font-semibold text-muted">Level
+            <label className="grid gap-1 text-xs font-semibold text-muted">Level
               <select className="input py-1.5 text-sm" value={practice.level} onChange={(e) => setPractice((p) => ({ ...p, level: e.target.value }))}>{PRACTICE_LEVELS.map((l) => <option key={l} value={l}>{cap(l)}</option>)}</select>
             </label>
-            <label className="grid gap-1 text-[11px] font-semibold text-muted">Date
+            <label className="grid gap-1 text-xs font-semibold text-muted">Date
               <input type="date" className="input py-1.5 text-sm" value={practice.date} max={today} onChange={(e) => setPractice((p) => ({ ...p, date: e.target.value }))} />
             </label>
-            <label className="grid gap-1 text-[11px] font-semibold text-muted">Test score
+            <label className="grid gap-1 text-xs font-semibold text-muted">Test score
               <input className="input py-1.5 text-sm" value={practice.score} maxLength={40} placeholder="e.g. 18/25" onChange={(e) => setPractice((p) => ({ ...p, score: e.target.value }))} />
             </label>
-            <label className="grid gap-1 text-[11px] font-semibold text-muted col-span-2 sm:col-span-4">Mistakes to remember
+            <label className="grid gap-1 text-xs font-semibold text-muted col-span-2 sm:col-span-4">Mistakes to remember
               <input className="input py-1.5 text-sm" value={practice.mistakes} maxLength={2000} onChange={(e) => setPractice((p) => ({ ...p, mistakes: e.target.value }))} />
             </label>
             {att > 0 && <p className={cx('col-span-2 sm:col-span-4 text-xs tnum', practiceError ? 'text-coral-fg font-semibold' : 'text-muted')}>{practiceError || `This session: ${accuracy(cor, att)}% accuracy`}</p>}
@@ -697,19 +697,19 @@ function CurrentAffairs({ ctx, planner }) {
 
       <form onSubmit={add} className="card p-4 grid grid-cols-2 sm:grid-cols-4 gap-2">
         <h2 className="h-display text-base col-span-2 sm:col-span-4">Add a news item</h2>
-        <label className="grid gap-1 text-[11px] font-semibold text-muted">Date
+        <label className="grid gap-1 text-xs font-semibold text-muted">Date
           <input type="date" className="input py-1.5 text-sm" value={form.date} max={today} onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))} />
         </label>
-        <label className="grid gap-1 text-[11px] font-semibold text-muted">Category
+        <label className="grid gap-1 text-xs font-semibold text-muted">Category
           <select className="input py-1.5 text-sm" value={form.category} onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}>{CA_CATEGORIES.map((c) => <option key={c}>{c}</option>)}</select>
         </label>
-        <label className="grid gap-1 text-[11px] font-semibold text-muted col-span-2">Headline or topic
+        <label className="grid gap-1 text-xs font-semibold text-muted col-span-2">Headline or topic
           <input className="input py-1.5 text-sm" value={form.headline} maxLength={300} onChange={(e) => setForm((f) => ({ ...f, headline: e.target.value }))} />
         </label>
-        <label className="grid gap-1 text-[11px] font-semibold text-muted col-span-2">Source link
+        <label className="grid gap-1 text-xs font-semibold text-muted col-span-2">Source link
           <input type="url" className="input py-1.5 text-sm" value={form.url} maxLength={1000} placeholder="https://" onChange={(e) => setForm((f) => ({ ...f, url: e.target.value }))} />
         </label>
-        <label className="grid gap-1 text-[11px] font-semibold text-muted col-span-2">Notes
+        <label className="grid gap-1 text-xs font-semibold text-muted col-span-2">Notes
           <input className="input py-1.5 text-sm" value={form.notes} maxLength={3000} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} />
         </label>
         {err && <p role="alert" className="col-span-2 sm:col-span-4 text-xs font-semibold text-coral-fg">{err}</p>}
@@ -746,7 +746,7 @@ function CurrentAffairs({ ctx, planner }) {
                       <div className="flex items-start gap-2">
                         <span className="min-w-0 flex-1">
                           <span className="block text-sm font-semibold">{r.headline}</span>
-                          <span className="block text-[11px] text-faint">{r.category}</span>
+                          <span className="block text-xs text-faint">{r.category}</span>
                           {r.notes && <span className="block text-[13px] text-muted mt-0.5">{r.notes}</span>}
                         </span>
                         <button type="button" aria-label="Delete this news item" className="h-7 w-7 shrink-0 rounded-full inline-flex items-center justify-center text-faint hover:text-coral-fg hover:bg-coral/60"
@@ -755,9 +755,9 @@ function CurrentAffairs({ ctx, planner }) {
                       <div className="flex flex-wrap items-center gap-2">
                         {r.url && <a href={r.url} target="_blank" rel="noopener noreferrer" className="text-xs font-semibold text-lav-fg inline-flex items-center gap-1 max-w-full truncate"><ExternalLink size={12} /> Source</a>}
                         <button type="button" role="checkbox" aria-checked={r.revised} onClick={() => patch(r.id, { revised: !r.revised })}
-                          className={cx('pill h-7 px-2.5 text-[11px] border', r.revised ? 'bg-mint text-mint-fg border-transparent' : 'border-line text-muted')}>{r.revised ? 'Revised' : 'Not revised'}</button>
+                          className={cx('pill h-7 px-2.5 text-xs border', r.revised ? 'bg-mint text-mint-fg border-transparent' : 'border-line text-muted')}>{r.revised ? 'Revised' : 'Not revised'}</button>
                         <button type="button" role="checkbox" aria-checked={r.quiz === 'done'} onClick={() => patch(r.id, { quiz: r.quiz === 'done' ? 'none' : 'done' })}
-                          className={cx('pill h-7 px-2.5 text-[11px] border', r.quiz === 'done' ? 'bg-mint text-mint-fg border-transparent' : 'border-line text-muted')}>{r.quiz === 'done' ? 'Quiz done' : 'No quiz yet'}</button>
+                          className={cx('pill h-7 px-2.5 text-xs border', r.quiz === 'done' ? 'bg-mint text-mint-fg border-transparent' : 'border-line text-muted')}>{r.quiz === 'done' ? 'Quiz done' : 'No quiz yet'}</button>
                       </div>
                     </li>
                   ))}

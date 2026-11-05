@@ -77,7 +77,7 @@ export default function Month() {
         <div className="xl:hidden relative h-20 rounded-card overflow-hidden mb-4 flex items-center px-4"
           style={{ background: `linear-gradient(90deg, ${look.from} 0%, ${look.to} 100%)` }}>
           <div className="relative z-10 text-white">
-            <p className="text-[11px] font-bold uppercase tracking-wider opacity-90">{look.label}</p>
+            <p className="text-xs font-bold uppercase tracking-wider opacity-90">{look.label}</p>
             <p className="text-xl font-black tracking-tight leading-tight">{format(monthStart, 'MMMM yyyy')}</p>
           </div>
           {/* the whole scene (a little trimmed at the top), small on the right, clear of the text */}
@@ -99,7 +99,7 @@ export default function Month() {
 
         {/* Grid */}
         <div className="relative grid grid-cols-7 gap-2 mb-2">
-          {dayNames.map((d) => <p key={d} className="text-[11px] font-bold text-faint uppercase tracking-wider text-center">{d}</p>)}
+          {dayNames.map((d) => <p key={d} className="text-xs font-bold text-faint uppercase tracking-wider text-center">{d}</p>)}
         </div>
         <div className="relative grid grid-cols-7 gap-2">
           {cells.map((c) => <Tile key={c.key} cell={c} onOpen={() => openDay(c.key)} />)}
@@ -132,7 +132,7 @@ export default function Month() {
             <div className="h-11 w-11 rounded-2xl bg-lav text-lav-fg flex items-center justify-center shrink-0"><Clock3 size={20} /></div>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-bold">{Math.round(stats.planned)} h planned</p>
-              <div className="flex items-center gap-1.5 mt-1.5 text-[10px] font-semibold text-faint">
+              <div className="flex items-center gap-1.5 mt-1.5 text-[11px] font-semibold text-faint">
                 Less
                 {LEVEL_ALPHA.map((a, i) => (
                   <span key={i} className="h-3 w-3 rounded-[4px] border border-line" style={{ background: i ? cssVar('--lav-fg', a) : 'transparent' }} />
@@ -164,7 +164,7 @@ function Tile({ cell, onOpen }) {
       style={{ background: level ? cssVar('--lav-fg', LEVEL_ALPHA[level]) : undefined }}>
       <div className="flex items-start justify-between gap-1 max-sm:flex-col-reverse max-sm:items-center max-sm:justify-start max-sm:gap-1.5 max-sm:pt-0.5">
         {list.length > 0 ? (
-          <span className={cx('rounded-full px-1.5 py-0.5 text-[10px] font-semibold max-sm:min-w-[18px] max-sm:text-center max-sm:px-1 max-sm:py-0 max-sm:leading-[16px]', strong ? 'bg-white/20' : 'bg-card border border-line text-muted')}>
+          <span className={cx('rounded-full px-1.5 py-0.5 text-[11px] font-semibold max-sm:min-w-[18px] max-sm:text-center max-sm:px-1 max-sm:py-0 max-sm:leading-[16px]', strong ? 'bg-white/20' : 'bg-card border border-line text-muted')}>
             {list.length}<span className="hidden sm:inline"> task{list.length === 1 ? '' : 's'}</span>
           </span>
         ) : <span />}
@@ -178,11 +178,11 @@ function Tile({ cell, onOpen }) {
         </span>
       </div>
       <div className="mt-auto space-y-0.5 hidden sm:block">
-        {holiday && <p className={cx('text-[10px] font-bold truncate inline-flex items-center gap-1 max-w-full', strong ? 'text-white' : 'text-peach-fg')}><PartyPopper size={10} className="shrink-0" />{holiday}</p>}
+        {holiday && <p className={cx('text-[11px] font-bold truncate inline-flex items-center gap-1 max-w-full', strong ? 'text-white' : 'text-peach-fg')}><PartyPopper size={10} className="shrink-0" />{holiday}</p>}
         {list.slice(0, holiday ? 1 : 2).map((t) => (
-          <p key={t.id} className={cx('text-[11px] font-medium truncate', t.status === 'completed' && 'line-through opacity-60', !strong && 'text-muted')}>{t.title}</p>
+          <p key={t.id} className={cx('text-xs font-medium truncate', t.status === 'completed' && 'line-through opacity-60', !strong && 'text-muted')}>{t.title}</p>
         ))}
-        {list.length > (holiday ? 1 : 2) && <p className={cx('text-[10px] font-semibold', strong ? 'text-white/70' : 'text-faint')}>+{list.length - (holiday ? 1 : 2)} more</p>}
+        {list.length > (holiday ? 1 : 2) && <p className={cx('text-[11px] font-semibold', strong ? 'text-white/70' : 'text-faint')}>+{list.length - (holiday ? 1 : 2)} more</p>}
       </div>
     </button>
   )
@@ -197,7 +197,7 @@ function Poster({ month, look }) {
         style={{ writingMode: 'vertical-rl', transform: 'translateX(-50%) rotate(180deg)', fontSize: 64 }}>
         {month}
       </span>
-      <span className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 rounded-full bg-black/45 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-white">{look.label}</span>
+      <span className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 rounded-full bg-black/45 px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider text-white">{look.label}</span>
       <SeasonScene season={look.season} className="mt-auto w-full" />
     </aside>
   )

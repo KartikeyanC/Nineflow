@@ -127,7 +127,7 @@ export default function Tooltips() {
       style={{ left: pos ? pos.left : 0, top: pos ? pos.top : 0, opacity: pos ? 1 : 0 }}
       className="pointer-events-none fixed z-[200] rounded-xl border border-white/50 dark:border-white/10 bg-card/70 text-ink px-3 py-1.5 backdrop-blur-xl backdrop-saturate-150 shadow-[inset_0_1px_0_rgb(255_255_255/0.45),0_10px_28px_-8px_rgb(var(--shadow)/0.32)] transition-opacity duration-150 motion-reduce:transition-none">
       <p className="text-[12px] font-semibold leading-tight whitespace-nowrap">{tip.name}</p>
-      {tip.hint && <p className="mt-0.5 max-w-[16rem] text-[11px] leading-snug text-muted">{tip.hint}</p>}
+      {tip.hint && <p className="mt-0.5 max-w-[16rem] text-xs leading-snug text-muted">{tip.hint}</p>}
     </div>,
     document.body,
   )

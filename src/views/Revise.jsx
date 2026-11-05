@@ -106,7 +106,7 @@ export default function Revise() {
                   <Check size={16} /> Knew it <span className="kbd ml-1 max-sm:hidden text-ink">2</span>
                 </button>
               </div>
-              <p className="mt-2 text-[11px] text-faint text-center">{nextHint(recs[card.key], again.has(card.key))}</p>
+              <p className="mt-2 text-xs text-faint text-center">{nextHint(recs[card.key], again.has(card.key))}</p>
             </>
           ) : (
             <button type="button" className="btn-black h-12 w-full mt-6" onClick={() => setShown(true)}>
@@ -139,7 +139,7 @@ function Stat({ icon: Icon, label, value, hint }) {
     <div className="card p-4">
       <p className="text-xs font-semibold text-muted inline-flex items-center gap-1.5"><Icon size={13} /> {label}</p>
       <p className="h-display text-2xl tnum mt-0.5">{value}</p>
-      {hint && <p className="text-[11px] text-faint mt-0.5 truncate">{hint}</p>}
+      {hint && <p className="text-xs text-faint mt-0.5 truncate">{hint}</p>}
     </div>
   )
 }

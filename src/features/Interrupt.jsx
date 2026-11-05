@@ -28,7 +28,7 @@ export function InterruptButton({ compact = false }) {
       </span>
       {!compact && <>
         <span className="hidden wide:inline text-[13px] font-semibold">Interruption</span>
-        <span className="hidden wide:inline-flex ml-auto text-[10px] font-semibold text-faint tracking-wide">CTRL I</span>
+        <span className="hidden wide:inline-flex ml-auto text-[11px] font-semibold text-faint tracking-wide">CTRL I</span>
       </>}
     </button>
   )
@@ -160,12 +160,12 @@ export default function Interrupt() {
             {!isNow && <button type="button" onClick={resetToNow} className="text-[12px] font-semibold text-muted hover:text-ink underline underline-offset-4 decoration-line hover:decoration-ink">Reset to now</button>}
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-[1.5fr_1fr_1fr] gap-x-2 gap-y-1">
-            <span className="col-span-2 sm:col-span-1 text-[11px] font-semibold text-faint">Date</span>
-            <span className="hidden sm:block text-[11px] font-semibold text-faint">Start</span>
-            <span className="hidden sm:block text-[11px] font-semibold text-faint">End</span>
+            <span className="col-span-2 sm:col-span-1 text-xs font-semibold text-faint">Date</span>
+            <span className="hidden sm:block text-xs font-semibold text-faint">Start</span>
+            <span className="hidden sm:block text-xs font-semibold text-faint">End</span>
             <DateField value={date} onChange={setDate} allowClear={false} placeholder="Pick a date" className="col-span-2 sm:col-span-1 w-full" />
-            <div className="grid gap-1"><span className="sm:hidden text-[11px] font-semibold text-faint">Start</span><TimeField value={start} onChange={(v) => { setStart(v); setEndError(null) }} placeholder="No set time" className="w-full" /></div>
-            <div className={cx('grid gap-1', !start && 'opacity-50 pointer-events-none')}><span className="sm:hidden text-[11px] font-semibold text-faint">End</span><TimeField value={endMin != null && endMin <= 1440 ? hhmm(endMin) : null} onChange={setEnd} allowClear={false} placeholder="End" className="w-full" /></div>
+            <div className="grid gap-1"><span className="sm:hidden text-xs font-semibold text-faint">Start</span><TimeField value={start} onChange={(v) => { setStart(v); setEndError(null) }} placeholder="No set time" className="w-full" /></div>
+            <div className={cx('grid gap-1', !start && 'opacity-50 pointer-events-none')}><span className="sm:hidden text-xs font-semibold text-faint">End</span><TimeField value={endMin != null && endMin <= 1440 ? hhmm(endMin) : null} onChange={setEnd} allowClear={false} placeholder="End" className="w-full" /></div>
           </div>
           {timeError && <p role="alert" className="text-[12px] font-semibold text-coral-fg">{timeError}</p>}
         </div>

@@ -62,7 +62,7 @@ export default function FinishGate() {
             <span className="text-[12px] font-semibold text-muted">Why are you finishing without {g.rule === 'any' ? 'any of them' : 'all of them'}?</span>
             <input autoFocus className="input" value={reason} maxLength={200} onChange={(e) => setReason(e.target.value)} placeholder="e.g. The client has no email address" />
           </label>
-          <p className="text-[11px] text-faint">This is saved on the task, so it's clear afterwards what was skipped.</p>
+          <p className="text-xs text-faint">This is saved on the task, so it's clear afterwards what was skipped.</p>
           <div className="flex items-center justify-between gap-2 mt-1">
             <button type="button" className="btn-ghost" onClick={() => setSkipping(false)}>Back</button>
             <button type="submit" disabled={why.length < 3} className="btn-black disabled:opacity-40">Finish without them</button>

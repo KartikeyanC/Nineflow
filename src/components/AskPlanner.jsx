@@ -100,7 +100,7 @@ export default function AskPlanner() {
             onChange={(e) => setText(e.target.value)} disabled={busy} />
           <button type="submit" disabled={!text.trim() || busy} aria-label="Send" className={cx('btn-black h-10 w-10 p-0 shrink-0', (!text.trim() || busy) && 'opacity-40')}><Send size={15} /></button>
         </form>
-        <p className="mt-2 text-[11px] text-faint">Your task titles, dates and time logged are sent to Claude with each question. Nothing is stored.</p>
+        <p className="mt-2 text-xs text-faint">Your task titles, dates and time logged are sent to Claude with each question. Nothing is stored.</p>
       </div>
     </Modal>
   )

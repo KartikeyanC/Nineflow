@@ -36,8 +36,8 @@ export default function Someday() {
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold truncate">{t.title}</p>
                 <div className="flex items-center gap-1.5 mt-0.5">
-                  <CategoryTag category={categoryById(t.category)} className="text-[10px] py-0" />
-                  <span className="text-[10px] text-faint">{fmtMinutes(t.durationMinutes)}</span>
+                  <CategoryTag category={categoryById(t.category)} className="text-[11px] py-0" />
+                  <span className="text-[11px] text-faint">{fmtMinutes(t.durationMinutes)}</span>
                 </div>
               </div>
               <PriorityPill priority={t.priority} className="hidden sm:inline-flex" />

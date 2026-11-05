@@ -6,7 +6,7 @@ import { DateField } from '../components/DatePicker'
 // Column header with a marker: ✎ you fill in, ƒ calculated.
 export function Th({ children, fill, calc, className }) {
   return (
-    <th className={cx('text-left text-[11px] font-bold text-muted uppercase tracking-wide px-2 py-2 whitespace-nowrap bg-page sticky top-0 z-10', className)}>
+    <th className={cx('text-left text-xs font-bold text-muted uppercase tracking-wide px-2 py-2 whitespace-nowrap bg-page sticky top-0 z-10', className)}>
       <span className="inline-flex items-center gap-1">
         {fill && <Pencil size={10} className="text-lav-fg" />}
         {calc && <FunctionSquare size={10} className="text-faint" />}
@@ -18,10 +18,10 @@ export function Th({ children, fill, calc, className }) {
 
 export function Legend() {
   return (
-    <p className="text-[11px] text-muted inline-flex items-center gap-3">
+    <p className="text-xs text-muted inline-flex items-center gap-3">
       <span className="inline-flex items-center gap-1"><Pencil size={10} className="text-lav-fg" /> you fill in</span>
       <span className="inline-flex items-center gap-1"><FunctionSquare size={10} className="text-faint" /> calculated</span>
-      <span className="pill bg-butter text-butter-fg py-0 text-[10px]">Example</span><span>kept out of totals</span>
+      <span className="pill bg-butter text-butter-fg py-0 text-[11px]">Example</span><span>kept out of totals</span>
     </p>
   )
 }
@@ -66,9 +66,9 @@ export function RowTools({ example, onDelete }) {
   }, [armed])
   return (
     <span className="inline-flex items-center gap-1">
-      {example && <span className="pill bg-butter text-butter-fg py-0 text-[10px]">Example</span>}
+      {example && <span className="pill bg-butter text-butter-fg py-0 text-[11px]">Example</span>}
       {armed
-        ? <button type="button" onClick={onDelete} className="pill bg-coral text-coral-fg py-0 text-[11px]">Delete?</button>
+        ? <button type="button" onClick={onDelete} className="pill bg-coral text-coral-fg py-0 text-xs">Delete?</button>
         : <button type="button" onClick={() => setArmed(true)} title="Delete row" aria-label="Delete row" className="h-6 w-6 rounded-full inline-flex items-center justify-center text-faint hover:text-coral-fg hover:bg-coral transition"><Trash2 size={12} /></button>}
     </span>
   )
@@ -91,4 +91,4 @@ export function Section({ title, hint, right, children, className }) {
 
 export const STATUS_TONE = { 'On track': 'bg-mint text-mint-fg', 'Below target': 'bg-coral text-coral-fg', Overloaded: 'bg-peach text-peach-fg', 'n/a': 'bg-page text-faint' }
 export const DELIVERY_TONE = { 'On time': 'bg-mint text-mint-fg', Late: 'bg-peach text-peach-fg', Overdue: 'bg-coral text-coral-fg', Open: 'bg-sky text-sky-fg' }
-export const Pill = ({ tone, children }) => <span className={cx('pill py-0 text-[11px]', tone)}>{children}</span>
+export const Pill = ({ tone, children }) => <span className={cx('pill py-0 text-xs', tone)}>{children}</span>

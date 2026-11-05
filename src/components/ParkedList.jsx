@@ -24,7 +24,7 @@ export function ParkChips({ value, onChange, counts, className }) {
   const chip = (kind, n, Icon, label) => (
     <button key={kind} type="button" aria-pressed={value === kind} onClick={() => onChange(value === kind ? 'active' : kind)}
       title={value === kind ? 'Back to the tasks' : n ? `Show ${n} ${label}` : `Show ${label} (none yet)`} aria-label={value === kind ? `Back to the tasks (showing ${label})` : `Show ${n} ${label}`}
-      className={cx('h-6 px-2 rounded-full text-[11px] font-semibold inline-flex items-center gap-1 transition tnum shrink-0',
+      className={cx('h-6 px-2 rounded-full text-xs font-semibold inline-flex items-center gap-1 transition tnum shrink-0',
         value === kind ? 'bg-ink text-page' : n ? 'bg-card/80 text-current hover:bg-card' : 'bg-card/40 text-current opacity-60 hover:opacity-100')}>
       <Icon size={12} />{n}
     </button>
@@ -48,7 +48,7 @@ export function ParkedTasks({ list, kind, layout = 'cards', onBack }) {
     danger ? 'text-coral-fg hover:bg-coral' : 'text-muted hover:text-ink hover:bg-page')
 
   const back = onBack && (
-        <div className={cx('flex items-center justify-between text-[11px] font-semibold text-muted', layout === 'cards' ? 'mb-2 px-1' : 'px-5 pt-3')}>
+        <div className={cx('flex items-center justify-between text-xs font-semibold text-muted', layout === 'cards' ? 'mb-2 px-1' : 'px-5 pt-3')}>
           <span className="inline-flex items-center gap-1">{kind === 'dropped' ? <XCircle size={12} /> : <PauseCircle size={12} />}{kind === 'dropped' ? 'Dropped' : 'Paused'}</span>
           <button type="button" onClick={onBack} className="hover:text-ink underline">Back to tasks</button>
         </div>
@@ -79,8 +79,8 @@ export function ParkedTasks({ list, kind, layout = 'cards', onBack }) {
               <button type="button" onClick={() => setSelectedId(t.id)} className="min-w-0 flex-1 text-left block w-full">
                 <span className={cx('block text-sm font-bold leading-snug', layout === 'rows' && 'truncate', kind === 'dropped' && 'line-through text-muted')}>{t.title || 'Untitled'}</span>
                 <span className="flex items-center gap-1.5 mt-1 flex-wrap">
-                  <CategoryTag category={categoryById(t.category)} className="text-[10px] py-0" />
-                  <span className="text-[11px] text-faint">{meta}</span>
+                  <CategoryTag category={categoryById(t.category)} className="text-[11px] py-0" />
+                  <span className="text-xs text-faint">{meta}</span>
                 </span>
               </button>
               <div className={cx('flex flex-wrap gap-1', layout === 'cards' && 'mt-2.5')}>

@@ -106,7 +106,7 @@ export default function FocusMode() {
           <Timer size={12} /> {fmtMinutes(spent)} focused on this task · estimate {fmtMinutes(task.durationMinutes)}
           {focus.phase === 'focus' && <span className="ml-2">· long break after {pomo.every - inCycle} more</span>}
         </p>
-        <p className="text-[11px] text-faint/80 mt-1">Stays in Working for the whole session · breaks and pauses aren't logged as focus time</p>
+        <p className="text-xs text-faint/80 mt-1">Stays in Working for the whole session · breaks and pauses aren't logged as focus time</p>
       </div>
     </div>
   )

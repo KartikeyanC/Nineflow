@@ -37,7 +37,7 @@ export default function Dock({ slot }) {
           className="sticky top-4 h-[calc(100vh-2rem)] w-11 shrink-0 card flex flex-col items-center justify-center gap-3 hover:shadow-lift transition">
           <ListTodo size={16} className="text-lav-fg" />
           <span className="pill bg-lav text-lav-fg py-0 px-1.5">{count}</span>
-          <span className="text-[10px] font-bold text-faint" style={{ writingMode: 'vertical-rl' }}>Quick list</span>
+          <span className="text-[11px] font-bold text-faint" style={{ writingMode: 'vertical-rl' }}>Quick list</span>
         </button>
       )
     }

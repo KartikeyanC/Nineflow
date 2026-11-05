@@ -97,7 +97,7 @@ export default function AccountSection() {
         {d.needsPassword && !warn && <PasswordReconnect className="mt-2 text-peach-fg" />}
         {syncing && d.action === 'reconnect' && isDesktop && <p className="mt-1 text-xs text-muted">If Google opens in your web browser, finish signing in there, then come back.</p>}
         {(error || s.error) && <p className="mt-1 text-xs text-coral-fg">{error || s.error}</p>}
-        <p className="mt-2 text-[11px] text-faint">
+        <p className="mt-2 text-xs text-faint">
           {email
             ? 'Changes save a couple of seconds after you make them, and load on any device you log in on. Only you can read your planner. To delete your data everywhere, use "Clear all data" below.'
             : `Changes save to Drive a couple of seconds after you make them, and load on any device you sign in on. The planner can only see the files it creates in your Drive. To delete your data everywhere, use "Clear all data" below, or delete the ${FOLDER_NAME} folder in Google Drive.`}
@@ -146,7 +146,7 @@ function ChangePassword({ email }) {
         <button type="submit" className="btn-black h-9 py-0" disabled={busy || !password}>{busy ? 'Saving…' : 'Save'}</button>
         <button type="button" className="btn-ghost h-9 py-0" onClick={() => { setOpen(false); setPassword(''); setError(null) }}>Cancel</button>
       </div>
-      <p className="mt-1.5 text-[11px] text-faint">At least {supa.MIN_PASSWORD} characters. Other devices stay signed in.</p>
+      <p className="mt-1.5 text-xs text-faint">At least {supa.MIN_PASSWORD} characters. Other devices stay signed in.</p>
       {error && <p role="alert" className="mt-1 text-xs text-coral-fg">{error}</p>}
     </form>
   )

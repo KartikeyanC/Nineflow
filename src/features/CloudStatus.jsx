@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { formatDistanceToNowStrict, parseISO } from 'date-fns'
 import { Cloud, CloudOff, RefreshCw, AlertTriangle, Check, X } from 'lucide-react'
-import { dismissNotice, getStatus, onStatus, reconnect, syncNow } from '../lib/cloud'
+import { dismissNotice, getStatus, keepThisDevice, onStatus, reconnect, syncNow } from '../lib/cloud'
 import { rememberedAccount } from '../lib/google'
 import { cx } from '../components/ui'
 
@@ -107,7 +107,16 @@ export function CloudBanner() {
       <div role="status" className="fixed z-40 top-3 inset-x-3 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 sm:w-[min(620px,calc(100vw-2rem))] animate-modal-in">
         <div className="flex items-start gap-3 rounded-[22px] bg-card shadow-lift ring-hair px-4 py-3">
           <Cloud size={16} className="mt-0.5 text-sky-fg shrink-0" />
-          <p className="text-[13px] flex-1">{s.notice}</p>
+          <div className="flex-1 min-w-0">
+            <p className="text-[13px]">{s.notice}</p>
+            {s.conflict && (
+              <div className="flex flex-wrap gap-2 mt-2">
+                <button type="button" className="btn-ghost h-8 py-0" onClick={dismissNotice}>Keep the other device's</button>
+                <button type="button" className="btn-black h-8 py-0" onClick={() => keepThisDevice().catch((e) => setError(e.message))}>Use this device's version</button>
+              </div>
+            )}
+            {error && <p role="alert" className="mt-1 text-xs text-coral-fg">{error}</p>}
+          </div>
           <button type="button" aria-label="Dismiss" onClick={dismissNotice} className="h-7 w-7 rounded-full inline-flex items-center justify-center text-faint hover:text-ink hover:bg-page"><X size={14} /></button>
         </div>
       </div>

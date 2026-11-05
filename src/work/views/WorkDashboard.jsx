@@ -40,10 +40,10 @@ export default function WorkDashboard() {
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3">
         {stats.kpis.map((k) => (
           <div key={k.label} className="card p-3.5">
-            <p className="text-[11px] font-semibold text-muted">{k.label}</p>
+            <p className="text-xs font-semibold text-muted">{k.label}</p>
             <p className="h-display text-2xl leading-tight mt-0.5">{fmtKpi(k, cur)}</p>
             <div className="flex items-center justify-between mt-1.5">
-              <span className="text-[10px] text-faint">{k.target != null ? `target ${fmtTarget(k, cur)}` : ''}</span>
+              <span className="text-[11px] text-faint">{k.target != null ? `target ${fmtTarget(k, cur)}` : ''}</span>
               <Pill tone={STATUS_TONE[k.status]}>{k.status}</Pill>
             </div>
           </div>
@@ -54,7 +54,7 @@ export default function WorkDashboard() {
         <Section title="By work area" hint="Tasks worked on in the range.">
           {areaRows.length === 0 ? <p className="text-sm text-faint">No work logged in this range.</p> : (
             <table className="w-full text-sm">
-              <thead><tr className="text-[11px] text-muted uppercase"><th className="text-left py-1">Area</th><th className="text-right">Tasks</th><th className="text-right">Done</th><th className="text-right">Planned h</th><th className="text-right">Actual h</th></tr></thead>
+              <thead><tr className="text-xs text-muted uppercase"><th className="text-left py-1">Area</th><th className="text-right">Tasks</th><th className="text-right">Done</th><th className="text-right">Planned h</th><th className="text-right">Actual h</th></tr></thead>
               <tbody>{areaRows.map((a) => (
                 <tr key={a.area} className="border-t border-line"><td className="py-1.5 font-semibold">{a.area}</td><td className="text-right">{a.tasks}</td><td className="text-right">{a.done}</td><td className="text-right text-muted">{h1(a.planned)}</td><td className={cx('text-right font-semibold', a.actual > a.planned && 'text-coral-fg')}>{h1(a.actual)}</td></tr>
               ))}</tbody>
@@ -98,7 +98,7 @@ export default function WorkDashboard() {
               {stats.byStatus.filter((s) => s.count).map((s) => <Cell key={s.status} fill={cssVar(STATUS_COLORS[s.status])} />)}
             </Pie><Tooltip /></PieChart>
           </ResponsiveContainer></div>
-          <ul className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted">{stats.byStatus.filter((s) => s.count).map((s) => <li key={s.status} className="inline-flex items-center gap-1"><i className="h-2 w-2 rounded-full" style={{ background: cssVar(STATUS_COLORS[s.status]) }} />{s.status} {s.count}</li>)}</ul>
+          <ul className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted">{stats.byStatus.filter((s) => s.count).map((s) => <li key={s.status} className="inline-flex items-center gap-1"><i className="h-2 w-2 rounded-full" style={{ background: cssVar(STATUS_COLORS[s.status]) }} />{s.status} {s.count}</li>)}</ul>
         </Section>
       </div>
     </div>

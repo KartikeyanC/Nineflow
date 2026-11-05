@@ -86,7 +86,7 @@ export default function Dashboard() {
         {[['Tasks', counts.total], ['Done', counts.done], ['Working', counts.working], ['Review', counts.review], ['To do', counts.todo]].map(([label, value], i) => (
           <div key={label} className={cx('text-center px-1', i > 0 && 'border-l border-line')}>
             <p className="h-display text-2xl leading-none tnum">{value}</p>
-            <p className="mt-1 text-[11px] font-semibold text-muted truncate">{label}</p>
+            <p className="mt-1 text-xs font-semibold text-muted truncate">{label}</p>
           </div>
         ))}
       </div>
@@ -151,7 +151,7 @@ function Stat({ label, value, sub, icon: Icon, tone }) {
       <div className="min-w-0">
         <p className="text-xs font-semibold text-muted">{label}</p>
         <p className="h-display text-3xl leading-tight">{value}</p>
-        <p className="text-[11px] text-faint truncate">{sub}</p>
+        <p className="text-xs text-faint truncate">{sub}</p>
       </div>
       <div className={cx('h-11 w-11 rounded-full flex items-center justify-center shrink-0', c.bg, c.text)}><Icon size={20} /></div>
     </div>
@@ -197,7 +197,7 @@ function Schedule({ list, isToday, now }) {
           <button type="button" className="pill bg-lav-fg text-white hover:opacity-90 transition" onClick={() => { applyPlan(preview); setPreview(null) }}>Apply</button>
         </div>
       ) : planMsg ? (
-        <span role="status" className="text-[11px] font-semibold text-muted animate-fade-in">{planMsg}</span>
+        <span role="status" className="text-xs font-semibold text-muted animate-fade-in">{planMsg}</span>
       ) : unscheduled > 0 && (
         <button type="button" onClick={runPlan} title={`Timebox ${unscheduled} unscheduled task${unscheduled === 1 ? '' : 's'} into free slots`}
           className="pill bg-lav text-lav-fg hover:opacity-90 transition">
@@ -212,19 +212,19 @@ function Schedule({ list, isToday, now }) {
               <li key={p.id} className="flex items-center gap-2 text-xs"><span className="w-10 font-semibold text-muted tnum">{p.startTime}</span><span className="font-semibold truncate">{p.t.title}</span><span className="ml-auto text-faint">{fmtMinutes(p.t.durationMinutes)}</span></li>
             ))}
           </ul>
-          {preview.unplaced.length > 0 && <p className="text-[11px] text-muted mt-1.5">{preview.unplaced.length} won't fit today.</p>}
+          {preview.unplaced.length > 0 && <p className="text-xs text-muted mt-1.5">{preview.unplaced.length} won't fit today.</p>}
         </div>
       )}
       {dayEvents.length > 0 && (
         <div className="mb-3 rounded-2xl bg-subtle/70 border border-dashed border-line px-3 py-2">
-          <p className="text-[11px] font-semibold text-faint inline-flex items-center gap-1.5 mb-1"><CalendarDays size={12} /> On your calendar</p>
+          <p className="text-xs font-semibold text-faint inline-flex items-center gap-1.5 mb-1"><CalendarDays size={12} /> On your calendar</p>
           <ul className="space-y-0.5">
             {dayEvents.map((e) => {
               const Tag = e.link ? 'a' : 'span'
               return (
                 <li key={`${e.id}-${e.key}`}>
                   <Tag {...(e.link ? { href: e.link, target: '_blank', rel: 'noopener noreferrer' } : {})} className="flex items-baseline gap-2.5 text-[13px] text-muted hover:text-ink">
-                    <span className="w-[4.5rem] shrink-0 text-[11px] font-semibold tnum">{e.allDay ? 'All day' : `${hh(e.startMin)}–${hh(Math.min(e.endMin, 1439))}`}</span>
+                    <span className="w-[4.5rem] shrink-0 text-xs font-semibold tnum">{e.allDay ? 'All day' : `${hh(e.startMin)}–${hh(Math.min(e.endMin, 1439))}`}</span>
                     <span className="truncate font-semibold">{e.title}</span>
                   </Tag>
                 </li>
@@ -254,9 +254,9 @@ function Schedule({ list, isToday, now }) {
                   <p className={cx('text-sm font-semibold truncate', done && 'line-through text-muted')}>
                     {t.interruption && <Zap size={12} className="inline -mt-0.5 mr-1 text-peach-fg" aria-label="Interruption" />}
                     {t.title}
-                    {live && <span className="ml-2 pill bg-lav-fg text-white text-[10px] py-0">Now</span>}
+                    {live && <span className="ml-2 pill bg-lav-fg text-white text-[11px] py-0">Now</span>}
                   </p>
-                  <p className="text-[11px] text-faint">{clock(hh(s))} – {clock(hh(e))} · {fmtMinutes(t.durationMinutes)}</p>
+                  <p className="text-xs text-faint">{clock(hh(s))} – {clock(hh(e))} · {fmtMinutes(t.durationMinutes)}</p>
                 </div>
               </li>
             )
@@ -325,7 +325,7 @@ function TaskList({ day, dayKey, isToday }) {
             return (
               <React.Fragment key={t.id}>
               {showEvening && idx === firstEvening && (
-                <li role="presentation" className="flex items-center gap-1.5 px-2 pt-3 pb-1 text-[10px] font-bold uppercase tracking-wide text-faint"><Moon size={11} /> Evening · from {eveningFrom}</li>
+                <li role="presentation" className="flex items-center gap-1.5 px-2 pt-3 pb-1 text-[11px] font-bold uppercase tracking-wide text-faint"><Moon size={11} /> Evening · from {eveningFrom}</li>
               )}
               <li data-row tabIndex={0} onKeyDown={(e) => onRowKey(e, t)} onClick={() => setSelectedId(t.id)} aria-label={`${t.title}${done ? ', done' : ''}`}
                 className="flex items-center gap-3 px-2 py-2 rounded-xl cursor-pointer hover:bg-page focus-visible:bg-page focus-visible:ring-2 focus-visible:ring-lav-fg/30 outline-none transition">
@@ -333,18 +333,18 @@ function TaskList({ day, dayKey, isToday }) {
                 <div className="min-w-0 flex-1">
                   <p className={cx('text-sm font-semibold truncate', done && 'line-through text-muted')}>{t.title}</p>
                   <div className="flex items-center gap-1.5 mt-0.5">
-                    <CategoryTag category={categoryById(t.category)} className="text-[10px] py-0" />
+                    <CategoryTag category={categoryById(t.category)} className="text-[11px] py-0" />
                     {t.recurrence && <Repeat size={10} className="text-lav-fg" />}
-                    <RequiredBadge task={t} className="!text-[10px]" />
-                    {t.status === 'working' && <span className="text-[10px] font-semibold text-sky-fg">Working</span>}
-                    {t.interruption && <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-peach-fg"><Zap size={10} />Interruption{t.interruption.by ? ` · ${t.interruption.by}` : ''}</span>}
-                    {od && <span className="text-[10px] font-semibold text-muted">{carriedLabel(t.date, now)}</span>}
-                    {tab !== 'today' && t.date && t.date !== dayKey && <span className="text-[10px] text-faint">{format(parseISO(t.date), 'EEE d')}</span>}
+                    <RequiredBadge task={t} className="!text-[11px]" />
+                    {t.status === 'working' && <span className="text-[11px] font-semibold text-sky-fg">Working</span>}
+                    {t.interruption && <span className="inline-flex items-center gap-0.5 text-[11px] font-semibold text-peach-fg"><Zap size={10} />Interruption{t.interruption.by ? ` · ${t.interruption.by}` : ''}</span>}
+                    {od && <span className="text-[11px] font-semibold text-muted">{carriedLabel(t.date, now)}</span>}
+                    {tab !== 'today' && t.date && t.date !== dayKey && <span className="text-[11px] text-faint">{format(parseISO(t.date), 'EEE d')}</span>}
                   </div>
                 </div>
                 <span className="text-xs font-medium text-muted tnum text-right">
                   {t.startTime || fmtMinutes(t.durationMinutes)}
-                  {done && totalMinutes(t, now) >= 1 && <span className="block text-[10px] text-faint">took {fmtMinutes(totalMinutes(t, now))}</span>}
+                  {done && totalMinutes(t, now) >= 1 && <span className="block text-[11px] text-faint">took {fmtMinutes(totalMinutes(t, now))}</span>}
                 </span>
               </li>
               </React.Fragment>
@@ -380,7 +380,7 @@ function Productivity({ counts }) {
         </ResponsiveContainer>
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
           <span className="h-display text-2xl leading-none">{pct}%</span>
-          <span className="text-[11px] text-faint font-medium mt-0.5">Productivity</span>
+          <span className="text-xs text-faint font-medium mt-0.5">Productivity</span>
         </div>
       </div>
       <ul className="mt-3 space-y-1">
@@ -408,7 +408,7 @@ function FocusTime({ day, now, tasks, isToday }) {
   return (
     <Card title="Focus time" span="xl:col-span-4">
       <p className="h-display text-3xl -mt-1">{fmtMinutes(total)}</p>
-      <p className="text-[11px] text-faint mb-2">Time spent in Working{isToday ? ' today' : ' that day'}</p>
+      <p className="text-xs text-faint mb-2">Time spent in Working{isToday ? ' today' : ' that day'}</p>
       <div className="h-28 flex-1">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} margin={{ top: 4, right: 0, left: 0, bottom: 0 }} barCategoryGap={3}>
@@ -616,7 +616,7 @@ function Countdowns() {
               <span className={cx('h-9 w-9 rounded-full flex items-center justify-center shrink-0', n < 0 ? 'bg-page text-faint' : n <= 3 ? 'bg-coral text-coral-fg' : 'bg-lav text-lav-fg')}><Hourglass size={15} /></span>
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold truncate">{c.name}</p>
-                <p className="text-[11px] text-faint">{format(parseISO(c.date), 'EEE, MMM d, yyyy')}</p>
+                <p className="text-xs text-faint">{format(parseISO(c.date), 'EEE, MMM d, yyyy')}</p>
               </div>
               <span className={cx('text-sm font-bold tnum', n < 0 && 'text-faint')}>{label(n)}</span>
               <button type="button" aria-label={`Remove ${c.name}`} onClick={() => save(list.filter((x) => x.id !== c.id))}

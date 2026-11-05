@@ -196,7 +196,7 @@ export default function Week() {
                     aria-label={`${format(day, 'EEEE d MMMM')}${list.length ? `, ${list.length} task${list.length === 1 ? '' : 's'}` : ''}`}
                     className={cx('h-14 rounded-2xl flex flex-col items-center justify-center gap-0.5 transition active:scale-95',
                       on ? 'bg-brand text-white shadow-sm' : today ? 'text-brand' : 'text-ink')}>
-                    <span className={cx('text-[10px] font-bold uppercase', on ? 'text-white/80' : today ? 'text-brand' : 'text-faint')}>{format(day, 'EEEEE')}</span>
+                    <span className={cx('text-[11px] font-bold uppercase', on ? 'text-white/80' : today ? 'text-brand' : 'text-faint')}>{format(day, 'EEEEE')}</span>
                     <span className="text-base font-bold leading-none tnum">{format(day, 'd')}</span>
                     <i className={cx('h-1 w-1 rounded-full', list.length ? (on ? 'bg-white' : 'bg-faint') : 'bg-transparent')} />
                   </button>
@@ -219,7 +219,7 @@ export default function Week() {
           )}
         </div>
         <div className="flex items-center gap-2">
-          {planMsg && <span className="text-[11px] font-semibold text-muted animate-fade-in">{planMsg}</span>}
+          {planMsg && <span className="text-xs font-semibold text-muted animate-fade-in">{planMsg}</span>}
           {planButton}
           <button type="button" className="btn-ghost h-9 py-0" onClick={() => setQuickAdd({ date: dateKey(anchor) })}><Plus size={15} /> Add task</button>
           <Segmented size="sm" value={mode}
@@ -235,7 +235,7 @@ export default function Week() {
           {/* Day tiles (phones have the strip above instead) */}
           {!phone && <div className="grid gap-2 px-3 pt-3" style={{ gridTemplateColumns: colTemplate }}>
             <div className="rounded-2xl bg-page flex flex-col items-center justify-center py-2">
-              <span className="text-[10px] font-bold text-faint">W</span>
+              <span className="text-[11px] font-bold text-faint">W</span>
               <span className="text-sm font-bold">{getISOWeek(days[0])}</span>
             </div>
             {days.map((day) => {
@@ -246,7 +246,7 @@ export default function Week() {
                   onClick={() => { setAnchor(day); setMode('day') }}
                   className={cx('rounded-2xl py-2 flex flex-col items-center transition hover:-translate-y-0.5',
                     today ? 'bg-brand text-white' : 'bg-page text-ink hover:bg-lav/60')}>
-                  <span className={cx('text-[10px] font-bold uppercase tracking-wider', today ? 'text-white/80' : 'text-faint')}>{format(day, 'EEE')}</span>
+                  <span className={cx('text-[11px] font-bold uppercase tracking-wider', today ? 'text-white/80' : 'text-faint')}>{format(day, 'EEE')}</span>
                   {/* .h-display sets text-ink, so today's date needs its colour set here or it vanishes on the ink tile. */}
                   <span className={cx('h-display text-2xl leading-tight', today && 'text-white')}>{format(day, 'd')}</span>
                   {holiday && <PartyPopper size={11} className={cx('mt-0.5', today ? 'text-white' : 'text-peach-fg')} aria-hidden="true" />}
@@ -257,12 +257,12 @@ export default function Week() {
 
           {/* No-time row */}
           <div className={cx('grid gap-2 px-3 pt-2 pb-2 border-b border-line', phone && 'px-2 py-2.5')} style={{ gridTemplateColumns: colTemplate }}>
-            <div className="text-[10px] font-bold text-faint uppercase tracking-wider flex items-center justify-center text-center leading-tight">No time</div>
+            <div className="text-[11px] font-bold text-faint uppercase tracking-wider flex items-center justify-center text-center leading-tight">No time</div>
             {gridDays.map(({ key, untimed, allDayEvents }) => (
               <div key={key} className="min-h-[28px] flex flex-wrap gap-1 content-start">
                 {allDayEvents.slice(0, 2).map((e) => <EventChip key={e.id} event={e} />)}
                 {untimed.slice(0, 3).map((t) => <Chip key={t.id} task={t} />)}
-                {untimed.length > 3 && <span className="text-[10px] font-semibold text-faint self-center">+{untimed.length - 3} more</span>}
+                {untimed.length > 3 && <span className="text-[11px] font-semibold text-faint self-center">+{untimed.length - 3} more</span>}
               </div>
             ))}
           </div>
@@ -273,12 +273,12 @@ export default function Week() {
               {/* Axis */}
               <div className="relative">
                 {hours.map((m) => (
-                  <span key={m} className={cx('absolute -translate-y-1/2 text-[11px] font-semibold text-faint', phone ? 'right-2' : 'right-3')} style={{ top: (m - GRID_START) * PX_PER_MIN }}>
+                  <span key={m} className={cx('absolute -translate-y-1/2 text-xs font-semibold text-faint', phone ? 'right-2' : 'right-3')} style={{ top: (m - GRID_START) * PX_PER_MIN }}>
                     {clock(toHHMM(m))}
                   </span>
                 ))}
                 {showNow && (
-                  <span className="absolute right-2 -translate-y-1/2 z-20 rounded-full bg-danger text-white text-[10px] font-bold px-1.5 py-0.5"
+                  <span className="absolute right-2 -translate-y-1/2 z-20 rounded-full bg-danger text-white text-[11px] font-bold px-1.5 py-0.5"
                     style={{ top: (nowMin - GRID_START) * PX_PER_MIN }}>
                     {clock(toHHMM(nowMin))}
                   </span>
@@ -308,7 +308,7 @@ export default function Week() {
         <section className="card p-5 col-span-12 xl:col-span-8">
           <div className="flex items-center justify-between mb-2">
             <h2 className="h-display text-base">Planned vs completed</h2>
-            <div className="flex items-center gap-3 text-[11px] font-semibold text-muted">
+            <div className="flex items-center gap-3 text-xs font-semibold text-muted">
               <span className="inline-flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-sm bg-sky" /> Planned</span>
               <span className="inline-flex items-center gap-1.5"><i className="h-2.5 w-2.5 rounded-sm bg-sky-fg" /> Completed</span>
             </div>
@@ -355,7 +355,7 @@ function DayColumn({ dayKey, isToday, hours, onSlot, children }) {
           {[m, m + 30].map((slot) => (
             <button key={slot} type="button" onClick={() => onSlot(slot)}
               onMouseEnter={() => setHover(slot)} onMouseLeave={() => setHover(null)}
-              className={cx('absolute left-0 right-0 text-left px-1.5 text-[10px] font-semibold text-lav-fg transition-colors',
+              className={cx('absolute left-0 right-0 text-left px-1.5 text-[11px] font-semibold text-lav-fg transition-colors',
                 hover === slot ? 'bg-lav/60' : 'bg-transparent')}
               style={{ top: (slot - GRID_START) * PX_PER_MIN, height: 30 * PX_PER_MIN }}>
               {hover === slot && `+ ${toHHMM(slot)}`}
@@ -401,9 +401,9 @@ function Block({ task, lane, lanes, onOpen }) {
         {task.title}
       </p>
       {height >= 40 && (
-        <p className={cx('text-[10px] font-medium opacity-80', c.text)}>{clock(toHHMM(start))} – {clock(toHHMM(start + task.durationMinutes))}</p>
+        <p className={cx('text-[11px] font-medium opacity-80', c.text)}>{clock(toHHMM(start))} – {clock(toHHMM(start + task.durationMinutes))}</p>
       )}
-      {height >= 72 && <PriorityPill priority={task.priority} className="mt-1 text-[10px] py-0" />}
+      {height >= 72 && <PriorityPill priority={task.priority} className="mt-1 text-[11px] py-0" />}
     </div>
   )
 }
@@ -421,7 +421,7 @@ function EventBlock({ item, lane, lanes }) {
       style={{ top: (start - GRID_START) * PX_PER_MIN, height, left: `calc(${lane * width}% + 3px)`, width: `calc(${width}% - 6px)`, zIndex: 4 }}
       className={cx('absolute rounded-xl border border-dashed border-faint/60 bg-subtle/80 px-2 py-1 overflow-hidden select-none text-muted hover:text-ink hover:border-faint transition', e.free && 'opacity-70')}>
       <p className="text-xs font-bold leading-tight line-clamp-2 flex items-start gap-1"><CalendarDays size={11} className="mt-0.5 shrink-0" />{e.title}</p>
-      {height >= 40 && <p className="text-[10px] font-medium opacity-80">{clock(toHHMM(e.startMin))} – {clock(toHHMM(Math.min(e.endMin, 1439)))}</p>}
+      {height >= 40 && <p className="text-[11px] font-medium opacity-80">{clock(toHHMM(e.startMin))} – {clock(toHHMM(Math.min(e.endMin, 1439)))}</p>}
     </Tag>
   )
 }
@@ -430,7 +430,7 @@ function EventChip({ event }) {
   const Tag = event.link ? 'a' : 'span'
   return (
     <Tag {...(event.link ? { href: event.link, target: '_blank', rel: 'noopener noreferrer' } : {})} title={`Calendar: ${event.title}`}
-      className="rounded-md px-1.5 py-0.5 text-[10px] font-semibold truncate max-w-full inline-flex items-center gap-1 border border-dashed border-faint/60 bg-subtle/80 text-muted hover:text-ink">
+      className="rounded-md px-1.5 py-0.5 text-[11px] font-semibold truncate max-w-full inline-flex items-center gap-1 border border-dashed border-faint/60 bg-subtle/80 text-muted hover:text-ink">
       <CalendarDays size={9} className="shrink-0" /> <span className="truncate">{event.title}</span>
     </Tag>
   )
@@ -441,7 +441,7 @@ function Chip({ task }) {
   const c = colorOf(categoryById(task.category).color)
   return (
     <button type="button" onClick={() => setSelectedId(task.id)}
-      className={cx('rounded-md px-1.5 py-0.5 text-[10px] font-semibold truncate max-w-full', c.bg, c.text, task.status === 'completed' && 'line-through opacity-60')}>
+      className={cx('rounded-md px-1.5 py-0.5 text-[11px] font-semibold truncate max-w-full', c.bg, c.text, task.status === 'completed' && 'line-through opacity-60')}>
       {task.title}
     </button>
   )
@@ -455,7 +455,7 @@ function Summary({ icon: Icon, tone, label, value, sub }) {
       <div className="min-w-0">
         <p className="text-xs font-semibold text-muted">{label}</p>
         <p className="h-display text-xl leading-tight">{value}</p>
-        {sub && <p className="text-[11px] text-faint truncate">{sub}</p>}
+        {sub && <p className="text-xs text-faint truncate">{sub}</p>}
       </div>
     </div>
   )

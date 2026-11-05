@@ -46,7 +46,7 @@ export default function MobileNav() {
 
   const tab = (active, Icon, label, onClick, extra = {}) => (
     <button type="button" onClick={onClick} {...extra}
-      className={cx('flex-1 h-16 flex flex-col items-center justify-center gap-1 text-[11px] font-semibold transition', active ? 'text-lav-fg' : 'text-faint')}>
+      className={cx('flex-1 h-16 flex flex-col items-center justify-center gap-1 text-xs font-semibold transition', active ? 'text-lav-fg' : 'text-faint')}>
       <span className={cx('h-7 w-10 rounded-full inline-flex items-center justify-center', active && 'bg-lav')}><Icon size={18} /></span>
       {label}
     </button>

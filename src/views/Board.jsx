@@ -309,7 +309,7 @@ export default function Board() {
             aria-label="Filters" data-tip="Filters" data-tip-hint="By when, category, priority or tag"
             className={cx('h-9 px-3 rounded-full border text-[13px] font-semibold inline-flex items-center gap-1.5 transition max-sm:order-6 max-sm:h-10 max-sm:min-w-10 max-sm:justify-center',
               showFilters || activeFilters ? 'bg-brand text-white border-transparent' : 'bg-card border-line text-muted hover:text-ink')}>
-            <SlidersHorizontal size={14} /><span className={LABEL}>Filters</span>{activeFilters > 0 && <span className="h-5 min-w-5 px-1 rounded-full bg-page text-ink text-[11px] font-bold inline-flex items-center justify-center">{activeFilters}</span>}
+            <SlidersHorizontal size={14} /><span className={LABEL}>Filters</span>{activeFilters > 0 && <span className="h-5 min-w-5 px-1 rounded-full bg-page text-ink text-xs font-bold inline-flex items-center justify-center">{activeFilters}</span>}
           </button>
           {mode === 'board' && (
             <button type="button" onClick={() => setEditingColumns(true)} data-tip="Columns" data-tip-hint="Add, rename and reorder the Board's columns" aria-label="Columns"
@@ -348,7 +348,7 @@ export default function Board() {
             ['Tag', 'tag', [['', 'Any tag'], ...tagList.map(({ tag, count }) => [tag, `#${tag} (${count})`])]],
           ].map(([label, key, options]) => (
             <label key={key} className="flex flex-col gap-1 min-w-[8.5rem]">
-              <span className="text-[11px] font-semibold text-muted">{label}</span>
+              <span className="text-xs font-semibold text-muted">{label}</span>
               <select className="input py-1.5 bg-page" value={crit[key]} onChange={(e) => setC({ [key]: e.target.value })}>
                 {options.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
               </select>
@@ -405,7 +405,7 @@ export default function Board() {
                     className={cx('shrink-0 h-10 pl-4 pr-3 rounded-full text-sm font-semibold inline-flex items-center gap-2 transition active:scale-95',
                       on ? 'bg-brand text-white shadow-sm' : 'bg-card border border-line text-muted')}>
                     {col.name}
-                    <span className={cx('h-5 min-w-5 px-1.5 rounded-full text-[11px] font-bold inline-flex items-center justify-center tnum', on ? 'bg-white/25 text-white' : 'bg-page text-ink')}>{idLists[col.id].length}</span>
+                    <span className={cx('h-5 min-w-5 px-1.5 rounded-full text-xs font-bold inline-flex items-center justify-center tnum', on ? 'bg-white/25 text-white' : 'bg-page text-ink')}>{idLists[col.id].length}</span>
                   </button>
                 )
               })}
@@ -520,7 +520,7 @@ function Column({ col, ids, taskById, activeId, selecting, picked, onPick, highl
             )}
             {frozen.length > 0 && (
               <div className="mt-1 flex flex-col gap-2">
-                <p className="px-1 text-[11px] font-semibold text-muted">Moved on from this day · {frozen.length}</p>
+                <p className="px-1 text-xs font-semibold text-muted">Moved on from this day · {frozen.length}</p>
                 {frozen.map(({ task, entry }) => <FrozenCard key={task.id} task={task} entry={entry} />)}
               </div>
             )}
@@ -562,7 +562,7 @@ function ListView({ columns, cols, shownOf, setShow, parkedOf, frozenFor }) {
           <section key={col.id} className="card overflow-hidden">
             <div className={cx('flex items-center gap-2 px-5 py-3', c.header, c.text)}>
               <h2 className="font-bold text-sm">{col.name}</h2>
-              <span className="h-5 min-w-5 px-1.5 rounded-full bg-card text-ink text-[11px] font-bold inline-flex items-center justify-center">{list.length}</span>
+              <span className="h-5 min-w-5 px-1.5 rounded-full bg-card text-ink text-xs font-bold inline-flex items-center justify-center">{list.length}</span>
               <ParkChips value={show} onChange={(v) => setShow(col.id, v)} counts={{ paused: parked.paused.length, dropped: parked.dropped.length }} />
             </div>
             {show !== 'active' ? (
@@ -581,7 +581,7 @@ function ListView({ columns, cols, shownOf, setShow, parkedOf, frozenFor }) {
                       <CheckCircle checked={done} onToggle={() => toggleComplete(t.id)} />
                       <p className={cx('flex-1 min-w-0 text-sm font-semibold truncate', done && 'line-through text-muted')}>
                         {t.title}
-                        {overdue && <span className="pill bg-page text-muted border border-line text-[10px] px-1.5 py-0 ml-2">{carriedLabel(t.date, now)}</span>}
+                        {overdue && <span className="pill bg-page text-muted border border-line text-[11px] px-1.5 py-0 ml-2">{carriedLabel(t.date, now)}</span>}
                       </p>
                       <RequiredBadge task={t} />
                       <CategoryTag category={categoryById(t.category)} className="hidden sm:inline-flex" />

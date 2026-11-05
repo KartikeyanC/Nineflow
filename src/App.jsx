@@ -47,6 +47,21 @@ function Shell() {
   const View = VIEWS[view] || Dashboard
   const [palette, setPalette] = useState(false)
   const [shortcuts, setShortcuts] = useState(false)
+  // Phones: the floating search button steps aside while you scroll down, so it never sits on what
+  // you are reading, and comes back when you scroll up or reach the top.
+  const [searchAway, setSearchAway] = useState(false)
+  useEffect(() => {
+    let last = window.scrollY
+    const onScroll = () => {
+      const y = window.scrollY
+      if (Math.abs(y - last) < 8) return
+      setSearchAway(y > last && y > 80)
+      last = y
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+  useEffect(() => setSearchAway(false), [view])
 
   // Cmd/Ctrl+K opens the command palette anywhere (the + button opens quick add).
   useEffect(() => {
@@ -120,7 +135,8 @@ function Shell() {
         type="button"
         onClick={() => setPalette(true)}
         aria-label="Search tasks and notes"
-        className="sm:hidden fixed bottom-[calc(9.25rem+env(safe-area-inset-bottom))] right-[1.375rem] z-30 h-11 w-11 rounded-full bg-card text-ink border border-line shadow-lift flex items-center justify-center active:scale-95 transition"
+        tabIndex={searchAway ? -1 : undefined}
+        className={`sm:hidden fixed bottom-[calc(9.25rem+env(safe-area-inset-bottom))] right-[1.375rem] z-30 h-11 w-11 rounded-full bg-card text-ink border border-line shadow-lift flex items-center justify-center active:scale-95 transition duration-200${searchAway ? ' translate-x-20 opacity-0 pointer-events-none' : ''}`}
       >
         <Search size={18} />
       </button>

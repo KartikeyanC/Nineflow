@@ -179,7 +179,7 @@ function Frame({ children, step, kicker, title, lead }) {
     <div className="card p-6 sm:p-8 animate-modal-in">
       {step != null && (
         <div className="mb-6">
-          <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-faint">
+          <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-faint">
             <span>Step {step + 1} of {STEP_LABEL.length} · {STEP_LABEL[step]}</span>
             <span>{Math.round(((step + 1) / STEP_LABEL.length) * 100)}%</span>
           </div>
@@ -809,7 +809,7 @@ function Setup() {
                 <div className="absolute inset-y-0 rounded-full bg-lav-fg/80" style={{ left: `${(startMin / 1440) * 100}%`, width: `${(Math.min(span, 1440 - startMin) / 1440) * 100}%` }} />
                 {startMin + span > 1440 && <div className="absolute inset-y-0 left-0 rounded-full bg-lav-fg/80" style={{ width: `${((startMin + span - 1440) / 1440) * 100}%` }} />}
               </div>
-              <div className="flex justify-between text-[10px] font-bold text-faint mt-1.5"><span>00:00</span><span>06:00</span><span>12:00</span><span>18:00</span><span>24:00</span></div>
+              <div className="flex justify-between text-[11px] font-bold text-faint mt-1.5"><span>00:00</span><span>06:00</span><span>12:00</span><span>18:00</span><span>24:00</span></div>
             </div>
             <p className="text-xs font-semibold text-muted mt-5 mb-2 inline-flex items-center gap-1"><CalendarDays size={12} /> Working days</p>
             <div className="flex gap-1.5">{DAYS.map(([l, d]) => (
@@ -822,7 +822,7 @@ function Setup() {
                   {SATURDAY_RULES.map((r) => (
                     <button key={r.id} type="button" onClick={() => set({ saturdayRule: r.id })} aria-pressed={a.saturdayRule === r.id}
                       className={cx('rounded-xl border-2 px-3 py-2 text-left transition', a.saturdayRule === r.id ? 'border-ink bg-card' : 'border-transparent bg-card/60 hover:bg-card')}>
-                      <span className="block text-sm font-semibold">{r.label}</span><span className="block text-[11px] text-muted">{r.hint}</span>
+                      <span className="block text-sm font-semibold">{r.label}</span><span className="block text-xs text-muted">{r.hint}</span>
                     </button>
                   ))}
                 </div>

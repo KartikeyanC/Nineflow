@@ -112,7 +112,7 @@ export default function TaskCard({ task, tone, dragging = false, handleProps, st
       {due && (
         <p className="mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-muted">
           <CalendarDays size={13} /> {due}
-          {overdue && <span className="pill bg-page text-muted border border-line text-[10px] px-1.5 py-0 ml-1">carried over</span>}
+          {overdue && <span className="pill bg-page text-muted border border-line text-[11px] px-1.5 py-0 ml-1">carried over</span>}
         </p>
       )}
 
@@ -128,11 +128,11 @@ export default function TaskCard({ task, tone, dragging = false, handleProps, st
 
       {/* Which day it started, once it has been going for more than a day (see the day trail) */}
       {!done && startDayOf(task) && task.date && startDayOf(task) < task.date && (
-        <p className="mt-1.5 text-[11px] font-medium text-faint">Since {format(parseISO(startDayOf(task)), 'MMM d')} · day {daysOnPlan(task, now)}</p>
+        <p className="mt-1.5 text-xs font-medium text-faint">Since {format(parseISO(startDayOf(task)), 'MMM d')} · day {daysOnPlan(task, now)}</p>
       )}
 
       {(task.tags || []).length > 0 && (
-        <p className="mt-2 flex flex-wrap gap-x-2 gap-y-0.5 text-[11px] font-semibold text-lav-fg">
+        <p className="mt-2 flex flex-wrap gap-x-2 gap-y-0.5 text-xs font-semibold text-lav-fg">
           {task.tags.slice(0, 3).map((t) => <span key={t}>#{t}</span>)}
           {task.tags.length > 3 && <span className="text-faint">+{task.tags.length - 3}</span>}
         </p>
@@ -143,7 +143,7 @@ export default function TaskCard({ task, tone, dragging = false, handleProps, st
       <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1.5">
         <CategoryTag category={categoryById(task.category)} className="shrink-0 whitespace-nowrap" />
         {/* Estimate, then how far off it was: "30m +3h 41m" over, "30m −10m" under. Kept as one piece. */}
-        <span className="inline-flex items-center gap-1 text-[11px] text-faint font-medium tnum whitespace-nowrap shrink-0"
+        <span className="inline-flex items-center gap-1 text-xs text-faint font-medium tnum whitespace-nowrap shrink-0"
           title={actual ? `Took ${fmtMinutes(actual)} · estimated ${fmtMinutes(task.durationMinutes)}${overBy ? ` · ${fmtMinutes(Math.abs(overBy))} ${overBy > 0 ? 'over' : 'under'}` : ''}` : undefined}>
           <Timer size={12} /> {fmtMinutes(task.durationMinutes)}
           {overBy !== 0 && (
@@ -153,7 +153,7 @@ export default function TaskCard({ task, tone, dragging = false, handleProps, st
           )}
         </span>
         {sub.total > 0 && (
-          <span className={cx('inline-flex items-center gap-1 text-[11px] font-semibold tnum whitespace-nowrap shrink-0', sub.done === sub.total ? 'text-mint-fg' : 'text-faint')} title={`${sub.done} of ${sub.total} steps done`}>
+          <span className={cx('inline-flex items-center gap-1 text-xs font-semibold tnum whitespace-nowrap shrink-0', sub.done === sub.total ? 'text-mint-fg' : 'text-faint')} title={`${sub.done} of ${sub.total} steps done`}>
             <ListChecks size={12} /> {sub.done}/{sub.total}
           </span>
         )}

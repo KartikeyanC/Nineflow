@@ -40,10 +40,10 @@ export default function DateView() {
         {strip.map((w) => (
           <button key={w.key} type="button" onClick={() => setK(w.key)}
             className={cx('rounded-2xl p-2 text-left border transition', w.key === k ? 'bg-brand text-white border-transparent' : w.working ? 'card hover:-translate-y-0.5' : 'bg-page border-dashed border-line text-faint')}>
-            <p className="text-[10px] font-bold uppercase">{format(w.date, 'EEE')}</p>
+            <p className="text-[11px] font-bold uppercase">{format(w.date, 'EEE')}</p>
             {/* .h-display sets text-ink, which is the tile's own colour when selected. */}
             <p className={cx('h-display text-lg leading-tight', w.key === k && 'text-white')}>{format(w.date, 'd')}</p>
-            <p className={cx('text-[10px] mt-1', w.key === k ? 'text-white/80' : 'text-muted')}>{w.due ? `${w.due} due · ` : ''}{w.worked ? `${h1(w.hours)} h` : w.working ? '—' : 'off'}{w.posts ? ` · ${w.posts} post${w.posts > 1 ? 's' : ''}` : ''}</p>
+            <p className={cx('text-[11px] mt-1', w.key === k ? 'text-white/80' : 'text-muted')}>{w.due ? `${w.due} due · ` : ''}{w.worked ? `${h1(w.hours)} h` : w.working ? '—' : 'off'}{w.posts ? ` · ${w.posts} post${w.posts > 1 ? 's' : ''}` : ''}</p>
           </button>
         ))}
       </div>
@@ -60,9 +60,9 @@ export default function DateView() {
               <li key={b.id} className={cx('flex items-start gap-3 py-2', b.lunch && 'opacity-60')}>
                 <span className="w-24 shrink-0 text-xs font-bold tabular-nums">{b.start}–{b.end}</span>
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-semibold">{b.name} <span className="text-faint font-medium">· {b.minutes} min</span>{b.area && <span className="ml-2 pill bg-lav text-lav-fg py-0 text-[10px]">{b.area}</span>}</p>
+                  <p className="text-sm font-semibold">{b.name} <span className="text-faint font-medium">· {b.minutes} min</span>{b.area && <span className="ml-2 pill bg-lav text-lav-fg py-0 text-[11px]">{b.area}</span>}</p>
                   {b.what && <p className="text-xs text-muted">{b.what}</p>}
-                  {b.output && <p className="text-[11px] text-mint-fg">→ {b.output}</p>}
+                  {b.output && <p className="text-xs text-mint-fg">→ {b.output}</p>}
                 </div>
               </li>
             ))}
@@ -79,14 +79,14 @@ export default function DateView() {
           <Section title={`Social media posts · ${posts.length}`}>
             {posts.length === 0 ? <p className="text-sm text-faint">No posts planned.</p> : (
               <ul className="space-y-1.5">{posts.map((p) => (
-                <li key={p.id} className="text-sm flex items-center gap-2"><span className="pill bg-sky text-sky-fg py-0 text-[10px]">{p.platform}</span><span className="font-semibold">{p.topic || p.postType}</span><span className="text-faint text-xs">{p.postType} · {p.status}{p.captionReady && p.creativeReady ? ' · ready' : ''}</span></li>
+                <li key={p.id} className="text-sm flex items-center gap-2"><span className="pill bg-sky text-sky-fg py-0 text-[11px]">{p.platform}</span><span className="font-semibold">{p.topic || p.postType}</span><span className="text-faint text-xs">{p.postType} · {p.status}{p.captionReady && p.creativeReady ? ' · ready' : ''}</span></li>
               ))}</ul>
             )}
           </Section>
           <Section title={`Active ad campaigns · ${camps.length}`}>
             {camps.length === 0 ? <p className="text-sm text-faint">No campaigns running.</p> : (
               <ul className="space-y-1.5">{camps.map((c) => { const x = campaignDerived(c, d); return (
-                <li key={c.id} className="text-sm flex items-center gap-2"><span className="pill bg-peach text-peach-fg py-0 text-[10px]">{c.platform}</span><span className="font-semibold">{c.campaign}</span><span className="text-faint text-xs">{x.budgetUsedPct ?? 0}% of budget · {x.daysLeft != null ? `${Math.max(0, x.daysLeft)} days left` : ''}</span></li>
+                <li key={c.id} className="text-sm flex items-center gap-2"><span className="pill bg-peach text-peach-fg py-0 text-[11px]">{c.platform}</span><span className="font-semibold">{c.campaign}</span><span className="text-faint text-xs">{x.budgetUsedPct ?? 0}% of budget · {x.daysLeft != null ? `${Math.max(0, x.daysLeft)} days left` : ''}</span></li>
               ) })}</ul>
             )}
           </Section>

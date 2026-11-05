@@ -23,8 +23,8 @@ export default function Process() {
                 </button>
                 {isOpen && (
                   <div className="pb-4 grid md:grid-cols-[1fr_280px] gap-4 animate-view-in">
-                    <ol className="space-y-1.5">{p.steps.map((s, i) => <li key={i} className="text-sm flex gap-2"><span className="h-5 w-5 rounded-full bg-lav text-lav-fg text-[11px] font-bold inline-flex items-center justify-center shrink-0">{i + 1}</span>{s}</li>)}</ol>
-                    <div className="rounded-2xl bg-mint/60 p-3.5"><p className="text-[11px] font-bold text-mint-fg uppercase tracking-wide">Finished means</p><p className="text-sm mt-1">{p.done}</p></div>
+                    <ol className="space-y-1.5">{p.steps.map((s, i) => <li key={i} className="text-sm flex gap-2"><span className="h-5 w-5 rounded-full bg-lav text-lav-fg text-xs font-bold inline-flex items-center justify-center shrink-0">{i + 1}</span>{s}</li>)}</ol>
+                    <div className="rounded-2xl bg-mint/60 p-3.5"><p className="text-xs font-bold text-mint-fg uppercase tracking-wide">Finished means</p><p className="text-sm mt-1">{p.done}</p></div>
                   </div>
                 )}
               </div>

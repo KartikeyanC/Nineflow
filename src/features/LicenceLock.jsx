@@ -73,7 +73,7 @@ export default function LicenceLock({ account, onUnlocked }) {
         <button type="button" className="btn-ghost h-9 py-0 mt-3 w-full justify-center" disabled={busy} onClick={switchAccount}>
           <LogOut size={14} /> Use a different account
         </button>
-        <p className="text-[11px] text-faint mt-5 text-center">© 2026 Kartikeyan. All rights reserved.</p>
+        <p className="text-xs text-faint mt-5 text-center">© 2026 Kartikeyan. All rights reserved.</p>
       </form>
     </div>
   )

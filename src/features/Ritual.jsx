@@ -79,7 +79,7 @@ function Frame({ icon: Icon, tone, title, steps, step, setStep, close, onFinish,
       <header className="flex items-center gap-3 px-5 sm:px-6 pt-5 pb-3">
         <span className={cx('h-9 w-9 rounded-full inline-flex items-center justify-center shrink-0', tone)}><Icon size={17} /></span>
         <div className="min-w-0 flex-1">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-faint">{title} · step {step + 1} of {steps.length}</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-faint">{title} · step {step + 1} of {steps.length}</p>
           <h2 className="font-serif text-[28px] leading-tight">{steps[step]}</h2>
         </div>
         <button type="button" onClick={close} aria-label="Close" className="h-9 w-9 rounded-full inline-flex items-center justify-center text-muted hover:bg-subtle hover:text-ink transition"><X size={16} /></button>
@@ -228,7 +228,7 @@ function ShutdownFlow({ step, setStep, close }) {
                   <i className={cx('h-2 w-2 rounded-full', colorOf(categoryById(t.category).color).dot)} />
                   <span className="flex-1 min-w-0 truncate font-semibold">{t.title}</span>
                   {t.seriesId
-                    ? <span className="text-[11px] text-faint">repeats, comes round again</span>
+                    ? <span className="text-xs text-faint">repeats, comes round again</span>
                     : (
                       <span className="flex gap-1">
                         <button type="button" className="pill h-7 bg-card shadow-soft" onClick={() => moveTasksTo([t.id], tomorrow, `Moved “${t.title}” to tomorrow`)}>Tomorrow</button>

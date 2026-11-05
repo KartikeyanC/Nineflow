@@ -6,6 +6,7 @@ import { FREQS, FREQ_LABEL, describe } from '../lib/recurrence'
 import { parseQuickAdd, fmtDateToken } from '../lib/nlp'
 import { learnedDuration } from '../lib/capacity'
 import { autofillTask } from '../lib/aiTasks'
+import { speechLang } from '../lib/speech'
 import { cleanTemplates, taskFieldsFromTemplate } from '../lib/views'
 import { CategoryPills, Modal, PriorityPills, cx } from './ui'
 import { StepsEditor } from './Checklist'
@@ -42,7 +43,7 @@ export default function QuickAddModal() {
   const startListening = () => {
     if (!Speech) return
     const rec = new Speech()
-    rec.lang = navigator.language || 'en-US'
+    rec.lang = speechLang()
     rec.interimResults = false
     rec.onresult = (e) => {
       const said = Array.from(e.results).map((r) => r[0].transcript).join(' ').trim()
@@ -167,14 +168,14 @@ export default function QuickAddModal() {
 
         {templates.length > 0 && (
           <div className="mt-2 flex flex-wrap items-center gap-1.5" role="group" aria-label="Templates">
-            <span className="text-[11px] text-faint mr-0.5 inline-flex items-center gap-1"><BookmarkPlus size={11} /> Templates</span>
+            <span className="text-xs text-faint mr-0.5 inline-flex items-center gap-1"><BookmarkPlus size={11} /> Templates</span>
             {templates.slice(0, 8).map((t) => (
               <button key={t.id} type="button" onClick={() => useTemplate(t)} title={t.steps.length ? `${t.title} · ${t.steps.length} steps` : t.title}
                 className="pill bg-page text-muted border border-line hover:text-ink hover:border-faint transition max-w-[12rem] truncate">{t.name}</button>
             ))}
             {templates.length > 8 && (
               <select value="" aria-label="More templates" onChange={(e) => { const t = templates.find((x) => x.id === e.target.value); if (t) useTemplate(t) }}
-                className="pill bg-page text-muted border border-line text-[11px] py-0.5">
+                className="pill bg-page text-muted border border-line text-xs py-0.5">
                 <option value="">More…</option>
                 {templates.slice(8).map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
               </select>
@@ -186,12 +187,12 @@ export default function QuickAddModal() {
         <div className="mt-2 min-h-[22px] flex flex-wrap items-center gap-1.5 max-sm:flex-nowrap max-sm:overflow-x-auto max-sm:-mx-1 max-sm:px-1 max-sm:pb-1">
           {parsed.tokens.length === 0 ? (
             draft.title.trim() ? (
-              <span className="inline-flex items-center gap-1 text-[11px] text-faint">
+              <span className="inline-flex items-center gap-1 text-xs text-faint">
                 <Sparkles size={11} /> Add a date, time or length: “tomorrow 3pm 30m #work !high”
               </span>
             ) : (
               <>
-                <span className="inline-flex items-center gap-1 text-[11px] text-faint mr-0.5"><Sparkles size={11} /> Try</span>
+                <span className="inline-flex items-center gap-1 text-xs text-faint mr-0.5"><Sparkles size={11} /> Try</span>
                 {EXAMPLES.map((ex) => (
                   <button key={ex} type="button" onClick={() => set({ title: ex }, false)}
                     className="pill bg-page text-muted border border-line hover:text-ink hover:border-faint transition max-sm:shrink-0 max-sm:whitespace-nowrap">{ex}</button>
@@ -220,8 +221,8 @@ export default function QuickAddModal() {
               className="pill h-7 px-3 text-[12px] font-semibold border border-line bg-card text-muted hover:text-ink hover:border-faint transition inline-flex items-center gap-1.5 disabled:opacity-60">
               {ai.busy ? <Loader2 size={12} className="animate-spin" /> : <WandSparkles size={12} />} Auto-fill with AI
             </button>
-            {ai.note && <span role="status" className="text-[11px] text-mint-fg font-semibold">{ai.note}</span>}
-            {ai.error && <span role="alert" className="text-[11px] text-coral-fg font-semibold">{ai.error}</span>}
+            {ai.note && <span role="status" className="text-xs text-mint-fg font-semibold">{ai.note}</span>}
+            {ai.error && <span role="alert" className="text-xs text-coral-fg font-semibold">{ai.error}</span>}
           </div>
         )}
 
@@ -231,7 +232,7 @@ export default function QuickAddModal() {
             <ListChecks size={14} className="text-faint" />
             <h3 className="text-xs font-semibold text-muted">Checklist</h3>
             {draft.subtasks.length > 0 && (
-              <span className="text-[11px] font-semibold text-faint tnum">
+              <span className="text-xs font-semibold text-faint tnum">
                 {draft.subtasks.length} {draft.subtasks.length === 1 ? 'step' : 'steps'}
                 {draft.subtasks.some((s) => s.required) && ` · ${draft.subtasks.filter((s) => s.required).length} required to finish`}
               </span>
@@ -258,7 +259,7 @@ export default function QuickAddModal() {
         </div>
 
         {usingLearned && (
-          <p className="mt-2 text-[11px] text-faint inline-flex items-center gap-1">
+          <p className="mt-2 text-xs text-faint inline-flex items-center gap-1">
             <Timer size={11} /> Estimate from your last {learned.samples} {settings.categories.find((c) => c.id === draft.category)?.name} tasks
           </p>
         )}

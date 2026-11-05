@@ -56,7 +56,7 @@ function UndoToast() {
         <button type="button" onClick={undoLast}
           className="group shrink-0 inline-flex items-center gap-2 h-9 rounded-full bg-page/15 hover:bg-page/25 pl-3 pr-3.5 text-[13px] font-semibold transition">
           <RotateCcw size={14} className="transition duration-500 group-hover:-rotate-45" /> Undo
-          <span className="text-page/50 text-[11px] tnum w-5 text-right">{left}s</span>
+          <span className="text-page/50 text-xs tnum w-5 text-right">{left}s</span>
         </button>
         <button type="button" onClick={dismissUndo} aria-label="Dismiss"
           className="shrink-0 h-9 w-9 rounded-full inline-flex items-center justify-center text-page/60 hover:text-page hover:bg-page/10 transition">

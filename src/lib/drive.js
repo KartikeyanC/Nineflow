@@ -1,11 +1,12 @@
 // Google Drive REST calls for the planner's one data file:
-//   My Drive / Daily Planner / planner-data.json
+//   My Drive / NineFlow / planner-data.json  (called "Daily Planner" at first; renamed on the next save)
 // With the drive.file scope the app only ever sees files it created.
 import { getToken } from './google'
 import { AuthError, OfflineError } from './syncErrors'
 
 export { AuthError, OfflineError }
-export const FOLDER_NAME = 'Daily Planner'
+export const FOLDER_NAME = 'NineFlow'
+const OLD_FOLDER_NAME = 'Daily Planner'
 export const FILE_NAME = 'planner-data.json'
 const API = 'https://www.googleapis.com/drive/v3'
 const UPLOAD = 'https://www.googleapis.com/upload/drive/v3'
@@ -43,12 +44,20 @@ async function findOne(query) {
   return d.files?.[0] || null
 }
 
+// The folder under either name. Devices already signed in reach the file by its id, so the rename
+// never splits anyone's data.
 export async function findFolder() {
-  return findOne(`name='${esc(FOLDER_NAME)}' and mimeType='application/vnd.google-apps.folder' and trashed=false`)
+  return findOne(`(name='${esc(FOLDER_NAME)}' or name='${esc(OLD_FOLDER_NAME)}') and mimeType='application/vnd.google-apps.folder' and trashed=false`)
 }
 
 export async function ensureFolder() {
   const found = await findFolder()
+  if (found?.name === OLD_FOLDER_NAME) {
+    const r = await call(`${API}/files/${found.id}?fields=${FIELDS}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: FOLDER_NAME }),
+    }).catch(() => null) // keeping the old name is fine; the next save tries again
+    return (r && await r.json().catch(() => null)) || found
+  }
   if (found) return found
   const r = await call(`${API}/files?fields=${FIELDS}`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -99,7 +108,7 @@ export async function updateFile(fileId, data) {
 
 // A Google Sheet or Google Doc made by uploading plain content and letting Drive convert it
 // (CSV → Sheet, HTML → Doc). Works with the drive.file scope, so no extra permission is needed.
-// `googleType` is the Google type to convert to; the file goes into the "Daily Planner" folder.
+// `googleType` is the Google type to convert to; the file goes into the NineFlow folder.
 export async function createConverted({ name, content, sourceType, googleType }) {
   const folder = await ensureFolder()
   const boundary = `dp${Math.random().toString(36).slice(2)}`

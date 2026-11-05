@@ -1,7 +1,7 @@
 // Account sync. Everything a signed-in person has (tasks, settings,
 // habits, Work OS, rituals…) lives under one localStorage namespace; this
 // module mirrors that namespace to the account's store:
-//   Google accounts (g_…): My Drive / Daily Planner / planner-data.json
+//   Google accounts (g_…): My Drive / NineFlow / planner-data.json
 //   Email accounts (e_…):  their row in Supabase's planner_data table
 //
 // The local copy is a cache: the app keeps working offline and while the
@@ -99,16 +99,19 @@ const driveStore = {
       const existing = await drive.findFile(folder.id)
       f = existing ? await drive.updateFile(existing.id, bundle) : await drive.createFile(folder.id, drive.FILE_NAME, bundle)
       writeMeta(id, { folderId: folder.id })
+    } else if (!meta.folderChecked) {
+      // Once per device: ensureFolder renames the old "Daily Planner" folder to NineFlow.
+      await drive.ensureFolder().catch(() => null)
     }
-    writeMeta(id, { fileId: f.id })
+    writeMeta(id, { fileId: f.id, folderChecked: true })
     return { id: f.id, modifiedTime: f.modifiedTime, link: f.webViewLink }
   },
-  async saveConflict(id, bundle) {
+  async saveConflict(id, bundle, whose = 'this device') {
     const folderId = readMeta(id).folderId || (await drive.ensureFolder()).id
     const stamp = new Date().toISOString().slice(0, 16).replace('T', ' ').replace(':', '')
-    await drive.createFile(folderId, `planner-data (conflict ${stamp}).json`, bundle)
+    await drive.createFile(folderId, `planner-data (conflict ${stamp}, ${whose}).json`, bundle)
   },
-  conflictNotice: 'Another device saved changes at the same time. This device\'s version was kept as a "conflict" file in your Daily Planner folder.',
+  conflictNotice: `Another device saved changes at the same time, so its version is on screen. This device's version was kept as a "conflict" file in your ${drive.FOLDER_NAME} folder.`,
   // `full`: the renewed token was refused too, so sign in again in Google's window.
   reconnect: ({ full = false } = {}) => requestToken(full ? { prompt: 'select_account', hint: rememberedAccount()?.email } : { prompt: '', hint: rememberedAccount()?.email, fresh: true }),
 }
@@ -177,7 +180,8 @@ export async function syncNow({ force = false } = {}) {
       if (dirty && remote?.data) {
         // Both sides changed: keep ours as a separate copy, then take theirs.
         await store.saveConflict(id, makeBundle(data))
-        setStatus({ notice: store.conflictNotice })
+        conflict = { id, mine: data, theirs: remote.data }
+        setStatus({ notice: store.conflictNotice, conflict: true })
       }
       if (remote?.data) {
         apply(id, remote.data)
@@ -262,7 +266,21 @@ export async function flush() {
   return !!id && fingerprint(collect(id)) === readMeta(id).pushed
 }
 
-export const dismissNotice = () => setStatus({ notice: null })
+export const dismissNotice = () => { conflict = null; setStatus({ notice: null, conflict: false }) }
+
+// The last time both devices changed at once: this device's version and the other one's.
+let conflict = null
+// "Use this device's version": the other device's version is kept as a copy first, so neither is lost.
+export async function keepThisDevice() {
+  const c = conflict
+  if (!c || c.id !== running) return
+  const store = storeFor(c.id)
+  await store.saveConflict(c.id, makeBundle(c.theirs), 'other device')
+  conflict = null
+  apply(c.id, c.mine)
+  setStatus({ notice: null, conflict: false })
+  await syncNow({ force: true })
+}
 
 // After first sign-in on this device: record that the local copy matches the store.
 export function markSynced(id, data, meta) {

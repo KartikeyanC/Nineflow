@@ -1,11 +1,14 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { useDialogFocus } from './ui'
 
 // Portal-positioned popover anchored to `anchorRef`. Closes on outside click
-// and on Escape (captured, so a modal behind it stays open).
+// and on Escape (captured, so a modal behind it stays open). It sits at the end of the page, so
+// focus moves into it when it opens, Tab stays inside, and focus goes back to the field on close.
 export default function Popover({ open, onClose, anchorRef, align = 'left', width = 292, children }) {
   const panelRef = useRef(null)
   const [pos, setPos] = useState({ top: 0, left: 0 })
+  useDialogFocus(panelRef, open)
 
   useLayoutEffect(() => {
     if (!open || !anchorRef.current) return
@@ -38,7 +41,7 @@ export default function Popover({ open, onClose, anchorRef, align = 'left', widt
 
   if (!open) return null
   return createPortal(
-    <div ref={panelRef} style={{ position: 'fixed', top: pos.top, left: pos.left, zIndex: 70, width }}>
+    <div ref={panelRef} tabIndex={-1} className="outline-none" style={{ position: 'fixed', top: pos.top, left: pos.left, zIndex: 70, width }}>
       {children}
     </div>,
     document.body,

@@ -34,7 +34,7 @@ export function Calendar({ value, onChange, allowClear = true, onClose }) {
       </div>
 
       <div className="grid grid-cols-7 mb-1">
-        {names.map((n, i) => <span key={i} className="text-[10px] font-bold text-faint text-center uppercase">{n}</span>)}
+        {names.map((n, i) => <span key={i} className="text-[11px] font-bold text-faint text-center uppercase">{n}</span>)}
       </div>
       <div className="grid grid-cols-7 gap-y-0.5">
         {days.map((d) => {

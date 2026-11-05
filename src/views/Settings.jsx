@@ -48,7 +48,7 @@ function LibrarySection() {
     <li className="flex items-center gap-2 rounded-xl px-2 py-1.5 hover:bg-page">
       <input defaultValue={item.name} maxLength={30} aria-label={`Name of ${item.name}`} onBlur={(e) => rename(listKey, list, item.id, e.target.value)}
         onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur() }} className="bg-transparent outline-none text-sm font-semibold min-w-0 flex-1" />
-      <span className="text-[11px] text-faint shrink-0 hidden sm:inline">{detail}</span>
+      <span className="text-xs text-faint shrink-0 hidden sm:inline">{detail}</span>
       <button type="button" aria-label={`Delete ${item.name}`} onClick={() => remove(listKey, list, item.id)}
         className="h-7 w-7 shrink-0 rounded-full inline-flex items-center justify-center text-faint hover:bg-coral/60 hover:text-coral-fg transition"><Trash2 size={13} /></button>
     </li>
@@ -361,7 +361,7 @@ function CalendarLink({ settings, updateSettings }) {
   )
 }
 
-// One-off copies into the person's own Google Drive (Daily Planner folder), as a Google Sheet or Google Doc.
+// One-off copies into the person's own Google Drive (NineFlow folder), as a Google Sheet or Google Doc.
 function GoogleExport({ tasks, categories, now, dayKey }) {
   const [busy, setBusy] = useState('')
   const [done, setDone] = useState(null) // { label, url }
@@ -379,7 +379,7 @@ function GoogleExport({ tasks, categories, now, dayKey }) {
     <div className="space-y-3 pt-4 border-t border-line">
       <div>
         <p className="text-sm font-semibold">Google Sheets and Docs</p>
-        <p className="text-xs text-muted mt-0.5">Copies made in your own Google Drive (Daily Planner folder). They are snapshots, so they don't change when your tasks do.</p>
+        <p className="text-xs text-muted mt-0.5">Copies made in your own Google Drive (NineFlow folder). They are snapshots, so they don't change when your tasks do.</p>
         <HowToConnect ids="googleExport" className="mt-2" />
       </div>
       <div className="flex flex-wrap gap-2">
@@ -574,13 +574,13 @@ export default function Settings() {
             <div className="flex flex-wrap items-end gap-2">
               {[['start', 'Start'], ['end', 'End']].map(([k, label]) => (
                 <label key={k} className="flex flex-col gap-1">
-                  <span className="text-[10px] font-semibold text-faint">{label}</span>
+                  <span className="text-[11px] font-semibold text-faint">{label}</span>
                   <TimeField value={settings.workHours[k]} allowClear={false} className="w-28"
                     onChange={(v) => v && updateSettings({ workHours: { ...settings.workHours, [k]: v } })} />
                 </label>
               ))}
               <label className="flex flex-col gap-1">
-                <span className="text-[10px] font-semibold text-faint">Break (min)</span>
+                <span className="text-[11px] font-semibold text-faint">Break (min)</span>
                 <input type="number" min={0} max={240} step={15} className="input w-20 text-center py-1.5"
                   value={settings.workHours.breakMinutes}
                   onChange={(e) => updateSettings({ workHours: { ...settings.workHours, breakMinutes: Math.max(0, Math.min(240, Number(e.target.value) || 0)) } })} />
@@ -627,7 +627,7 @@ export default function Settings() {
                   <input type="number" min={1} max={k === 'every' ? 12 : 180} className="input w-16 text-center py-1.5"
                     value={settings.pomodoro[k]}
                     onChange={(e) => updateSettings({ pomodoro: { ...settings.pomodoro, [k]: Math.max(1, Number(e.target.value) || 1) } })} />
-                  <span className="text-[10px] font-semibold text-faint">{label}</span>
+                  <span className="text-[11px] font-semibold text-faint">{label}</span>
                 </label>
               ))}
             </div>
@@ -736,7 +736,7 @@ export default function Settings() {
           </div>
         </section>
         </Group>
-        <p className="text-[11px] text-faint text-center pt-2">NineFlow · © 2026 Kartikeyan. All rights reserved.</p>
+        <p className="text-xs text-faint text-center pt-2">NineFlow · © 2026 Kartikeyan. All rights reserved.</p>
       </div>
 
       {importing && <TaskImport onClose={() => setImporting(false)} />}

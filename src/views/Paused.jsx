@@ -32,8 +32,8 @@ export default function Paused() {
       <button type="button" onClick={() => setSelectedId(t.id)} className="min-w-0 flex-1 text-left">
         <span className="block text-sm font-semibold truncate">{t.title || 'Untitled'}</span>
         <span className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-          <CategoryTag category={categoryById(t.category)} className="text-[10px] py-0" />
-          <span className="text-[11px] text-faint">{meta}</span>
+          <CategoryTag category={categoryById(t.category)} className="text-[11px] py-0" />
+          <span className="text-xs text-faint">{meta}</span>
         </span>
       </button>
       <div className="flex flex-wrap items-center gap-1">{children}</div>

@@ -1,5 +1,5 @@
 // "Export to Google Sheets / Google Docs": a spreadsheet of the person's tasks and a document of a
-// day's report, made in their own Drive (Daily Planner folder) with createConverted (lib/drive.js).
+// day's report, made in their own Drive (NineFlow folder) with createConverted (lib/drive.js).
 // One-off copies: nothing is kept in step afterwards.
 import { format, parseISO } from 'date-fns'
 import { createConverted } from './drive'

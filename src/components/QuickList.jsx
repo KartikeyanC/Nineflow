@@ -75,7 +75,7 @@ export default function QuickList({ layout = 'column', onCollapse, collapseIcon 
         <div className="ml-auto flex items-center gap-0.5">
           {inPip ? (
             <button type="button" onClick={() => { window.focus(); closePip() }} title="Back to the app"
-              className="h-7 px-2 rounded-full inline-flex items-center gap-1 text-[11px] font-semibold text-muted hover:bg-page hover:text-ink transition">
+              className="h-7 px-2 rounded-full inline-flex items-center gap-1 text-xs font-semibold text-muted hover:bg-page hover:text-ink transition">
               <AppWindow size={13} /> App
             </button>
           ) : (
@@ -100,12 +100,12 @@ export default function QuickList({ layout = 'column', onCollapse, collapseIcon 
         </div>
       </header>
 
-      {pipError && <p className="mx-4 mb-2 rounded-xl bg-coral text-coral-fg text-[11px] font-semibold px-3 py-2 animate-fade-in">{pipError}</p>}
+      {pipError && <p className="mx-4 mb-2 rounded-xl bg-coral text-coral-fg text-xs font-semibold px-3 py-2 animate-fade-in">{pipError}</p>}
 
       <div className="px-4 pb-2 flex gap-1">
         {FILTERS.map((f) => (
           <button key={f.id} type="button" onClick={() => setQL({ filter: f.id })}
-            className={cx('rounded-full px-2.5 py-0.5 text-[11px] font-semibold transition',
+            className={cx('rounded-full px-2.5 py-0.5 text-xs font-semibold transition',
               filter === f.id ? 'bg-brand text-white' : 'bg-page text-muted hover:text-ink')}>
             {f.label}
           </button>
@@ -127,12 +127,12 @@ export default function QuickList({ layout = 'column', onCollapse, collapseIcon 
                   <CheckCircle checked={false} onToggle={() => { if (toggleComplete(t.id) === false && inPip) window.focus() }} size="sm" />
                   <div className="min-w-0 flex-1">
                     <p className="text-[13px] font-semibold truncate">{t.title}</p>
-                    <p className="text-[10px] truncate text-faint">
+                    <p className="text-[11px] truncate text-faint">
                       {od ? carriedLabel(t.date, now) : dueLabel(t, now)} · {fmtMinutes(t.durationMinutes)}
                       {t.status === 'working' && <span className="text-sky-fg font-semibold"> · working</span>}
                     </p>
                   </div>
-                  <CategoryTag category={categoryById(t.category)} className="text-[10px] py-0 hidden sm:inline-flex" />
+                  <CategoryTag category={categoryById(t.category)} className="text-[11px] py-0 hidden sm:inline-flex" />
                 </li>
               )
             })}
@@ -147,7 +147,7 @@ export default function QuickList({ layout = 'column', onCollapse, collapseIcon 
             value={text} onChange={(e) => setText(e.target.value)} />
         </label>
         {parsed.tokens.length > 0 && (
-          <p className="text-[10px] text-lav-fg font-semibold mt-1 px-1 truncate">
+          <p className="text-[11px] text-lav-fg font-semibold mt-1 px-1 truncate">
             {parsed.tokens.map((t) => t.raw).join(' · ')}
           </p>
         )}

@@ -246,7 +246,7 @@ function Note({ note, flash, autoFocus, onFocused, onText, onColor, onPin, onDel
           ))}
         </ul>
       )}
-      {cardCount > 0 && <p className="mt-1.5 inline-flex items-center gap-1 text-[11px] font-semibold text-ink/60"><Brain size={12} aria-hidden="true" /> {cardCount} flashcard{cardCount === 1 ? '' : 's'}</p>}
+      {cardCount > 0 && <p className="mt-1.5 inline-flex items-center gap-1 text-xs font-semibold text-ink/60"><Brain size={12} aria-hidden="true" /> {cardCount} flashcard{cardCount === 1 ? '' : 's'}</p>}
       {(adding || imgError) && <p role={imgError ? 'alert' : 'status'} className={cx('mt-1.5 text-xs font-semibold', imgError ? 'text-coral-fg' : 'text-ink/60')}>{imgError || 'Adding picture…'}</p>}
       <input ref={fileRef} type="file" accept="image/*" multiple hidden onChange={(e) => { take(e.target.files); e.target.value = '' }} />
       <div className="mt-2 flex items-center gap-1">
@@ -290,7 +290,7 @@ function NoteTime({ note }) {
   const edited = note.updatedAt ? parseISO(note.updatedAt) : null
   const wasEdited = edited && isValid(edited) && note.text && edited - made > 60_000
   return (
-    <p className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold text-ink/55 tnum"
+    <p className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-ink/55 tnum"
       title={`Created ${format(made, 'EEEE d MMMM yyyy, h:mm a')}${wasEdited ? ` · last edited ${format(edited, 'EEEE d MMMM yyyy, h:mm a')}` : ''}`}>
       <Clock3 size={11} className="shrink-0" aria-hidden="true" />
       <span className="min-w-0 truncate">
@@ -361,7 +361,7 @@ function NotesFinder({ notes, query, setQuery, find, setFind, count, filtering, 
           </span>
         )}
       </div>
-      {tags.length === 0 && <p className="text-[11px] text-faint">Tip: write #tags like #gk or #maths in a note and they appear here to filter by.</p>}
+      {tags.length === 0 && <p className="text-xs text-faint">Tip: write #tags like #gk or #maths in a note and they appear here to filter by.</p>}
     </div>
   )
 }
@@ -397,7 +397,7 @@ function NoteRow({ note, query, onOpen, onTag }) {
         {f.pictures > 0 && <ImageIcon size={13} aria-label={`${f.pictures} picture${f.pictures === 1 ? '' : 's'}`} />}
         {f.links > 0 && <Link2 size={13} aria-label={`${f.links} link${f.links === 1 ? '' : 's'}`} />}
         {f.cards > 0 && <Brain size={13} aria-label={`${f.cards} flashcard${f.cards === 1 ? '' : 's'}`} />}
-        {d && isValid(d) && <time dateTime={when} className="text-[11px] font-semibold tnum ml-1">{format(d, 'd MMM')}</time>}
+        {d && isValid(d) && <time dateTime={when} className="text-xs font-semibold tnum ml-1">{format(d, 'd MMM')}</time>}
       </span>
     </li>
   )

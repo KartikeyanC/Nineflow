@@ -63,11 +63,12 @@ function install() {
     // List / search
     if (u.pathname === '/drive/v3/files' && method === 'GET') {
       const q = u.searchParams.get('q') || ''
-      const name = /name='((?:[^'\\]|\\.)*)'/.exec(q)?.[1]?.replace(/\\'/g, "'")
+      // Every name='…' in the query counts ("name='A' or name='B'").
+      const names = [...q.matchAll(/name='((?:[^'\\]|\\.)*)'/g)].map((m) => m[1].replace(/\\'/g, "'"))
       const parent = /'([^']+)' in parents/.exec(q)?.[1]
       const folder = q.includes("mimeType='application/vnd.google-apps.folder'")
       const files = Object.values(d.files)
-        .filter((f) => !f.trashed && (!name || f.name === name) && (!parent || f.parents?.includes(parent)) && (!folder || f.mimeType === 'application/vnd.google-apps.folder'))
+        .filter((f) => !f.trashed && (!names.length || names.includes(f.name)) && (!parent || f.parents?.includes(parent)) && (!folder || f.mimeType === 'application/vnd.google-apps.folder'))
         .sort((a, b) => b.modifiedTime.localeCompare(a.modifiedTime))
       return json({ files: files.map(meta) })
     }
@@ -95,6 +96,12 @@ function install() {
     if (u.pathname.startsWith('/upload/drive/v3/files/') && method === 'PATCH') {
       f.content = init.body
       f.modifiedTime = now()
+      save(d)
+      return json(meta(f))
+    }
+    // Rename (metadata only)
+    if (u.pathname.startsWith('/drive/v3/files/') && method === 'PATCH') {
+      Object.assign(f, { name: JSON.parse(init.body).name || f.name, modifiedTime: now() })
       save(d)
       return json(meta(f))
     }

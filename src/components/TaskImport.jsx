@@ -130,7 +130,7 @@ export default function TaskImport({ onClose }) {
           </p>
 
           <div className="grid sm:grid-cols-2 gap-2 text-[13px]">
-            <label className="grid gap-1 text-[11px] font-semibold text-muted">Category, when the Subject isn't one of yours
+            <label className="grid gap-1 text-xs font-semibold text-muted">Category, when the Subject isn't one of yours
               <select className="input py-1.5 text-sm" value={category} onChange={(e) => setCategory(e.target.value)}>
                 {settings.categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
@@ -150,9 +150,9 @@ export default function TaskImport({ onClose }) {
                   <span className="w-[5.5rem] shrink-0 text-[12px] font-semibold tnum text-muted">{r.date ? format(parseISO(r.date), 'EEE d MMM') : 'No date'}{r.startTime && <span className="block font-medium text-faint">{r.startTime}</span>}</span>
                   <span className="min-w-0 flex-1">
                     <span className="block text-[13px] font-semibold">{r.title}</span>
-                    <span className="block text-[11px] text-faint">{[r.subject, r.durationMinutes && fmtMinutes(r.durationMinutes), r.priority && `${r.priority[0].toUpperCase()}${r.priority.slice(1)} priority`].filter(Boolean).join(' · ')}</span>
-                    {r.skip && <span className="block text-[11px] font-semibold text-muted">{r.skip}</span>}
-                    {r.problems.map((p) => <span key={p} className="block text-[11px] font-semibold text-coral-fg">Line {r.line}: {p}{p.startsWith('Date') ? ' · tick to add it without a date' : ''}</span>)}
+                    <span className="block text-xs text-faint">{[r.subject, r.durationMinutes && fmtMinutes(r.durationMinutes), r.priority && `${r.priority[0].toUpperCase()}${r.priority.slice(1)} priority`].filter(Boolean).join(' · ')}</span>
+                    {r.skip && <span className="block text-xs font-semibold text-muted">{r.skip}</span>}
+                    {r.problems.map((p) => <span key={p} className="block text-xs font-semibold text-coral-fg">Line {r.line}: {p}{p.startsWith('Date') ? ' · tick to add it without a date' : ''}</span>)}
                   </span>
                 </button>
               </li>
@@ -165,7 +165,7 @@ export default function TaskImport({ onClose }) {
               {chosen.length ? `Add all ${chosen.length} task${chosen.length === 1 ? '' : 's'}` : 'Nothing to add'}
             </button>
           </div>
-          <p className="text-[11px] text-faint">Your other tasks stay as they are. Undo, right after adding, removes this import.</p>
+          <p className="text-xs text-faint">Your other tasks stay as they are. Undo, right after adding, removes this import.</p>
         </div>
       )}
     </Modal>

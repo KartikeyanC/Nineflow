@@ -223,7 +223,7 @@ function Stat({ label, value, hint }) {
     <div className="card p-4">
       <p className="text-xs font-semibold text-muted">{label}</p>
       <p className="h-display text-2xl tnum mt-0.5">{value}</p>
-      <p className="text-[11px] text-faint mt-0.5 truncate" title={hint}>{hint}</p>
+      <p className="text-xs text-faint mt-0.5 truncate" title={hint}>{hint}</p>
     </div>
   )
 }

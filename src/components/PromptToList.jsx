@@ -157,7 +157,7 @@ export default function PromptToList() {
                 className={cx('inline-flex items-center gap-1.5 h-9 rounded-full px-3.5 text-[13px] font-semibold transition', listening ? 'bg-brand text-white animate-pulse' : 'bg-page border border-line text-ink hover:bg-card')}>
                 {listening ? <><Square size={13} /> Stop listening</> : <><Mic size={14} /> Speak tasks</>}
               </button>
-              <span className="text-[11px] text-faint">{listening ? (heard ? 'Listening… say "next" between tasks.' : 'Listening… start speaking.') : 'Say "next" or "then" between tasks.'}</span>
+              <span className="text-xs text-faint">{listening ? (heard ? 'Listening… say "next" between tasks.' : 'Listening… start speaking.') : 'Say "next" or "then" between tasks.'}</span>
             </div>
           )}
           {voiceNote === 'windows' ? (
@@ -168,11 +168,11 @@ export default function PromptToList() {
           {!text && !meetingMode && (
             <div className="mt-2 flex flex-wrap gap-1.5">
               {EXAMPLES.map((ex) => (
-                <button key={ex} type="button" onClick={() => setText(ex)} className="pill h-7 px-3 text-[11px] border border-line bg-card text-muted hover:text-ink transition max-w-full truncate">{ex}</button>
+                <button key={ex} type="button" onClick={() => setText(ex)} className="pill h-7 px-3 text-xs border border-line bg-card text-muted hover:text-ink transition max-w-full truncate">{ex}</button>
               ))}
             </div>
           )}
-          {meetingMode && text.length > 0 && <p className="mt-1 text-[11px] text-faint tnum">{text.length.toLocaleString()} of 12,000 characters</p>}
+          {meetingMode && text.length > 0 && <p className="mt-1 text-xs text-faint tnum">{text.length.toLocaleString()} of 12,000 characters</p>}
           {error && (
             <p role="alert" className="mt-3 rounded-xl bg-coral/60 text-coral-fg px-3 py-2 text-[13px] inline-flex items-start gap-2"><Info size={14} className="mt-0.5 shrink-0" /> {error}</p>
           )}
@@ -191,7 +191,7 @@ export default function PromptToList() {
               <p className="mt-1 text-[13px] text-muted leading-relaxed whitespace-pre-line">{meeting.summary}</p>
               {meeting.decisions.length > 0 && (
                 <>
-                  <p className="mt-2.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-faint">Decisions</p>
+                  <p className="mt-2.5 text-xs font-semibold uppercase tracking-[0.12em] text-faint">Decisions</p>
                   <ul className="mt-1 space-y-0.5 text-[13px]">{meeting.decisions.map((d, i) => <li key={i} className="flex gap-2"><span className="text-faint">•</span><span>{d}</span></li>)}</ul>
                 </>
               )}
@@ -204,7 +204,7 @@ export default function PromptToList() {
           <p className="text-sm text-muted">
             {items.length === 0 ? 'No action items were found in these notes.' : `${items.length} ${items.length === 1 ? 'task' : 'tasks'}. Untick any you don't want.`}
           </p>
-          {madeHere && <p className="mt-1 text-[11px] text-faint">Made on this device from your words: days, times, "high priority" and lengths like "for an hour" were picked up.</p>}
+          {madeHere && <p className="mt-1 text-xs text-faint">Made on this device from your words: days, times, "high priority" and lengths like "for an hour" were picked up.</p>}
           <ul className="mt-3 max-h-[40vh] overflow-y-auto -mx-1 px-1 space-y-0.5" aria-label="Tasks from your note">
             {items.map((t, i) => {
               const on = !off.has(i)
@@ -215,9 +215,9 @@ export default function PromptToList() {
                   <span className="w-[4.5rem] shrink-0 text-[12px] font-semibold tnum text-muted">{t.date ? format(parseISO(t.date), 'EEE d MMM') : 'Today'}</span>
                   <span className="min-w-0 flex-1">
                     <span className={cx('block text-[13px] font-semibold truncate', !on && 'line-through')} title={t.title}>{t.title}</span>
-                    <span className="block text-[10px] font-semibold text-faint">{[cat?.name, t.priority === 'high' && 'High priority', t.priority === 'low' && 'Low priority', t.recurrence && describeRepeat(t.recurrence)].filter(Boolean).join(' · ')}</span>
+                    <span className="block text-[11px] font-semibold text-faint">{[cat?.name, t.priority === 'high' && 'High priority', t.priority === 'low' && 'Low priority', t.recurrence && describeRepeat(t.recurrence)].filter(Boolean).join(' · ')}</span>
                   </span>
-                  <span className="shrink-0 text-[11px] text-faint tnum">{[t.startTime, t.durationMinutes && fmtMinutes(t.durationMinutes)].filter(Boolean).join(' · ')}</span>
+                  <span className="shrink-0 text-xs text-faint tnum">{[t.startTime, t.durationMinutes && fmtMinutes(t.durationMinutes)].filter(Boolean).join(' · ')}</span>
                 </li>
               )
             })}

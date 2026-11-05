@@ -38,7 +38,7 @@ export function CapacityBar({ dayKey, i = 0 }) {
       {/* Row 1: the number and what to do about it. Row 2: the bar, full width. */}
       <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
         <div className="flex items-baseline gap-2 min-w-0">
-          <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-faint">{load.isToday ? "Today's load" : 'Load'}</span>
+          <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-faint">{load.isToday ? "Today's load" : 'Load'}</span>
           <span className="text-[20px] font-bold tracking-tight tnum">{fmtMinutes(load.planned)}</span>
           <span className="text-[13px] text-muted tnum">of {fmtMinutes(load.capacity)}</span>
         </div>
@@ -92,7 +92,7 @@ export function CapacityBar({ dayKey, i = 0 }) {
           )}
           {overBy > 0 && <i className="absolute inset-y-0 w-0.5 bg-ink/70" style={{ left: pct(load.capacity) }} />}
         </div>
-        <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-muted">
+        <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted">
           {load.isToday && <span className="inline-flex items-center gap-1.5"><i className="h-1.5 w-1.5 rounded-full bg-ink/10 ring-hair" />Day so far {fmtMinutes(elapsed)}</span>}
           <span className="inline-flex items-center gap-1.5"><i className="h-1.5 w-1.5 rounded-full bg-mint-fg" />Done {fmtMinutes(load.done)}</span>
           <span className="inline-flex items-center gap-1.5"><i className="h-1.5 w-1.5 rounded-full bg-sky-fg" />Working {fmtMinutes(load.working)}</span>
@@ -154,7 +154,7 @@ export function CarriedOver({ i = 0 }) {
                 <i className={cx('h-2 w-2 rounded-full shrink-0', c.dot)} />
                 <button type="button" onClick={() => setSelectedId(t.id)} className="min-w-0 flex-1 text-left">
                   <span className="block text-[14px] font-semibold truncate">{t.title}</span>
-                  <span className="block text-[11px] text-faint tnum">{carriedLabel(t.date, now)} · {fmtMinutes(remainingMinutes(t, now))}{t.priority === 'high' ? ' · high priority' : ''}</span>
+                  <span className="block text-xs text-faint tnum">{carriedLabel(t.date, now)} · {fmtMinutes(remainingMinutes(t, now))}{t.priority === 'high' ? ' · high priority' : ''}</span>
                 </button>
               </div>
               <div className="flex items-center gap-1 shrink-0 max-sm:grid max-sm:grid-cols-4 max-sm:gap-1.5">
@@ -180,7 +180,7 @@ export function CarriedOver({ i = 0 }) {
 function Choice({ children, onClick, quiet, title }) {
   return (
     <button type="button" onClick={onClick} title={title}
-      className={cx('inline-flex items-center gap-1 h-7 rounded-full px-2.5 text-[11px] font-semibold transition active:scale-[0.96] whitespace-nowrap max-sm:h-9 max-sm:px-1 max-sm:justify-center max-sm:border',
+      className={cx('inline-flex items-center gap-1 h-7 rounded-full px-2.5 text-xs font-semibold transition active:scale-[0.96] whitespace-nowrap max-sm:h-9 max-sm:px-1 max-sm:justify-center max-sm:border',
         quiet ? 'text-faint hover:text-ink hover:bg-card max-sm:border-line' : 'bg-card text-ink shadow-soft hover:-translate-y-px max-sm:border-line max-sm:shadow-none')}>
       {children}
     </button>

@@ -24,7 +24,7 @@ export default function HowToConnect({ ids, className }) {
             <div className="flex flex-wrap gap-1.5 mb-3" role="tablist" aria-label="Choose a service">
               {list.map((id) => (
                 <button key={id} type="button" role="tab" aria-selected={id === pick} onClick={() => setPick(id)}
-                  className={cx('pill h-7 px-2.5 text-[11px] border transition', id === pick ? 'bg-accent text-white border-transparent' : 'bg-card border-line text-muted hover:text-ink')}>
+                  className={cx('pill h-7 px-2.5 text-xs border transition', id === pick ? 'bg-accent text-white border-transparent' : 'bg-card border-line text-muted hover:text-ink')}>
                   {GUIDES[id].title.replace(/ \(.*\)$/, '')}
                 </button>
               ))}
@@ -33,7 +33,7 @@ export default function HowToConnect({ ids, className }) {
           <ol className="grid gap-2">
             {guide.steps.map((s, i) => (
               <li key={i} className="flex gap-2.5 text-[13px] leading-snug">
-                <span className="h-5 w-5 shrink-0 rounded-full bg-accent-soft text-accent text-[11px] font-bold inline-flex items-center justify-center tnum">{i + 1}</span>
+                <span className="h-5 w-5 shrink-0 rounded-full bg-accent-soft text-accent text-xs font-bold inline-flex items-center justify-center tnum">{i + 1}</span>
                 <span className="min-w-0">{rich(s)}</span>
               </li>
             ))}

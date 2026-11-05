@@ -33,7 +33,7 @@ export function TimeList({ value, onChange, allowClear = true, onClose }) {
                 sel ? 'bg-brand text-white font-bold' : 'hover:bg-lav hover:text-lav-fg',
                 !sel && (onHour ? 'font-bold text-ink' : 'font-medium text-muted'))}>
               <span>{clock(t)}</span>
-              <span className={cx('text-[10px]', sel ? 'text-white/80' : 'text-faint')}>{datePrefs().clock === '12' ? t : fmtTime(t)}</span>
+              <span className={cx('text-[11px]', sel ? 'text-white/80' : 'text-faint')}>{datePrefs().clock === '12' ? t : fmtTime(t)}</span>
             </button>
           )
         })}
@@ -41,7 +41,7 @@ export function TimeList({ value, onChange, allowClear = true, onClose }) {
       {allowClear && (
         <div className="mt-1.5 pt-1.5 border-t border-line flex justify-between items-center px-1">
           <button type="button" onClick={() => { onChange(null); onClose?.() }} className="text-xs font-semibold text-muted hover:text-ink">Clear</button>
-          <span className="text-[10px] text-faint">15-min steps</span>
+          <span className="text-[11px] text-faint">15-min steps</span>
         </div>
       )}
     </div>

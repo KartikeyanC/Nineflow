@@ -53,12 +53,12 @@ export default function ParkDialog({ task, mode, onClose }) {
             ))}
             {when === 'pick' && <input type="date" className="input h-8 py-0 w-auto" min={dateKey(addDays(now, 1))} value={picked} onChange={(e) => setPicked(e.target.value)} aria-label="Day to check again" />}
           </div>
-          <p className="mt-2 text-[11px] text-faint">
+          <p className="mt-2 text-xs text-faint">
             {until ? `It comes back to your plan on ${format(new Date(`${until}T12:00:00`), 'EEE, MMM d')}.` : 'It stays in Paused until you resume it.'} Until then it's off every list, board and reminder.
           </p>
         </>
       )}
-      {mode === 'drop' && <p className="mt-3 text-[11px] text-faint">It leaves every list. You can restore it from Paused for {DROP_KEEP_DAYS} days.</p>}
+      {mode === 'drop' && <p className="mt-3 text-xs text-faint">It leaves every list. You can restore it from Paused for {DROP_KEEP_DAYS} days.</p>}
 
       <div className="mt-5 flex justify-end gap-2">
         <button type="button" className="btn-ghost" onClick={onClose}>Cancel</button>

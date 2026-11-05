@@ -1,12 +1,33 @@
 import React, { useMemo } from 'react'
 import { addDays } from 'date-fns'
-import { DndContext, MouseSensor, TouchSensor, pointerWithin, useDraggable, useDroppable, useSensor, useSensors } from '@dnd-kit/core'
+import { DndContext, KeyboardCode, KeyboardSensor, MouseSensor, TouchSensor, pointerWithin, rectIntersection, useDraggable, useDroppable, useSensor, useSensors } from '@dnd-kit/core'
 import { Flame, CalendarClock, Zap, Archive } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
 import { dateKey, dueLabel } from '../lib/tasks'
 import { CheckCircle, PriorityPill, cx } from '../components/ui'
 
 // Eisenhower matrix: important = high priority, urgent = due today, tomorrow or overdue.
+
+// Keyboard: Space picks a task up, the arrow keys jump it to the next quadrant that way, Space drops it.
+const DIRS = { [KeyboardCode.Left]: [-1, 0], [KeyboardCode.Right]: [1, 0], [KeyboardCode.Up]: [0, -1], [KeyboardCode.Down]: [0, 1] }
+function quadrantCoordinates(event, { context: { droppableRects, collisionRect } }) {
+  const dir = DIRS[event.code]
+  if (!dir || !collisionRect) return undefined
+  event.preventDefault()
+  const cx = collisionRect.left + collisionRect.width / 2, cy = collisionRect.top + collisionRect.height / 2
+  let best = null
+  for (const rect of droppableRects.values()) {
+    const dx = rect.left + rect.width / 2 - cx, dy = rect.top + rect.height / 2 - cy
+    const along = dx * dir[0] + dy * dir[1]
+    if (along <= 20) continue // not in that direction
+    const score = along + Math.abs(dir[0] ? dy : dx) * 2
+    if (!best || score < best.score) best = { score, rect }
+  }
+  if (!best) return undefined
+  return { x: best.rect.left + best.rect.width / 2 - collisionRect.width / 2, y: best.rect.top + best.rect.height / 2 - collisionRect.height / 2 }
+}
+// The pointer decides for mouse and touch; a keyboard drag has none, so it uses the card's overlap.
+const collide = (args) => (args.pointerCoordinates ? pointerWithin(args) : rectIntersection(args))
 const QUADRANTS = [
   { id: 'do', important: true, urgent: true, title: 'Do first', hint: 'Important and urgent', icon: Flame, tone: 'bg-rose/40' },
   { id: 'schedule', important: true, urgent: false, title: 'Schedule', hint: 'Important, not urgent', icon: CalendarClock, tone: 'bg-mint/40' },
@@ -73,6 +94,7 @@ export default function Matrix() {
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 180, tolerance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: quadrantCoordinates }),
   )
 
   // Dropping on a quadrant sets just enough to put the task there.
@@ -90,9 +112,9 @@ export default function Matrix() {
     <div className="flex flex-col gap-4 h-full">
       <div>
         <h1 className="text-2xl font-semibold">Matrix</h1>
-        <p className="text-sm text-muted">Important means high priority; urgent means due by tomorrow. Drag a task to re-rank it.</p>
+        <p className="text-sm text-muted">Important means high priority; urgent means due by tomorrow. Drag a task to re-rank it, or press Space on it, use the arrow keys, and Space again.</p>
       </div>
-      <DndContext sensors={sensors} collisionDetection={pointerWithin} onDragEnd={onDragEnd}>
+      <DndContext sensors={sensors} collisionDetection={collide} onDragEnd={onDragEnd}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {groups.map(({ q, tasks: ts }) => <Quadrant key={q.id} q={q} tasks={ts} now={now} />)}
         </div>

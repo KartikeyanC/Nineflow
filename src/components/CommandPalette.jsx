@@ -79,7 +79,7 @@ export default function CommandPalette({ open, onClose }) {
           <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={onKey} aria-label="Search or type a command"
             placeholder="Search tasks and notes, jump to a screen, or type a new task…"
             className="flex-1 min-w-0 bg-transparent outline-none text-base placeholder:text-faint" />
-          <kbd className="text-[10px] text-faint border border-line rounded px-1.5 py-0.5">Esc</kbd>
+          <kbd className="text-[11px] text-faint border border-line rounded px-1.5 py-0.5">Esc</kbd>
         </div>
         <ul ref={listRef} role="listbox" className="mt-2 max-h-[50vh] overflow-y-auto -mx-1">
           {items.length === 0 && <li className="px-3 py-6 text-center text-sm text-faint">Nothing matches.</li>}
@@ -88,7 +88,7 @@ export default function CommandPalette({ open, onClose }) {
             const first = n === 0 || items[n - 1].group !== it.group
             return (
               <React.Fragment key={`${it.group}-${it.label}-${n}`}>
-                {first && <li role="presentation" className="px-3 pt-2 pb-1 text-[10px] font-bold uppercase tracking-wide text-faint">{it.group}</li>}
+                {first && <li role="presentation" className="px-3 pt-2 pb-1 text-[11px] font-bold uppercase tracking-wide text-faint">{it.group}</li>}
                 <li role="option" aria-selected={n === i} data-active={n === i}
                   onMouseEnter={() => setI(n)} onClick={() => choose(it)}
                   className={cx('flex items-center gap-3 px-3 h-10 rounded-xl cursor-pointer', n === i ? 'bg-page' : '')}>

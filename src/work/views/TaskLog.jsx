@@ -106,7 +106,7 @@ export default function TaskLog() {
                 <Td><NumIn value={t.plannedHours} onChange={(v) => set(t, { plannedHours: v })} /></Td>
                 <Td><DateIn value={t.workDate} onChange={(v) => set(t, { workDate: v })} /></Td>
                 <Td>{t.linked
-                  ? <span className="inline-flex items-center gap-1.5 text-sm font-semibold tabular-nums" title="From the planner's focus sessions">{h1(t.actualHours)} <span className="pill bg-sky text-sky-fg py-0 text-[10px]">planner</span></span>
+                  ? <span className="inline-flex items-center gap-1.5 text-sm font-semibold tabular-nums" title="From the planner's focus sessions">{h1(t.actualHours)} <span className="pill bg-sky text-sky-fg py-0 text-[11px]">planner</span></span>
                   : <NumIn value={t.actualHours} onChange={(v) => set(t, { actualHours: v })} />}</Td>
                 <Td><SelectIn value={t.status} options={TASK_STATUSES} className="w-32" onChange={(v) => set(t, { status: v })} /></Td>
                 <Td><NumIn value={t.revisions} step={1} className="w-16" onChange={(v) => set(t, { revisions: v })} /></Td>

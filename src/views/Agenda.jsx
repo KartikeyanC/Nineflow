@@ -69,11 +69,11 @@ export default function Agenda() {
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold truncate">{t.title}</p>
                     <div className="flex items-center gap-1.5 mt-0.5 min-w-0">
-                      {t.startTime && <span className="sm:hidden text-[11px] font-semibold text-muted tnum shrink-0">{clock(t.startTime)}</span>}
-                      <CategoryTag category={categoryById(t.category)} className="text-[10px] py-0" />
+                      {t.startTime && <span className="sm:hidden text-xs font-semibold text-muted tnum shrink-0">{clock(t.startTime)}</span>}
+                      <CategoryTag category={categoryById(t.category)} className="text-[11px] py-0" />
                       {t.recurrence && <Repeat size={10} className="text-lav-fg" />}
-                      <RequiredBadge task={t} className="!text-[10px]" />
-                      {g.key === 'overdue' && <span className="text-[10px] font-semibold text-muted">{carriedLabel(t.date, now)}</span>}
+                      <RequiredBadge task={t} className="!text-[11px]" />
+                      {g.key === 'overdue' && <span className="text-[11px] font-semibold text-muted">{carriedLabel(t.date, now)}</span>}
                     </div>
                   </div>
                   <span className="text-xs text-faint shrink-0">{fmtMinutes(t.durationMinutes)}</span>

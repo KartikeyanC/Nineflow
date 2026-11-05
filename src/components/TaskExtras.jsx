@@ -44,7 +44,7 @@ export function RemindersField({ task }) {
       </div>
       {task.startTime && effectiveReminders(task, settings).length > 0 && (
         <div className="mt-2 flex flex-wrap items-center gap-1.5" role="group" aria-label="Keep reminding">
-          <span className="text-[11px] text-faint mr-0.5">Keep reminding</span>
+          <span className="text-xs text-faint mr-0.5">Keep reminding</span>
           <button type="button" aria-pressed={task.nagEvery == null} onClick={() => updateTask(task.id, { nagEvery: null })} className={pill(task.nagEvery == null)}>
             Default{task.nagEvery == null && ` (${settings.reminders?.repeat ? `${settings.reminders.repeat} min` : 'once'})`}
           </button>
@@ -54,9 +54,9 @@ export function RemindersField({ task }) {
           ))}
         </div>
       )}
-      {own && list.length > 0 && !task.startTime && <p className="mt-1.5 text-[11px] text-faint">No start time, so reminders count from 09:00 on the day.</p>}
+      {own && list.length > 0 && !task.startTime && <p className="mt-1.5 text-xs text-faint">No start time, so reminders count from 09:00 on the day.</p>}
       {note && <p role="alert" className="mt-1.5 text-[12px] text-coral-fg font-semibold">{note}</p>}
-      {own && list.length > 0 && !note && <p className="mt-1.5 text-[11px] text-faint">Notifications show while NineFlow is open.</p>}
+      {own && list.length > 0 && !note && <p className="mt-1.5 text-xs text-faint">Notifications show while NineFlow is open.</p>}
     </div>
   )
 }

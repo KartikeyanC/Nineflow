@@ -133,7 +133,7 @@ export default function GoalPlanner() {
             <div className="mt-2 flex flex-wrap items-center gap-1.5">
               {EXAMPLES.map((ex) => (
                 <button key={ex} type="button" onClick={() => { setPromptText(ex); setUnderstood(null) }} title={ex}
-                  className="pill h-7 px-2.5 text-[11px] bg-card border border-line text-muted hover:text-ink transition max-w-[13rem] truncate">{ex.split(',')[0]}</button>
+                  className="pill h-7 px-2.5 text-xs bg-card border border-line text-muted hover:text-ink transition max-w-[13rem] truncate">{ex.split(',')[0]}</button>
               ))}
               <button type="button" onClick={buildFromPrompt} disabled={!promptText.trim()} className={cx('btn-black h-9 py-0 ml-auto', !promptText.trim() && 'opacity-40')}>Build my plan <CalendarCheck size={14} /></button>
             </div>
@@ -158,7 +158,7 @@ export default function GoalPlanner() {
             <textarea className="input min-h-[96px] resize-y leading-relaxed" value={form.topicsText} onChange={(e) => set({ topicsText: e.target.value })}
               placeholder={'Chapter 1: Algebra\nChapter 2: Geometry\nPast papers'} />
           </Field>
-          {topics.length > 0 && <p className="mt-1 text-[11px] text-faint">{topics.length} {topics.length === 1 ? 'topic' : 'topics'}</p>}
+          {topics.length > 0 && <p className="mt-1 text-xs text-faint">{topics.length} {topics.length === 1 ? 'topic' : 'topics'}</p>}
 
           <div className="mt-4">
             <span className="block text-xs font-semibold text-muted mb-1.5">Time per day</span>
@@ -223,10 +223,10 @@ export default function GoalPlanner() {
                       <span className="w-[4.5rem] shrink-0 text-[12px] font-semibold tnum text-muted">{format(parseISO(t.date), 'EEE d MMM')}</span>
                       <span className="min-w-0 flex-1">
                         <span className={cx('block text-[13px] font-semibold truncate', !on && 'line-through')} title={t.title}>{t.title}</span>
-                        {t.kind === 'revision' && <span className="block text-[10px] font-semibold text-lav-fg">Revision</span>}
-                        {t.kind === 'deadline' && <span className="block text-[10px] font-semibold text-coral-fg">Deadline</span>}
+                        {t.kind === 'revision' && <span className="block text-[11px] font-semibold text-lav-fg">Revision</span>}
+                        {t.kind === 'deadline' && <span className="block text-[11px] font-semibold text-coral-fg">Deadline</span>}
                       </span>
-                      <span className="shrink-0 text-[11px] text-faint tnum">{t.startTime ? `${clock(t.startTime)} · ` : ''}{fmtMinutes(t.durationMinutes)}</span>
+                      <span className="shrink-0 text-xs text-faint tnum">{t.startTime ? `${clock(t.startTime)} · ` : ''}{fmtMinutes(t.durationMinutes)}</span>
                     </li>
                   )
                 })}
@@ -252,7 +252,7 @@ function Check({ checked, onChange, title, hint }) {
   return (
     <label className="flex items-start gap-3 rounded-xl px-2 py-1.5 cursor-pointer hover:bg-page transition">
       <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="mt-1 h-4 w-4 shrink-0 accent-[rgb(var(--accent))]" />
-      <span><span className="block text-[13px] font-semibold">{title}</span><span className="block text-[11px] text-faint">{hint}</span></span>
+      <span><span className="block text-[13px] font-semibold">{title}</span><span className="block text-xs text-faint">{hint}</span></span>
     </label>
   )
 }

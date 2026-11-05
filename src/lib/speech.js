@@ -15,7 +15,8 @@ export function speechKind() {
   return WebSpeech ? 'web' : null
 }
 
-const lang = () => (typeof navigator !== 'undefined' && navigator.language) || 'en-IN'
+export const speechLang = () => (typeof navigator !== 'undefined' && navigator.language) || 'en-IN'
+const lang = speechLang
 
 /**
  * Starts listening. Calls onText(full text so far, isFinal) while the person speaks and

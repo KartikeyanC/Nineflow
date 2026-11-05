@@ -168,7 +168,7 @@ export function NotesFolderSettings() {
           <button type="button" className="mt-4 text-xs font-semibold text-muted hover:text-ink underline underline-offset-2" onClick={stopNotesFolder}>
             Stop saving notes as files
           </button>
-          <p className="text-[11px] text-faint mt-1">The files already in the folder stay there. A note deleted in NineFlow moves its file to the folder's "deleted" folder; nothing is erased.</p>
+          <p className="text-xs text-faint mt-1">The files already in the folder stay there. A note deleted in NineFlow moves its file to the folder's "deleted" folder; nothing is erased.</p>
         </>
       ) : (
         <button type="button" className="btn-black" onClick={chooseNotesFolder}><FolderOpen size={14} /> Choose a folder</button>
