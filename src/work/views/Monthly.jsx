@@ -1,5 +1,6 @@
 import React from 'react'
-import { format, parseISO } from 'date-fns'
+import { parseISO } from 'date-fns'
+import { format } from '../../lib/dateFormat'
 import { useWork } from '../WorkContext'
 import { AREAS } from '../workStore'
 import { monthlySummary, h1, pct } from '../workCalc'

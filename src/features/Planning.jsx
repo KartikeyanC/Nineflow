@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react'
 import { addDays, parseISO } from 'date-fns'
+import { clock } from '../lib/dateFormat'
 import { ArrowRight, Clock3, CornerDownRight, Inbox, Moon } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
 import { carriedLabel, dateKey, fmtMinutes, isOverdue } from '../lib/tasks'
@@ -56,13 +57,13 @@ export function CapacityBar({ dayKey, i = 0 }) {
           )}
           {state === 'ok' && (
             <p className="text-[13px] text-muted tnum">
-              Finish <b className="text-ink">≈ {hhmm(load.finish)}</b><span className="mx-1.5 text-faint">·</span>{fmtMinutes(load.available - load.left)} free
+              Finish <b className="text-ink">≈ {clock(hhmm(load.finish))}</b><span className="mx-1.5 text-faint">·</span>{fmtMinutes(load.available - load.left)} free
             </p>
           )}
           {state === 'over' && (
             <>
               <p className="text-[13px] tnum text-peach-fg font-semibold">
-                {fmtMinutes(load.over)} over<span className="mx-1.5 opacity-60">·</span>finish ≈ {hhmm(load.finish)}
+                {fmtMinutes(load.over)} over<span className="mx-1.5 opacity-60">·</span>finish ≈ {clock(hhmm(load.finish))}
               </p>
               {trim.length > 0 && (
                 <button type="button" onClick={() => moveTasksTo(trim.map((t) => t.id), tomorrow, `Moved ${trim.length} to tomorrow to make room`)}
@@ -98,7 +99,7 @@ export function CapacityBar({ dayKey, i = 0 }) {
           <span className="inline-flex items-center gap-1.5"><i className="h-1.5 w-1.5 rounded-full bg-ink/25" />To do {fmtMinutes(load.todo)}</span>
           {load.review > 0 && <span className="inline-flex items-center gap-1.5" title="With someone else, so it isn't counted against your day"><i className="h-1.5 w-1.5 rounded-full bg-violet-fg/60" />In review {fmtMinutes(load.review)}</span>}
           <button type="button" onClick={() => setView('settings')} className="inline-flex items-center gap-1 text-faint hover:text-ink transition">
-            <Clock3 size={11} /> Working hours {settings.workHours.start}–{settings.workHours.end}
+            <Clock3 size={11} /> Working hours {clock(settings.workHours.start)}–{clock(settings.workHours.end)}
           </button>
         </div>
       </div>

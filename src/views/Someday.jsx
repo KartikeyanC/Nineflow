@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react'
-import { addDays, format, parseISO } from 'date-fns'
+import { addDays, parseISO } from 'date-fns'
+import { format } from '../lib/dateFormat'
 import { Inbox, Plus, Sun, Sunrise } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
 import { dateKey, fmtMinutes } from '../lib/tasks'

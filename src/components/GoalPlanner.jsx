@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { ArrowLeft, CalendarCheck, Info, Sparkles, Target } from 'lucide-react'
-import { format, parseISO } from 'date-fns'
+import { parseISO } from 'date-fns'
+import { clock, format } from '../lib/dateFormat'
 import { usePlanner } from '../store/PlannerContext'
 import { dayLoad } from '../lib/capacity'
 import { fmtMinutes } from '../lib/tasks'
@@ -225,7 +226,7 @@ export default function GoalPlanner() {
                         {t.kind === 'revision' && <span className="block text-[10px] font-semibold text-lav-fg">Revision</span>}
                         {t.kind === 'deadline' && <span className="block text-[10px] font-semibold text-coral-fg">Deadline</span>}
                       </span>
-                      <span className="shrink-0 text-[11px] text-faint tnum">{t.startTime ? `${t.startTime} · ` : ''}{fmtMinutes(t.durationMinutes)}</span>
+                      <span className="shrink-0 text-[11px] text-faint tnum">{t.startTime ? `${clock(t.startTime)} · ` : ''}{fmtMinutes(t.durationMinutes)}</span>
                     </li>
                   )
                 })}

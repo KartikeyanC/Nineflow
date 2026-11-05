@@ -22,7 +22,7 @@ import { KINDS, defaultName, guessKind, sendChat } from '../lib/notify'
 import ToolConnections from '../features/ToolConnections'
 import { feedAvailable, feedUrl, newFeedToken, removeFeed, useFeedStatus } from '../lib/calFeed'
 import { COUNTRIES, countryFromBrowser } from '../lib/holidays'
-import { format } from 'date-fns'
+import { format } from '../lib/dateFormat'
 import AccountSection from '../features/Account'
 import InstallApp from '../features/InstallApp'
 import { WorkspacesSection } from '../features/Workspaces'
@@ -208,7 +208,7 @@ function ConnectionsSection({ settings, updateSettings }) {
       </div>
 
       <div className="space-y-3 pt-4 border-t border-line">
-        <Row label="Public holidays" hint="Marked on Week, Month and the Dashboard (Nager.Date). Not every country has data.">
+        <Row label="Public holidays" hint="Marked on Week, Month and the Dashboard. India uses the central government list; other countries come from Nager.Date.">
           {onOff(settings.holidays.on, (on) => updateSettings({ holidays: { ...settings.holidays, on } }))}
         </Row>
         {settings.holidays.on && (
@@ -561,6 +561,14 @@ export default function Settings() {
           <Row label="Week starts on" hint="Used by the Week and Month screens.">
             <Segmented size="sm" value={settings.weekStart} onChange={(v) => updateSettings({ weekStart: v })}
               options={[{ value: 1, label: 'Monday' }, { value: 0, label: 'Sunday' }]} />
+          </Row>
+          <Row label="Dates" hint="How dates are written everywhere in the app.">
+            <Segmented size="sm" value={settings.dateOrder || 'auto'} onChange={(v) => updateSettings({ dateOrder: v })}
+              options={[{ value: 'auto', label: 'Like my device' }, { value: 'dmy', label: '4 Nov' }, { value: 'mdy', label: 'Nov 4' }]} />
+          </Row>
+          <Row label="Clock" hint="How times are shown. Typing either way still works.">
+            <Segmented size="sm" value={settings.clock || 'auto'} onChange={(v) => updateSettings({ clock: v })}
+              options={[{ value: 'auto', label: 'Like my device' }, { value: '12', label: '2:30pm' }, { value: '24', label: '14:30' }]} />
           </Row>
           <Row label="Working hours" hint="Your daily capacity and “Plan my day” use these. The break is subtracted from the day.">
             <div className="flex flex-wrap items-end gap-2">

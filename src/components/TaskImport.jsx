@@ -1,5 +1,6 @@
 import React, { useMemo, useRef, useState } from 'react'
-import { format, parseISO } from 'date-fns'
+import { parseISO } from 'date-fns'
+import { format } from '../lib/dateFormat'
 import { AlertTriangle, Check, ClipboardPaste, FileSpreadsheet, Upload } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
 import { dateKey, fmtMinutes } from '../lib/tasks'

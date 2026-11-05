@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
-import { addDays, differenceInCalendarDays, format, formatDistanceToNowStrict, parseISO } from 'date-fns'
+import { addDays, differenceInCalendarDays, formatDistanceToNowStrict, parseISO } from 'date-fns'
+import { format } from '../lib/dateFormat'
 import { PauseCircle, Play, RotateCcw, Trash2, XCircle } from 'lucide-react'
 import { createPortal } from 'react-dom'
 import { usePlanner } from '../store/PlannerContext'

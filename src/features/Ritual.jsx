@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { addDays, format } from 'date-fns'
+import { addDays } from 'date-fns'
+import { format } from '../lib/dateFormat'
 import { X, ArrowRight, ArrowLeft, Sunrise, Moon, Copy, Check, Target, Inbox, Plus, Send, Loader2 } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
 import { dateKey, fmtMinutes, isOverdue, sortByTime, tasksOn, totalMinutes } from '../lib/tasks'

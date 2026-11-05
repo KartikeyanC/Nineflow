@@ -1,5 +1,6 @@
 import React, { useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { addDays, differenceInCalendarDays, endOfDay, format, isAfter, isSameDay, isValid, parseISO, startOfDay } from 'date-fns'
+import { addDays, differenceInCalendarDays, endOfDay, isAfter, isSameDay, isValid, parseISO, startOfDay } from 'date-fns'
+import { format } from '../lib/dateFormat'
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { ChartColumn, ChevronLeft, ChevronRight, Table2 } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'

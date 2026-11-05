@@ -1,10 +1,8 @@
 // Working charts: how much was worked and finished over a chosen stretch of time.
 // "Worked" is the time tasks spent in Working (their sessions), the same measure as Focus time
 // on the Dashboard. "Done" counts tasks by the day they were finished.
-import {
-  addDays, addMonths, differenceInCalendarDays, eachDayOfInterval, endOfDay, endOfMonth, endOfWeek, format,
-  isValid, parseISO, startOfDay, startOfMonth, subDays, subMonths,
-} from 'date-fns'
+import { addDays, addMonths, differenceInCalendarDays, eachDayOfInterval, endOfDay, endOfMonth, endOfWeek, isValid, parseISO, startOfDay, startOfMonth, subDays, subMonths } from 'date-fns'
+import { format } from './dateFormat'
 import { sessionEnd } from './tasks'
 
 export const RANGES = [

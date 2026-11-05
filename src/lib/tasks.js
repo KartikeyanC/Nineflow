@@ -1,19 +1,6 @@
 // Pure helpers over the task array. No React, no storage.
-import {
-  addDays,
-  differenceInCalendarDays,
-  differenceInMinutes,
-  eachDayOfInterval,
-  endOfDay,
-  format,
-  isSameDay,
-  max as maxDate,
-  min as minDate,
-  parseISO,
-  startOfDay,
-  startOfWeek,
-  subDays,
-} from 'date-fns'
+import { addDays, differenceInCalendarDays, differenceInMinutes, eachDayOfInterval, endOfDay, isSameDay, max as maxDate, min as minDate, parseISO, startOfDay, startOfWeek, subDays } from 'date-fns'
+import { clock, format } from './dateFormat'
 import { uid } from './storage'
 
 // In review: handed over and waiting on someone else. Its timer is stopped (see
@@ -362,7 +349,7 @@ export function carryForward(tasks, now = new Date()) {
 export function dueLabel(task, now = new Date()) {
   if (!task.date) return null
   const d = parseISO(task.date)
-  const time = task.startTime ? ` ${task.startTime}` : ''
+  const time = task.startTime ? ` ${clock(task.startTime)}` : ''
   const diff = differenceInCalendarDays(d, now)
   if (diff === 0) return `Today${time}`
   if (diff === 1) return `Tomorrow${time}`

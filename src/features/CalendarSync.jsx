@@ -5,7 +5,8 @@ import { clearCalendarToken, getCalendarToken, isDesktop, rememberedAccount, req
 import { AuthError, OfflineError } from '../lib/syncErrors'
 import { storageKey } from '../lib/profiles'
 import { loadRange, useShowEvents } from '../lib/gcalEvents'
-import { addDays, format, parseISO } from 'date-fns'
+import { addDays, parseISO } from 'date-fns'
+import { format } from '../lib/dateFormat'
 
 const listeners = new Set()
 

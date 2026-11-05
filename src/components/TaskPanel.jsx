@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { format, parseISO } from 'date-fns'
+import { parseISO } from 'date-fns'
+import { format } from '../lib/dateFormat'
 import { Activity, CalendarCheck, CalendarDays, Clock, Timer, Tag, Flag, Trash2, X, Repeat, ArrowRight, CalendarPlus, Layers, Bell, Hash, Columns3, Video, Paperclip, MoreHorizontal, PauseCircle, XCircle } from 'lucide-react'
 import { googleCalendarUrl } from '../lib/calendar'
 import { meetLinkFor } from '../lib/gcal'

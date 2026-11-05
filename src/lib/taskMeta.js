@@ -1,5 +1,6 @@
 // Small helpers for the two optional extras on a task: reminders and tags.
-import { addDays, format, parseISO } from 'date-fns'
+import { addDays, parseISO } from 'date-fns'
+import { format } from './dateFormat'
 
 // ---- reminders -------------------------------------------------------------------
 // task.reminders is null (use the default from Settings), [] (none), or a list

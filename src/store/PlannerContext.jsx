@@ -16,6 +16,7 @@ import { busyFor } from '../lib/gcalEvents'
 import { baseOfColumn, cleanColumns, columnOf, isOriginal } from '../lib/columns'
 import { currentProfileId } from '../lib/profiles'
 import { applyTheme } from '../lib/themes'
+import { setDatePrefs } from '../lib/dateFormat'
 import { removeTasksFromWorkspace, sendTasksToWorkspace } from '../lib/workspaces'
 import { ensureRecurrences } from '../lib/recurrence'
 import { planDay as planDayPure } from '../lib/schedule'
@@ -43,6 +44,8 @@ function chime(phase) {
 export function PlannerProvider({ children }) {
   const [tasks, setTasks] = useState(loadTasks)
   const [settings, setSettings] = useState(loadSettings)
+  // Date order and clock, set before anything below is drawn (lib/dateFormat.js).
+  setDatePrefs(settings)
   const [habits, setHabits] = useState(loadHabits)
   useEffect(() => saveHabits(habits), [habits])
 

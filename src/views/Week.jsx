@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { addDays, format, getISOWeek, isSameDay, isSameMonth, parseISO, startOfWeek } from 'date-fns'
+import { addDays, getISOWeek, isSameDay, isSameMonth, parseISO, startOfWeek } from 'date-fns'
+import { clock, datePrefs, format } from '../lib/dateFormat'
 import { DndContext, KeyboardSensor, MouseSensor, TouchSensor, pointerWithin, useDraggable, useDroppable, useSensor, useSensors } from '@dnd-kit/core'
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { ChevronLeft, ChevronRight, Plus, Check, CheckCircle2, Flame, Wand2, CalendarDays, PartyPopper } from 'lucide-react'
@@ -54,7 +55,8 @@ function layoutLanes(tasks) {
 function rangeLabel(days, now) {
   const a = days[0], b = days[days.length - 1]
   if (days.length === 1) return isSameDay(a, now) ? `Today · ${format(a, 'MMM d')}` : format(a, 'EEE, MMM d')
-  return isSameMonth(a, b) ? `${format(a, 'MMM d')} – ${format(b, 'd')}` : `${format(a, 'MMM d')} – ${format(b, 'MMM d')}`
+  if (!isSameMonth(a, b)) return `${format(a, 'MMM d')} – ${format(b, 'MMM d')}`
+  return datePrefs().order === 'dmy' ? `${format(a, 'd')} – ${format(b, 'd MMM')}` : `${format(a, 'MMM d')} – ${format(b, 'd')}`
 }
 
 export default function Week() {
@@ -272,13 +274,13 @@ export default function Week() {
               <div className="relative">
                 {hours.map((m) => (
                   <span key={m} className={cx('absolute -translate-y-1/2 text-[11px] font-semibold text-faint', phone ? 'right-2' : 'right-3')} style={{ top: (m - GRID_START) * PX_PER_MIN }}>
-                    {toHHMM(m)}
+                    {clock(toHHMM(m))}
                   </span>
                 ))}
                 {showNow && (
                   <span className="absolute right-2 -translate-y-1/2 z-20 rounded-full bg-danger text-white text-[10px] font-bold px-1.5 py-0.5"
                     style={{ top: (nowMin - GRID_START) * PX_PER_MIN }}>
-                    {toHHMM(nowMin)}
+                    {clock(toHHMM(nowMin))}
                   </span>
                 )}
               </div>
@@ -399,7 +401,7 @@ function Block({ task, lane, lanes, onOpen }) {
         {task.title}
       </p>
       {height >= 40 && (
-        <p className={cx('text-[10px] font-medium opacity-80', c.text)}>{toHHMM(start)} – {toHHMM(start + task.durationMinutes)}</p>
+        <p className={cx('text-[10px] font-medium opacity-80', c.text)}>{clock(toHHMM(start))} – {clock(toHHMM(start + task.durationMinutes))}</p>
       )}
       {height >= 72 && <PriorityPill priority={task.priority} className="mt-1 text-[10px] py-0" />}
     </div>
@@ -419,7 +421,7 @@ function EventBlock({ item, lane, lanes }) {
       style={{ top: (start - GRID_START) * PX_PER_MIN, height, left: `calc(${lane * width}% + 3px)`, width: `calc(${width}% - 6px)`, zIndex: 4 }}
       className={cx('absolute rounded-xl border border-dashed border-faint/60 bg-subtle/80 px-2 py-1 overflow-hidden select-none text-muted hover:text-ink hover:border-faint transition', e.free && 'opacity-70')}>
       <p className="text-xs font-bold leading-tight line-clamp-2 flex items-start gap-1"><CalendarDays size={11} className="mt-0.5 shrink-0" />{e.title}</p>
-      {height >= 40 && <p className="text-[10px] font-medium opacity-80">{toHHMM(e.startMin)} – {toHHMM(Math.min(e.endMin, 1439))}</p>}
+      {height >= 40 && <p className="text-[10px] font-medium opacity-80">{clock(toHHMM(e.startMin))} – {clock(toHHMM(Math.min(e.endMin, 1439)))}</p>}
     </Tag>
   )
 }

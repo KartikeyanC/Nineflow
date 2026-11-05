@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
-import { format, parseISO } from 'date-fns'
+import { parseISO } from 'date-fns'
+import { format } from '../lib/dateFormat'
 import { Check, Download, Loader2, Send } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
 import { patchConn, setConn, useConnections, wasSent } from '../lib/connections'

@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react'
-import { addDays, format, parseISO } from 'date-fns'
+import { addDays, parseISO } from 'date-fns'
+import { clock, format } from '../lib/dateFormat'
 import { CalendarClock, Plus, Repeat } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
 import { carriedLabel, dateKey, fmtMinutes, isOverdue, sortByTime } from '../lib/tasks'
@@ -68,7 +69,7 @@ export default function Agenda() {
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold truncate">{t.title}</p>
                     <div className="flex items-center gap-1.5 mt-0.5 min-w-0">
-                      {t.startTime && <span className="sm:hidden text-[11px] font-semibold text-muted tnum shrink-0">{t.startTime}</span>}
+                      {t.startTime && <span className="sm:hidden text-[11px] font-semibold text-muted tnum shrink-0">{clock(t.startTime)}</span>}
                       <CategoryTag category={categoryById(t.category)} className="text-[10px] py-0" />
                       {t.recurrence && <Repeat size={10} className="text-lav-fg" />}
                       <RequiredBadge task={t} className="!text-[10px]" />

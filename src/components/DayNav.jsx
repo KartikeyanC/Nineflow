@@ -1,5 +1,6 @@
 import React from 'react'
-import { addDays, format, parseISO, subDays } from 'date-fns'
+import { addDays, parseISO, subDays } from 'date-fns'
+import { format } from '../lib/dateFormat'
 import { CalendarCheck, ChevronLeft, ChevronRight } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
 import { dateKey } from '../lib/tasks'

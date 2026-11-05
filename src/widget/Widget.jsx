@@ -1,7 +1,7 @@
 import { applyTheme } from '../lib/themes'
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { ExternalLink, Sparkles, X } from 'lucide-react'
-import { format } from 'date-fns'
+import { format, setDatePrefs } from '../lib/dateFormat'
 import { loadSettings, loadTasks, saveTasks, isOnboarded } from '../lib/storage'
 import { currentProfile, firstName } from '../lib/profiles'
 import { carriedLabel, checkGate, dateKey, dueLabel, fmtMinutes, isOverdue, sortByTime, withStatus } from '../lib/tasks'
@@ -36,6 +36,7 @@ function useStored() {
 
 export default function Widget() {
   const [{ tasks, settings, signedIn, now }, setState, read] = useStored()
+  setDatePrefs(settings)
   const profile = currentProfile()
   const today = dateKey(now)
 

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
-import { addDays, format } from 'date-fns'
+import { addDays } from 'date-fns'
+import { format } from '../lib/dateFormat'
 import { PauseCircle, XCircle } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
 import { DROP_KEEP_DAYS, DROP_REASONS, PAUSE_REASONS, dateKey } from '../lib/tasks'

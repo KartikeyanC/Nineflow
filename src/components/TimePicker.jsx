@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { Clock } from 'lucide-react'
 import { fmtTime } from '../lib/tasks'
+import { clock, datePrefs } from '../lib/dateFormat'
 import { cx } from './ui'
 import Popover from './Popover'
 import { FieldButton } from './DatePicker'
@@ -31,8 +32,8 @@ export function TimeList({ value, onChange, allowClear = true, onClose }) {
               className={cx('w-full flex items-center justify-between rounded-lg px-2.5 text-xs transition',
                 sel ? 'bg-brand text-white font-bold' : 'hover:bg-lav hover:text-lav-fg',
                 !sel && (onHour ? 'font-bold text-ink' : 'font-medium text-muted'))}>
-              <span>{t}</span>
-              <span className={cx('text-[10px]', sel ? 'text-white/80' : 'text-faint')}>{fmtTime(t)}</span>
+              <span>{clock(t)}</span>
+              <span className={cx('text-[10px]', sel ? 'text-white/80' : 'text-faint')}>{datePrefs().clock === '12' ? t : fmtTime(t)}</span>
             </button>
           )
         })}
@@ -52,7 +53,7 @@ export function TimeField({ value, onChange, allowClear = true, trigger, align =
   const anchorRef = useRef(null)
   const close = useCallback(() => setOpen(false), [])
   const toggle = () => setOpen((o) => !o)
-  const label = value || placeholder
+  const label = value ? clock(value) : placeholder
 
   return (
     <>

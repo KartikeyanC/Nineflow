@@ -1,7 +1,8 @@
 // A day's report built from planner tasks and their real focus sessions,
 // so nothing has to be typed twice. Used by the shutdown flow and by the
 // Work OS daily report.
-import { format, parseISO } from 'date-fns'
+import { parseISO } from 'date-fns'
+import { format } from './dateFormat'
 import { fmtMinutes, minutesOnDay, tasksOn, totalMinutes } from './tasks'
 
 export function dayReport({ tasks, key, now = new Date(), categories = [], note = {}, name = '' }) {

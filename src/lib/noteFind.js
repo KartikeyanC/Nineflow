@@ -1,6 +1,7 @@
 // Finding notes once there are many: tags written in the text, a search, quick filters,
 // a sort order and month headings. Pure functions; the Notes screen draws the result.
-import { format, isValid, parseISO } from 'date-fns'
+import { isValid, parseISO } from 'date-fns'
+import { format } from './dateFormat'
 import { linksIn } from './noteImages'
 import { countCards } from './flashcards'
 

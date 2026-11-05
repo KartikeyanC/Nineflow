@@ -1,5 +1,6 @@
 import React from 'react'
-import { format, parseISO } from 'date-fns'
+import { parseISO } from 'date-fns'
+import { format } from '../lib/dateFormat'
 import { Snowflake } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
 import { STATUS_LABEL } from '../lib/tasks'

@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react'
-import { format, parseISO, addDays } from 'date-fns'
+import { parseISO, addDays } from 'date-fns'
+import { format } from '../../lib/dateFormat'
 import { Copy, Check } from 'lucide-react'
 import { useWork } from '../WorkContext'
 import { real, taskDerived, key, h1, isWorkingDay, timePlan } from '../workCalc'

@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { addDays, addMonths, eachDayOfInterval, endOfMonth, endOfWeek, format, isSameDay, isSameMonth, parseISO, startOfMonth, startOfWeek } from 'date-fns'
+import { addDays, addMonths, eachDayOfInterval, endOfMonth, endOfWeek, isSameDay, isSameMonth, parseISO, startOfMonth, startOfWeek } from 'date-fns'
+import { format } from '../lib/dateFormat'
 import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
 import { dateKey, todayKey } from '../lib/tasks'

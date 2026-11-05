@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react'
-import { format, parseISO } from 'date-fns'
+import { parseISO } from 'date-fns'
+import { format } from '../lib/dateFormat'
 import { Brain, Check, Flame, RotateCcw, StickyNote, X } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
 import { STEPS, cardsInNotes, dueCards, streak, withAnswer } from '../lib/flashcards'

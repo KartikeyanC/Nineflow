@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react'
-import { addDays, differenceInCalendarDays, format, isSameDay, parseISO, subDays } from 'date-fns'
+import { addDays, differenceInCalendarDays, isSameDay, parseISO, subDays } from 'date-fns'
+import { clock, format } from '../lib/dateFormat'
 import { Bar, BarChart, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis } from 'recharts'
 import {
   ArrowRight, Plus, X, Flame, ListChecks, CheckCircle2, Activity, Circle, Eye,
@@ -245,7 +246,7 @@ function Schedule({ list, isToday, now }) {
             return (
               <li key={t.id} onClick={() => setSelectedId(t.id)}
                 className={cx('relative flex items-start gap-3 py-2 pr-2 rounded-xl cursor-pointer transition hover:bg-page', live && 'bg-lav/50')}>
-                <span className="w-12 text-right text-xs font-semibold text-muted pt-0.5 shrink-0">{t.startTime}</span>
+                <span className="w-12 text-right text-xs font-semibold text-muted pt-0.5 shrink-0">{clock(t.startTime)}</span>
                 <span className="relative shrink-0 mt-1.5 ml-1.5">
                   <span className={cx('block h-2.5 w-2.5 rounded-full', c.dot, live && 'animate-pulse')} />
                 </span>
@@ -255,7 +256,7 @@ function Schedule({ list, isToday, now }) {
                     {t.title}
                     {live && <span className="ml-2 pill bg-lav-fg text-white text-[10px] py-0">Now</span>}
                   </p>
-                  <p className="text-[11px] text-faint">{hh(s)} – {hh(e)} · {fmtMinutes(t.durationMinutes)}</p>
+                  <p className="text-[11px] text-faint">{clock(hh(s))} – {clock(hh(e))} · {fmtMinutes(t.durationMinutes)}</p>
                 </div>
               </li>
             )

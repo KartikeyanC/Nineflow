@@ -27,6 +27,8 @@ export const DEFAULT_SETTINGS = {
   heatmapMeasure: 'hours', // 'hours' | 'count'
   theme: 'light', // 'light' | 'dark' | 'system'
   textSize: 'normal', // 'normal' | 'large' | 'larger' (lib/themes.js)
+  dateOrder: 'auto', // 'auto' | 'dmy' (4 Nov) | 'mdy' (Nov 4), lib/dateFormat.js
+  clock: 'auto', // 'auto' | '12' | '24'
   palette: 'default', // colour theme: see lib/themes.js
   pomodoro: { focus: 25, short: 5, long: 15, every: 4 }, // minutes; long break every N focus blocks
   quickList: { position: 'right', collapsed: false, filter: 'today' }, // position: 'right' | 'top' | 'bottom' | 'off'

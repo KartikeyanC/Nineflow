@@ -1,4 +1,4 @@
-// Public holidays from Nager.Date: free, no key, no sign-in. One request per country
+// Public holidays from Nager.Date (India's are built in, below): free, no key, no sign-in. One request per country
 // and year, cached in this browser for a week. The country is picked in Settings; left
 // blank, it comes from the browser's language (en-IN → IN).
 import { useEffect, useState } from 'react'
@@ -10,11 +10,33 @@ const FRESH_MS = 7 * 24 * 60 * 60_000
 // What Settings offers (Nager.Date covers about a hundred countries; these are the common ones).
 export const COUNTRIES = [
   ['AU', 'Australia'], ['BR', 'Brazil'], ['CA', 'Canada'], ['DE', 'Germany'], ['ES', 'Spain'], ['FR', 'France'],
-  ['GB', 'United Kingdom'], ['ID', 'Indonesia'], ['IE', 'Ireland'], ['IT', 'Italy'], ['JP', 'Japan'], ['MX', 'Mexico'],
+  ['GB', 'United Kingdom'], ['IN', 'India'], ['ID', 'Indonesia'], ['IE', 'Ireland'], ['IT', 'Italy'], ['JP', 'Japan'], ['MX', 'Mexico'],
   ['NG', 'Nigeria'], ['NL', 'Netherlands'], ['NZ', 'New Zealand'], ['PH', 'Philippines'], ['PL', 'Poland'], ['PT', 'Portugal'],
   ['SE', 'Sweden'], ['SG', 'Singapore'], ['US', 'United States'], ['ZA', 'South Africa'],
 ]
-// Nager.Date has no holiday data for some countries (India among them): the picker says so rather than failing quietly.
+// Nager.Date has no data for India, so its list is built in: the 17 central government gazetted holidays
+// (DoPT OM F.No.12/2/2023-JCA: 3 July 2025 for 2026, 16 July 2026 for 2027), which every central office
+// keeps; states add their own. Add the next year when DoPT publishes it (usually in July). Years not
+// listed get the three national holidays, whose dates never change.
+const INDIA = {
+  2026: {
+    '01-26': 'Republic Day', '03-04': 'Holi', '03-21': 'Id-ul-Fitr', '03-26': 'Ram Navami', '03-31': 'Mahavir Jayanti',
+    '04-03': 'Good Friday', '05-01': 'Buddha Purnima', '05-27': 'Id-ul-Zuha (Bakrid)', '06-26': 'Muharram',
+    '08-15': 'Independence Day', '08-26': 'Milad-un-Nabi', '09-04': 'Janmashtami', '10-02': 'Gandhi Jayanti',
+    '10-20': 'Dussehra', '11-08': 'Diwali', '11-24': 'Guru Nanak Jayanti', '12-25': 'Christmas',
+  },
+  2027: {
+    '01-26': 'Republic Day', '03-10': 'Id-ul-Fitr', '03-23': 'Holi', '03-26': 'Good Friday', '04-15': 'Ram Navami',
+    '04-19': 'Mahavir Jayanti', '05-17': 'Id-ul-Zuha (Bakrid)', '05-20': 'Buddha Purnima', '06-16': 'Muharram',
+    '08-15': 'Independence Day / Milad-un-Nabi', '08-25': 'Janmashtami', '10-02': 'Gandhi Jayanti',
+    '10-09': 'Dussehra', '10-29': 'Diwali', '11-14': 'Guru Nanak Jayanti', '12-25': 'Christmas',
+  },
+}
+const INDIA_FIXED = { '01-26': 'Republic Day', '08-15': 'Independence Day', '10-02': 'Gandhi Jayanti' }
+export function indiaYear(year) {
+  return Object.fromEntries(Object.entries(INDIA[year] || INDIA_FIXED).map(([md, name]) => [`${year}-${md}`, name]))
+}
+
 export const countryFromBrowser = () => {
   try { return (navigator.language || '').split('-')[1]?.toUpperCase() || '' } catch { return '' }
 }
@@ -24,6 +46,7 @@ const writeCache = (v) => { try { localStorage.setItem(CACHE_KEY, JSON.stringify
 
 // { 'yyyy-MM-dd': 'Holiday name' } for a country and year ({} when there is no data).
 export async function loadYear(country, year) {
+  if (country === 'IN') return indiaYear(year)
   const id = `${country}-${year}`
   const cache = readCache()
   if (cache[id] && Date.now() - cache[id].at < FRESH_MS) return cache[id].days

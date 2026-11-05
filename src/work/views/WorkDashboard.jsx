@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react'
-import { format, parseISO } from 'date-fns'
+import { parseISO } from 'date-fns'
+import { format } from '../../lib/dateFormat'
 import { Bar, BarChart, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from 'recharts'
 import { useWork } from '../WorkContext'
 import { usePlanner } from '../../store/PlannerContext'

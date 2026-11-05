@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Zap, X, CornerUpLeft } from 'lucide-react'
-import { format, parseISO } from 'date-fns'
+import { parseISO } from 'date-fns'
+import { clock, format } from '../lib/dateFormat'
 import { usePlanner } from '../store/PlannerContext'
 import { dateKey, fmtMinutes, totalMinutes } from '../lib/tasks'
 import { dayLoad, hhmm, toMin } from '../lib/capacity'
@@ -206,7 +207,7 @@ export default function Interrupt() {
 
         <div className="grid gap-2 rounded-2xl bg-subtle ring-hair p-3.5">
           {!isNow && (
-            <p className="text-[13px]"><b>Scheduled</b> for {dayLabel}{start ? ` at ${start}${endMin != null && endMin <= 1440 ? `–${hhmm(endMin)}` : ''}` : ''}. It goes on that day's plan; nothing is paused or pushed back.</p>
+            <p className="text-[13px]"><b>Scheduled</b> for {dayLabel}{start ? ` at ${clock(start)}${endMin != null && endMin <= 1440 ? `–${clock(hhmm(endMin))}` : ''}` : ''}. It goes on that day's plan; nothing is paused or pushed back.</p>
           )}
           {isNow && <Toggle checked={startNow} onChange={setStartNow} label="Start it now"
             hint={current ? `Pauses “${current.title}” (${fmtMinutes(totalMinutes(current, now))} logged) and starts the timer on this. You'll be offered to go back to it.` : 'Starts the timer on this now.'} />}
@@ -220,8 +221,8 @@ export default function Interrupt() {
           {load.afterHours
             ? `Your work day is over; this adds ${fmtMinutes(minutes)} to today.`
             : after > 0
-              ? `${dayLabel} will be ${fmtMinutes(after)} over capacity, finishing around ${hhmm(finish)}. You can move lower-priority work afterwards.`
-              : `Still fits: ${day === today ? "you'd" : `${dayLabel} would`} finish around ${hhmm(finish)}.`}
+              ? `${dayLabel} will be ${fmtMinutes(after)} over capacity, finishing around ${clock(hhmm(finish))}. You can move lower-priority work afterwards.`
+              : `Still fits: ${day === today ? "you'd" : `${dayLabel} would`} finish around ${clock(hhmm(finish))}.`}
         </p>
 
         <footer className="flex items-center justify-end gap-2">

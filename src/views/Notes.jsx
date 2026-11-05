@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { format, isSameDay, isValid, parseISO } from 'date-fns'
+import { isSameDay, isValid, parseISO } from 'date-fns'
+import { format } from '../lib/dateFormat'
 import { Brain, Clock3, ExternalLink, Image as ImageIcon, ImagePlus, LayoutGrid, Link2, List, ListPlus, Pin, PinOff, Plus, Search, StickyNote, Trash2, X } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
 import { uid } from '../lib/storage'

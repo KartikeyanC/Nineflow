@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { ArrowLeft, Info, Loader2, Mic, Sparkles, Square } from 'lucide-react'
-import { format, parseISO } from 'date-fns'
+import { parseISO } from 'date-fns'
+import { format } from '../lib/dateFormat'
 import { usePlanner } from '../store/PlannerContext'
 import { fmtMinutes, todayKey } from '../lib/tasks'
 import { meetingToTasks, promptToTasks } from '../lib/aiTasks'

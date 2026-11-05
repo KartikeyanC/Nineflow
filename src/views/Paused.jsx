@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react'
-import { addDays, differenceInCalendarDays, format, formatDistanceToNowStrict, parseISO } from 'date-fns'
+import { addDays, differenceInCalendarDays, formatDistanceToNowStrict, parseISO } from 'date-fns'
+import { format } from '../lib/dateFormat'
 import { PauseCircle, Play, RotateCcw, Scissors, Sun, Trash2, TrendingDown, XCircle, ListChecks } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
 import { DROP_KEEP_DAYS, SLIP_DAYS, dateKey, fmtMinutes, slipping } from '../lib/tasks'

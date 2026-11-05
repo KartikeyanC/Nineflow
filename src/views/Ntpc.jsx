@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react'
-import { addDays, differenceInCalendarDays, format, parseISO } from 'date-fns'
+import { addDays, differenceInCalendarDays, parseISO } from 'date-fns'
+import { clock, format } from '../lib/dateFormat'
 import { BookOpen, CalendarClock, Check, ChevronDown, ExternalLink, Eye, EyeOff, Flag, Newspaper, Plus, RotateCcw, Target, Trash2, TrendingDown, ArrowRight } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
 import { dateKey, fmtMinutes, totalMinutes } from '../lib/tasks'
@@ -144,7 +145,7 @@ function Overview({ ctx, planner, goSyllabus }) {
                   <CheckCircle checked={t.status === 'completed'} onToggle={() => toggleComplete(t.id)} size="sm" />
                   <button type="button" onClick={() => setSelectedId(t.id)} className="min-w-0 flex-1 text-left">
                     <span className={cx('block text-sm font-semibold truncate', t.status === 'completed' && 'line-through text-muted')}>{t.title}</span>
-                    <span className="block text-[11px] text-faint">{t.startTime ? `${t.startTime} · ` : ''}{subjectById(t.exam.subject)?.short || 'All subjects'} · {fmtMinutes(t.durationMinutes)}</span>
+                    <span className="block text-[11px] text-faint">{t.startTime ? `${clock(t.startTime)} · ` : ''}{subjectById(t.exam.subject)?.short || 'All subjects'} · {fmtMinutes(t.durationMinutes)}</span>
                   </button>
                 </li>
               ))}
