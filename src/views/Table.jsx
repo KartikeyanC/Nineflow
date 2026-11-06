@@ -5,6 +5,7 @@ import { usePlanner } from '../store/PlannerContext'
 import { clock, format } from '../lib/dateFormat'
 import { PRIORITIES, PRIORITY_LABEL, STATUS_LABEL, dateKey, fmtMinutes, totalMinutes } from '../lib/tasks'
 import { CategoryTag, CheckCircle, ConfirmDialog, EmptyState, PriorityPill, cx } from '../components/ui'
+import { cleanTaskFields, sortKeyOf, withValue } from '../lib/fields'
 
 // Every task as one sortable table, with filters, and ticks for changing many at once (the bulk bar:
 // complete, move to a day, priority, category, client, delete; one Undo for each). Paused and dropped
@@ -36,9 +37,17 @@ export default function Table() {
   const lastTick = useRef(null)
   const today = dateKey(now)
 
+  // Custom fields (Settings → Custom fields) come after Client.
+  const fields = settings.fields || []
+  const columns = useMemo(() => {
+    const at = COLUMNS.findIndex((c) => c.id === 'client') + 1
+    const extra = fields.map((f) => ({ id: `field:${f.id}`, label: f.name, field: f, num: f.type === 'number', get: (t) => sortKeyOf(f, cleanTaskFields(t.fields, [f])[f.id]) }))
+    return [...COLUMNS.slice(0, at), ...extra, ...COLUMNS.slice(at)]
+  }, [fields])
+
   const rows = useMemo(() => {
     const q = find.trim().toLowerCase()
-    const col = COLUMNS.find((c) => c.id === sort.by)
+    const col = columns.find((c) => c.id === sort.by) || COLUMNS[1]
     return tasks
       .filter((t) => (show === 'all' || (show === 'done') === (t.status === 'completed'))
         && (cat === 'all' || t.category === cat)
@@ -46,7 +55,7 @@ export default function Table() {
       .map((t) => ({ t, k: col.get(t, now) }))
       .sort((a, b) => (a.k < b.k ? -sort.dir : a.k > b.k ? sort.dir : (a.t.startTime || '').localeCompare(b.t.startTime || '')))
       .map((x) => x.t)
-  }, [tasks, show, cat, find, sort, now])
+  }, [tasks, show, cat, find, sort, now, columns])
   const shown = all ? rows : rows.slice(0, MAX_ROWS)
 
   // Ticks only count for rows still on screen (a filter change can hide some).
@@ -95,7 +104,7 @@ export default function Table() {
         </div>
       </header>
 
-      {chosen.length > 0 && <BulkBar ids={chosen} clear={clear} today={today} now={now} updateTasks={updateTasks} removeTasks={removeTasks} categories={settings.categories} tasks={tasks} />}
+      {chosen.length > 0 && <BulkBar ids={chosen} clear={clear} today={today} now={now} updateTasks={updateTasks} removeTasks={removeTasks} categories={settings.categories} tasks={tasks} fields={fields} />}
 
       {rows.length === 0 ? (
         <div className="card p-6"><EmptyState icon={Table2} title="No tasks match" hint="Try All, another category, or a different search." /></div>
@@ -108,7 +117,7 @@ export default function Table() {
                   <input type="checkbox" className="h-4 w-4 align-middle" aria-label={allTicked ? 'Untick all' : 'Tick all shown'} checked={allTicked} onChange={tickAll} />
                 </th>
                 <th className="py-2.5 px-1 w-8"><span className="sr-only">Done</span></th>
-                {COLUMNS.map((c) => (
+                {columns.map((c) => (
                   <th key={c.id} className={cx('py-2.5 px-2 font-semibold', c.num && 'text-right')} aria-sort={sort.by === c.id ? (sort.dir > 0 ? 'ascending' : 'descending') : 'none'}>
                     <button type="button" onClick={() => sortBy(c.id)} className={cx('inline-flex items-center gap-1 hover:text-ink', sort.by === c.id && 'text-ink')}>
                       {c.label}{sort.by === c.id && (sort.dir > 0 ? <ArrowUp size={12} /> : <ArrowDown size={12} />)}
@@ -136,6 +145,7 @@ export default function Table() {
                     <td className="py-1.5 px-2"><PriorityPill priority={t.priority} /></td>
                     <td className="py-1.5 px-2"><CategoryTag category={categoryById(t.category)} className="text-xs py-0" /></td>
                     <td className="py-1.5 px-2 text-muted truncate max-w-[140px]">{t.client || '—'}{t.billable && <span className="ml-1 text-xs text-mint-fg">· billable</span>}</td>
+                    {fields.map((f) => <td key={f.id} className={cx('py-1.5 px-2 text-muted whitespace-nowrap truncate max-w-[160px]', f.type === 'number' && 'text-right tnum')}>{fieldText(f, t)}</td>)}
                     <td className="py-1.5 px-2 text-right tnum text-muted">{fmtMinutes(t.durationMinutes || 0)}</td>
                     <td className="py-1.5 pr-4 pl-2 text-right tnum text-muted">{(() => { const m = totalMinutes(t, now); return m ? fmtMinutes(m) : '—' })()}</td>
                   </tr>
@@ -153,7 +163,7 @@ export default function Table() {
 }
 
 // What to do with the ticked tasks. Each action is one Undo.
-function BulkBar({ ids, clear, today, now, updateTasks, removeTasks, categories, tasks }) {
+function BulkBar({ ids, clear, today, now, updateTasks, removeTasks, categories, tasks, fields }) {
   const [note, setNote] = useState('')
   const [confirm, setConfirm] = useState(false)
   const n = ids.length
@@ -199,6 +209,26 @@ function BulkBar({ ids, clear, today, now, updateTasks, removeTasks, categories,
         {clients.map((c) => <option key={c} value={c}>{c}</option>)}
         <option value="__bill">Mark billable</option><option value="__nobill">Mark not billable</option><option value="__none">No client</option>
       </select>
+      {fields.length > 0 && (
+        // Dropdown and tick-box fields can be set here; any field can be cleared.
+        <select className={sel} aria-label="Field" value="" onChange={(e) => {
+          const at = e.target.value.indexOf('::') // field id :: value (ids never hold '::'; options may)
+          const id = e.target.value.slice(0, at), v = e.target.value.slice(at + 2)
+          const f = fields.find((x) => x.id === id)
+          if (!f) return
+          const value = v === '__clear' ? undefined : f.type === 'check' ? v === 'yes' || undefined : v
+          run((t) => ({ fields: withValue(t.fields, f, value) }), value === undefined ? `Cleared ${f.name} on ${n} tasks` : `Set ${f.name} on ${n} tasks`)
+        }}>
+          <option value="">Field…</option>
+          {fields.map((f) => (
+            <optgroup key={f.id} label={f.name}>
+              {f.type === 'select' && f.options.map((o) => <option key={o} value={`${f.id}::${o}`}>{o}</option>)}
+              {f.type === 'check' && <option value={`${f.id}::yes`}>Yes</option>}
+              <option value={`${f.id}::__clear`}>Clear</option>
+            </optgroup>
+          ))}
+        </select>
+      )}
       <button type="button" className="btn-ghost h-8 py-0 text-xs text-coral-fg" onClick={() => setConfirm(true)}><Trash2 size={13} /> Delete</button>
       <button type="button" className="ml-auto h-8 w-8 rounded-full inline-flex items-center justify-center text-muted hover:bg-page" aria-label="Untick all" onClick={clear}><X size={15} /></button>
       {note && <p role="status" className="w-full text-xs text-peach-fg font-semibold px-1.5">{note}</p>}
@@ -207,4 +237,13 @@ function BulkBar({ ids, clear, today, now, updateTasks, removeTasks, categories,
         onConfirm={() => { removeTasks(ids, `Deleted ${n} tasks`); setConfirm(false); clear() }} />
     </div>
   )
+}
+
+// A custom field's value as the table shows it.
+function fieldText(field, task) {
+  const v = cleanTaskFields(task.fields, [field])[field.id]
+  if (v === undefined) return '—'
+  if (field.type === 'check') return '✓'
+  if (field.type === 'date') return format(parseISO(v), 'd MMM yyyy')
+  return String(v)
 }

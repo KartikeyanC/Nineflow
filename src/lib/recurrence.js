@@ -74,6 +74,7 @@ export function ensureRecurrences(tasks, now = new Date(), horizon = HORIZON_DAY
         tags: template.tags || [],
         client: template.client ?? null, // each repeat is for the same client, billed the same way
         billable: template.billable === true,
+        fields: template.fields || {}, // each repeat starts with the same custom field values
         exam: template.exam ?? null, // a repeating study task stays linked to its syllabus topic
         seriesId,
         recurrence: rec,

@@ -498,6 +498,7 @@ export function PlannerProvider({ children }) {
   // Many tasks at once (Table view's bulk bar), with one Undo. `patch` is the fields to set, with
   // `date` and `status` applied the same way single changes apply them. Completing skips tasks whose
   // required steps aren't ticked (they need "Before you finish", one at a time). Returns how many changed.
+  // `patch` can also be a function of the task, for a change that depends on it (custom field values).
   const updateTasks = useCallback((ids, patch, undoLabel) => {
     const want = new Set(ids)
     const skip = patch.status === 'completed'
@@ -506,10 +507,11 @@ export function PlannerProvider({ children }) {
     const changed = tasksRef.current.filter((t) => want.has(t.id) && !skip.has(t.id)).length
     if (!changed) return { changed: 0, skipped: skip.size }
     offerUndo(undoLabel || `Changed ${changed} tasks`)
-    const { date, status, ...rest } = patch
     setTasks((ts) => ts.map((t) => {
       if (!want.has(t.id) || skip.has(t.id)) return t
-      let next = 'date' in patch ? withDate(t, date) : t
+      const p = typeof patch === 'function' ? patch(t) : patch
+      const { date, status, ...rest } = p
+      let next = 'date' in p ? withDate(t, date) : t
       if (status) next = withStatus(next, status)
       return { ...next, ...rest }
     }))

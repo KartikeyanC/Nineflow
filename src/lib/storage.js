@@ -8,6 +8,7 @@ import { cleanRevision } from './flashcards'
 import { cleanTags } from './taskMeta'
 import { THEMES } from './themes'
 import { cleanBilling } from './billing'
+import { cleanFields } from './fields'
 import { COLUMNS_VERSION, DEFAULT_COLUMNS, LEGACY_REVIEW_ID, cleanColumns, migrateColumns } from './columns'
 
 // Keys live inside the signed-in profile's namespace (see profiles.js).
@@ -163,6 +164,7 @@ export function loadSettings() {
     views: Array.isArray(stored.views) ? stored.views : [],
     templates: Array.isArray(stored.templates) ? stored.templates : [],
     billing: cleanBilling(stored.billing), // rates, tax and invoice details (lib/billing.js)
+    fields: cleanFields(stored.fields), // custom fields on tasks (lib/fields.js)
   }
   if (!Array.isArray(settings.categories) || settings.categories.length === 0) {
     settings.categories = DEFAULT_CATEGORIES
@@ -215,6 +217,7 @@ function normalizeTask(t) {
     tags: cleanTags(t.tags),
     client: typeof t.client === 'string' && t.client.trim() ? t.client.replace(/\s+/g, ' ').trim().slice(0, 60) : null, // who the work is for (Charts: Hours by client)
     billable: t.billable === true,
+    fields: t.fields && typeof t.fields === 'object' && !Array.isArray(t.fields) ? t.fields : {}, // custom field values; checked against the fields where shown (lib/fields.js)
     column: !wasInReview && typeof t.column === 'string' ? t.column : null,
     seriesId: t.seriesId ?? null,
     recurrence: t.recurrence && t.recurrence.freq ? { freq: t.recurrence.freq, until: t.recurrence.until ?? null, skip: t.recurrence.skip ?? [] } : null,

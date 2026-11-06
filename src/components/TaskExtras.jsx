@@ -5,6 +5,7 @@ import { uid } from '../lib/storage'
 import { MAX_TEMPLATES, cleanTemplates, templateFromTask } from '../lib/views'
 import { MAX_TAGS, NAG_CHOICES, REMINDER_CHOICES, allTags, cleanTag, cleanTags, effectiveReminders, reminderLabel, reminderShort } from '../lib/taskMeta'
 import { cx } from './ui'
+import { cleanTaskFields, withValue } from '../lib/fields'
 
 // The "Reminders" and "Tags" rows of the task panel.
 
@@ -157,5 +158,35 @@ export function SaveAsTemplate({ task }) {
       <button type="submit" disabled={!name.trim()} className={cx('btn-black h-8 py-0 px-3', !name.trim() && 'opacity-40')}>Save</button>
       <button type="button" onClick={() => setOpen(false)} aria-label="Cancel" className="h-8 w-8 rounded-full inline-flex items-center justify-center text-faint hover:bg-page hover:text-ink"><X size={14} /></button>
     </form>
+  )
+}
+
+// One input per custom field (Settings → Custom fields), for the task panel's rows.
+export function FieldInput({ task, field }) {
+  const { updateTask } = usePlanner()
+  const value = cleanTaskFields(task.fields, [field])[field.id]
+  const set = (v) => updateTask(task.id, { fields: withValue(task.fields, field, v) })
+  const box = 'input h-9 py-0 w-full'
+  if (field.type === 'check') {
+    return (
+      <button type="button" role="switch" aria-checked={!!value} aria-label={field.name} onClick={() => set(!value || undefined)} className={pill(!!value)}>
+        {value && <Check size={12} />} {value ? 'Yes' : 'No'}
+      </button>
+    )
+  }
+  if (field.type === 'select') {
+    return (
+      <select className={box} aria-label={field.name} value={value || ''} onChange={(e) => set(e.target.value)}>
+        <option value="">—</option>{field.options.map((o) => <option key={o} value={o}>{o}</option>)}
+      </select>
+    )
+  }
+  if (field.type === 'date') return <input type="date" className={box} aria-label={field.name} value={value || ''} onChange={(e) => set(e.target.value)} />
+  // Text and numbers save when you leave the box (or press Enter), not on every key.
+  return (
+    <input key={`${task.id}:${value ?? ''}`} type={field.type === 'number' ? 'number' : 'text'} step="any" inputMode={field.type === 'number' ? 'decimal' : undefined}
+      className={box} aria-label={field.name} defaultValue={value ?? ''} placeholder="—"
+      onBlur={(e) => e.target.value !== String(value ?? '') && set(e.target.value)}
+      onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur() } }} />
   )
 }

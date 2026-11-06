@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react'
-import { Plus, Trash2, Download, Upload, Sparkles, AlertTriangle, CalendarPlus, CalendarCheck, Check, Loader2, RefreshCw, ChevronRight, UserRound, Layers, Smartphone, Tag, SlidersHorizontal, Columns3, Bookmark, Database, CalendarDays, Plug, FileSpreadsheet, HardDrive, Receipt, History } from 'lucide-react'
+import { Plus, Trash2, Download, Upload, Sparkles, AlertTriangle, CalendarPlus, CalendarCheck, Check, Loader2, RefreshCw, ChevronRight, UserRound, Layers, Smartphone, Tag, SlidersHorizontal, Columns3, Bookmark, Database, CalendarDays, Plug, FileSpreadsheet, HardDrive, Receipt, History, ListPlus } from 'lucide-react'
 import { usePhone } from '../lib/usePhone'
 import TaskImport from '../components/TaskImport'
 import HowToConnect from '../components/HowToConnect'
@@ -39,6 +39,7 @@ import { ConfirmDialog, Segmented, cx } from '../components/ui'
 import { TimeField } from '../components/TimePicker'
 import { NotesFolderSettings, notesFolderAvailable } from '../features/NotesFolder'
 import { CURRENCIES } from '../lib/billing'
+import { FIELD_TYPES, MAX_FIELDS, cleanFields, newFieldId } from '../lib/fields'
 
 // The things you saved: task templates (from a task's "Save as template") and
 // Board views (from Filters → Save view). Rename or delete them here.
@@ -685,6 +686,8 @@ export default function Settings() {
         </section>
         </Group>
 
+        <Group icon={ListPlus} title="Custom fields"><FieldsSection settings={settings} updateSettings={updateSettings} /></Group>
+
         <Group icon={History} title="Version history"><HistorySection /></Group>
 
         {/* Billing */}
@@ -956,6 +959,46 @@ function BillingSection({ settings, updateSettings }) {
         <input type="number" min={1} className="input w-28 py-1.5" value={b.nextNumber}
           onChange={(e) => set({ nextNumber: Math.max(1, Math.round(Number(e.target.value) || 1)) })} />
       </Row>
+    </section>
+  )
+}
+
+// Custom fields (lib/fields.js): up to ten, each a name and a type; dropdowns list their options.
+// Changing a field's type or removing an option leaves values that no longer fit unshown.
+function FieldsSection({ settings, updateSettings }) {
+  const fields = settings.fields || []
+  const save = (next) => updateSettings({ fields: cleanFields(next) })
+  const patch = (id, change) => save(fields.map((f) => (f.id === id ? { ...f, ...change } : f)))
+  const [removing, setRemoving] = useState(null)
+  return (
+    <section className="card p-5 space-y-3">
+      <p className="text-sm text-muted">Your own fields on every task: fill them in from the task, and see, sort and set them in the <b className="text-ink">Table</b>. Up to {MAX_FIELDS}.</p>
+      {fields.map((f) => (
+        <div key={f.id} className="rounded-2xl border border-line p-3 space-y-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <input className="input h-9 py-0 flex-1 min-w-[10rem]" aria-label="Field name" defaultValue={f.name} maxLength={40}
+              onBlur={(e) => e.target.value.trim() && e.target.value !== f.name && patch(f.id, { name: e.target.value })} />
+            <select className="input h-9 py-0 w-auto" aria-label={`Type of ${f.name}`} value={f.type} onChange={(e) => patch(f.id, { type: e.target.value })}>
+              {FIELD_TYPES.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
+            </select>
+            <button type="button" className="btn-ghost h-9 py-0 text-coral-fg" onClick={() => setRemoving(f)} aria-label={`Remove ${f.name}`}><Trash2 size={14} /></button>
+          </div>
+          {f.type === 'select' && (
+            <label className="block">
+              <span className="block text-xs font-semibold text-muted mb-1">Options, separated by commas</span>
+              <input className="input h-9 py-0" defaultValue={f.options.join(', ')} placeholder="e.g. Idea, Draft, Ready"
+                key={f.options.join('|')} onBlur={(e) => patch(f.id, { options: e.target.value.split(',') })} />
+            </label>
+          )}
+        </div>
+      ))}
+      <button type="button" className="btn-ghost" disabled={fields.length >= MAX_FIELDS}
+        onClick={() => save([...fields, { id: newFieldId(), name: `Field ${fields.length + 1}`, type: 'text', options: [] }])}>
+        <Plus size={14} /> Add a field
+      </button>
+      <ConfirmDialog open={!!removing} onClose={() => setRemoving(null)} title={removing ? `Remove “${removing.name}”?` : ''}
+        body="It disappears from every task and from the Table. Settings → Version history can bring it back, with its values." confirmLabel="Remove"
+        onConfirm={() => removing && save(fields.filter((f) => f.id !== removing.id))} />
     </section>
   )
 }

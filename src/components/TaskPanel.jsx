@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { parseISO } from 'date-fns'
 import { format } from '../lib/dateFormat'
-import { Activity, CalendarCheck, CalendarDays, Clock, Timer, Tag, Flag, Trash2, X, Repeat, ArrowRight, CalendarPlus, Layers, Bell, Hash, Columns3, Video, Paperclip, MoreHorizontal, PauseCircle, XCircle, Briefcase } from 'lucide-react'
+import { Activity, CalendarCheck, CalendarDays, Clock, Timer, Tag, Flag, Trash2, X, Repeat, ArrowRight, CalendarPlus, Layers, Bell, Hash, Columns3, Video, Paperclip, MoreHorizontal, PauseCircle, XCircle, Briefcase, ListPlus } from 'lucide-react'
 import { googleCalendarUrl } from '../lib/calendar'
 import { meetLinkFor } from '../lib/gcal'
 import { pickDriveFiles, pickerAvailable } from '../lib/picker'
@@ -16,7 +16,7 @@ import { STATUSES, STATUS_LABEL, carriedLabel, daysOnPlan, endDayOf, fmtMinutes,
 import { FREQS, FREQ_LABEL, describe } from '../lib/recurrence'
 import { CategoryPills, IconButton, Menu, PriorityPills, Segmented, cx, useDialogFocus } from './ui'
 import Checklist from './Checklist'
-import { ClientField, RemindersField, SaveAsTemplate, TagsField } from './TaskExtras'
+import { ClientField, FieldInput, RemindersField, SaveAsTemplate, TagsField } from './TaskExtras'
 import { DateField } from './DatePicker'
 import { TimeField } from './TimePicker'
 
@@ -220,6 +220,11 @@ export default function TaskPanel() {
             <Row icon={Briefcase} label="Client">
               <ClientField key={task.id} task={task} />
             </Row>
+            {(settings.fields || []).map((f) => (
+              <Row key={f.id} icon={ListPlus} label={f.name}>
+                <FieldInput task={task} field={f} />
+              </Row>
+            ))}
             <FilesRow task={task} onChange={(files) => updateTask(task.id, { files })} />
             {calendarOn && task.date && <MeetRow task={task} onChange={(meet) => updateTask(task.id, { meet })} />}
             {otherWorkspaces.length > 0 && focus?.taskId !== task.id && (
