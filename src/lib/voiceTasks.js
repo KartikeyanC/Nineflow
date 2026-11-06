@@ -9,6 +9,7 @@
 // after spoken phrases are turned into its short forms ("high priority" → !high, "for half an
 // hour" → 30m, "7 p.m." → 7pm, a bare "at 7" → 7am).
 import { parseQuickAdd } from './nlp'
+import { applyToPieces } from './voiceCommands'
 
 const SEPARATORS = /(?:[.;\n,]+|\b(?:and then|after that|next task|new task|and also|next|then|also)\b)/i
 
@@ -41,12 +42,23 @@ export function normalizeSpoken(s) {
 const FILLER = /^\s*(?:and|okay|ok|um+|uh+|so|well|i need to|i have to|i must|i should|remind me to|please)\b\s*/i
 const stripFiller = (p) => { let s = p; while (FILLER.test(s)) s = s.replace(FILLER, ''); return s.trim() }
 
-// The pieces of what was said that are tasks (filler like "okay" or "um" alone is dropped).
+// The pieces of what was said that are tasks (filler like "okay" or "um" alone is dropped), after
+// spoken changes like "delete that" or "remove task 2" have taken out the pieces they name
+// (lib/voiceCommands.js).
 export function splitSpoken(text) {
-  return spokenTimes(text)
-    .split(SEPARATORS)
-    .map(stripFiller)
-    .filter((p) => p.replace(/\W/g, '').length >= 2)
+  return applyToPieces(rawPieces(text))
+}
+const rawPieces = (text) => spokenTimes(text)
+  .split(SEPARATORS)
+  .map(stripFiller)
+  .filter((p) => p.replace(/\W/g, '').length >= 2)
+
+// For the AI: the same text with spoken changes applied, one task per line, or the text as it was
+// when nothing in it is a change (so a typed note keeps its own wording).
+export function applySpokenCommands(text) {
+  const raw = rawPieces(text)
+  const kept = applyToPieces(raw)
+  return kept.length === raw.length ? text : kept.join('\n')
 }
 
 const cap = (s) => (s ? s[0].toUpperCase() + s.slice(1) : s)

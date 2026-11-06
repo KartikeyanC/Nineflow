@@ -18,6 +18,7 @@
     "android:build": "node scripts/build-android.mjs",
     "android:test": "rolldown -c scripts/android-bridge-test/rolldown.config.mjs && node node_modules/.cache/android-bridge-test.mjs",
     "test:ntpc": "rolldown -c scripts/ntpc-test/rolldown.config.mjs && node node_modules/.cache/ntpc-test.mjs",
+    "test:voice": "rolldown -c scripts/voice-test/rolldown.config.mjs && node node_modules/.cache/voice-test.mjs",
     "test:import": "rolldown -c scripts/import-test/rolldown.config.mjs && node node_modules/.cache/import-test.mjs",
     "test:billing": "node scripts/billing-test.mjs",
     "test:fields": "node scripts/fields-test.mjs",

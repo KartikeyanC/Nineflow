@@ -7,7 +7,8 @@ import { fmtMinutes, todayKey } from '../lib/tasks'
 import { meetingToTasks, promptToTasks } from '../lib/aiTasks'
 import { hasNoSite } from '../lib/platform'
 import { listen, speechKind } from '../lib/speech'
-import { spokenToTasks } from '../lib/voiceTasks'
+import { applySpokenCommands, spokenToTasks } from '../lib/voiceTasks'
+import { describeRows, parseCommand, resolveTargets } from '../lib/voiceCommands'
 import { describe as describeRepeat } from '../lib/recurrence'
 import { CheckCircle, Modal, Segmented, cx } from './ui'
 
@@ -43,7 +44,7 @@ export default function PromptToList() {
   const [off, setOff] = useState(() => new Set())
   const [error, setError] = useState('')
   const [madeHere, setMadeHere] = useState(false) // made on this device, without AI
-  const close = () => { voice.current?.stop(); setPromptListOpen(false) }
+  const close = () => { voice.current?.stop(); changeVoice.current?.stop(); setPromptListOpen(false) }
   const meetingMode = mode === 'meeting'
 
   // Speak tasks: the words land in the box as they're said; say "next" or "then" between tasks.
@@ -67,6 +68,47 @@ export default function PromptToList() {
   }
   const stopVoice = () => voice.current?.stop()
   useEffect(() => () => voice.current?.stop(), [])
+
+  // Changes on the preview, said or typed: "delete task 2", "delete the last one", "delete call mom",
+  // "bring back task 2", "undo". A removed row is only unticked, so nothing is lost by a mishearing.
+  const [change, setChange] = useState('')
+  const [changeMsg, setChangeMsg] = useState(null) // { text, bad }
+  const [changeListening, setChangeListening] = useState(false)
+  const changeRef = useRef(null)
+  const changeVoice = useRef(null)
+  const removedHistory = useRef([])
+  const applyChange = (said) => {
+    const words = String(said || '').trim()
+    if (!words) return
+    const cmd = parseCommand(words)
+    if (!cmd) { setChangeMsg({ bad: true, text: `“${words}” isn't a change. Try “delete task 2”, “delete the last one” or “delete” and a task's name.` }); return }
+    const titles = items.map((t) => t.title)
+    const hits = resolveTargets(cmd, titles, { isOn: (i) => !off.has(i), history: removedHistory.current })
+    if (!hits.length) {
+      setChangeMsg({ bad: true, text: cmd.type === 'remove' ? `No task on the list matches “${words}”.` : 'There is nothing removed to bring back.' })
+      return
+    }
+    setOff((s) => { const n = new Set(s); hits.forEach((i) => (cmd.type === 'remove' ? n.add(i) : n.delete(i))); return n })
+    if (cmd.type === 'remove') removedHistory.current.push(...hits)
+    setChangeMsg({ bad: false, text: cmd.type === 'remove' ? `Removed ${describeRows(hits, titles)}. Say “undo” to bring it back.` : `Brought back ${describeRows(hits, titles)}.` })
+    setChange('')
+  }
+  const applyLatest = useRef(applyChange)
+  applyLatest.current = applyChange // listening ends later, when the list may have changed
+  const startChangeVoice = async () => {
+    setChangeMsg(null)
+    if (kind === 'windows') { changeRef.current?.focus(); setChangeMsg({ bad: false, text: 'Press Windows + H, say the change, then press Enter.' }); return }
+    let latest = ''
+    try {
+      setChangeListening(true)
+      changeVoice.current = await listen({
+        onText: (said) => { latest = said; setChange(said) },
+        onEnd: (err) => { setChangeListening(false); changeVoice.current = null; if (err) setChangeMsg({ bad: true, text: err }); else applyLatest.current(latest) },
+      })
+    } catch (e) { setChangeListening(false); setChangeMsg({ bad: true, text: e.message }) }
+  }
+  useEffect(() => () => changeVoice.current?.stop(), [])
+  useEffect(() => { setChange(''); setChangeMsg(null); removedHistory.current = []; changeVoice.current?.stop() }, [stage, open])
 
   useEffect(() => {
     if (open) {
@@ -93,11 +135,12 @@ export default function PromptToList() {
     try {
       const opts = { today: todayKey(), categories: settings.categories }
       if (meetingMode) {
-        const r = await meetingToTasks(text.trim(), opts)
+        const r = await meetingToTasks(text.trim(), opts) // meeting notes are pasted, not dictated
         setMeeting({ title: r.title, summary: r.summary, decisions: r.decisions })
         setItems(r.tasks)
       } else {
-        setItems(await promptToTasks(text.trim(), opts))
+        // "delete that" and the like said while dictating are applied here first, so Claude never sees them as tasks.
+        setItems(await promptToTasks(applySpokenCommands(text.trim()), opts))
         setMeeting(null)
       }
       setOff(new Set())
@@ -157,7 +200,7 @@ export default function PromptToList() {
                 className={cx('inline-flex items-center gap-1.5 h-9 rounded-full px-3.5 text-[13px] font-semibold transition', listening ? 'bg-brand text-white animate-pulse' : 'bg-page border border-line text-ink hover:bg-card')}>
                 {listening ? <><Square size={13} /> Stop listening</> : <><Mic size={14} /> Speak tasks</>}
               </button>
-              <span className="text-xs text-faint">{listening ? (heard ? 'Listening… say "next" between tasks.' : 'Listening… start speaking.') : 'Say "next" or "then" between tasks.'}</span>
+              <span className="text-xs text-faint">{listening ? (heard ? 'Listening… say "next" between tasks, "delete that" to take one back.' : 'Listening… start speaking.') : 'Say "next" between tasks. Say "delete that" to take the last one back.'}</span>
             </div>
           )}
           {voiceNote === 'windows' ? (
@@ -202,7 +245,7 @@ export default function PromptToList() {
             </div>
           )}
           <p className="text-sm text-muted">
-            {items.length === 0 ? 'No action items were found in these notes.' : `${items.length} ${items.length === 1 ? 'task' : 'tasks'}. Untick any you don't want.`}
+            {items.length === 0 ? 'No action items were found in these notes.' : `${items.length} ${items.length === 1 ? 'task' : 'tasks'}. Untick any you don't want, or say "delete task 2".`}
           </p>
           {madeHere && <p className="mt-1 text-xs text-faint">Made on this device from your words: days, times, "high priority" and lengths like "for an hour" were picked up.</p>}
           <ul className="mt-3 max-h-[40vh] overflow-y-auto -mx-1 px-1 space-y-0.5" aria-label="Tasks from your note">
@@ -211,6 +254,7 @@ export default function PromptToList() {
               const cat = settings.categories.find((c) => c.id === t.category)
               return (
                 <li key={i} className={cx('flex items-center gap-3 rounded-xl px-2 py-1.5 transition hover:bg-page', !on && 'opacity-45')}>
+                  <span className="w-4 shrink-0 text-right text-[11px] font-bold tnum text-faint" aria-hidden="true">{i + 1}</span>
                   <CheckCircle checked={on} onToggle={() => toggle(i)} size="sm" />
                   <span className="w-[4.5rem] shrink-0 text-[12px] font-semibold tnum text-muted">{t.date ? format(parseISO(t.date), 'EEE d MMM') : 'Today'}</span>
                   <span className="min-w-0 flex-1">
@@ -222,6 +266,26 @@ export default function PromptToList() {
               )
             })}
           </ul>
+          {items.length > 0 && (
+            <form className="mt-3" onSubmit={(e) => { e.preventDefault(); applyChange(change) }}>
+              <div className="flex items-center gap-2">
+                <input ref={changeRef} className="input h-9 py-0 text-[13px] flex-1 min-w-0" value={change} onChange={(e) => setChange(e.target.value)}
+                  placeholder={kind ? 'Say or type a change, e.g. delete task 2' : 'Type a change, e.g. delete task 2'} aria-label="Change the list" />
+                {kind && (
+                  <button type="button" onClick={changeListening ? () => changeVoice.current?.stop() : startChangeVoice} aria-pressed={changeListening}
+                    aria-label={changeListening ? 'Stop listening' : 'Say a change'} title={changeListening ? 'Stop listening' : 'Say a change'}
+                    className={cx('shrink-0 h-9 w-9 rounded-full inline-flex items-center justify-center transition', changeListening ? 'bg-brand text-white animate-pulse' : 'bg-page border border-line text-ink hover:bg-card')}>
+                    {changeListening ? <Square size={13} /> : <Mic size={14} />}
+                  </button>
+                )}
+              </div>
+              {changeMsg ? (
+                <p role="status" className={cx('mt-1.5 text-xs font-semibold', changeMsg.bad ? 'text-coral-fg' : 'text-muted')}>{changeMsg.text}</p>
+              ) : (
+                <p className="mt-1.5 text-xs text-faint">{changeListening ? 'Listening… say the change.' : '“delete task 2”, “delete the last one”, “delete call mom”, “delete 2 and 3”, “bring back task 2”, “undo”'}</p>
+              )}
+            </form>
+          )}
           <div className="flex items-center justify-between mt-6">
             <button type="button" onClick={() => setStage('form')} className="btn-ghost"><ArrowLeft size={14} /> Change</button>
             <button type="button" onClick={add} disabled={!count} className={cx('btn-black', !count && 'opacity-40')}>
