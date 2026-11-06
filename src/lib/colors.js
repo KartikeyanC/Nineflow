@@ -20,6 +20,6 @@ export const cssVar = (name, alpha = 1) => `rgb(var(${name}) / ${alpha})`
 
 export const PRIORITY_STYLE = {
   high: 'bg-coral text-coral-fg',
-  medium: 'bg-peach text-peach-fg',
+  medium: 'bg-butter text-butter-fg', // yellow, so it never looks like High (red) in any colour theme
   low: 'bg-mint text-mint-fg',
 }

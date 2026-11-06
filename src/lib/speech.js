@@ -10,8 +10,9 @@ const WebSpeech = typeof window !== 'undefined' ? window.SpeechRecognition || wi
 
 export function speechKind() {
   if (typeof window === 'undefined') return null
-  if (window.nineflowDesktop) return 'windows'
+  // The phone app checks first: its bridge also sets window.nineflowDesktop (src/native/androidBridge.js).
   if (isNativeApp()) return 'android'
+  if (window.nineflowDesktop) return 'windows'
   return WebSpeech ? 'web' : null
 }
 
@@ -46,7 +47,9 @@ function listenWeb({ onText, onEnd }) {
   }
   rec.onerror = (e) => onEnd(e.error === 'not-allowed' || e.error === 'service-not-allowed'
     ? 'Microphone access was blocked. Allow it in the browser\'s site settings and try again.'
-    : e.error === 'no-speech' ? 'Nothing was heard. Try again, a little closer to the microphone.' : null)
+    : e.error === 'no-speech' ? 'Nothing was heard. Try again, a little closer to the microphone.'
+    : e.error === 'audio-capture' ? 'No microphone was found. Check one is plugged in and allowed.'
+    : e.error === 'network' ? 'Voice input needs the internet (the browser sends the sound to its speech service).' : null)
   rec.onend = () => onEnd(null)
   rec.start()
   return { stop: () => rec.stop() }

@@ -6,7 +6,7 @@ import { FREQS, FREQ_LABEL, describe } from '../lib/recurrence'
 import { parseQuickAdd, fmtDateToken } from '../lib/nlp'
 import { learnedDuration } from '../lib/capacity'
 import { autofillTask } from '../lib/aiTasks'
-import { speechLang } from '../lib/speech'
+import { listen, speechKind } from '../lib/speech'
 import { cleanTemplates, taskFieldsFromTemplate } from '../lib/views'
 import { CategoryPills, Modal, PriorityPills, cx } from './ui'
 import { StepsEditor } from './Checklist'
@@ -35,27 +35,36 @@ export default function QuickAddModal() {
   // Token texts the user dismissed with ×: they stay part of the title.
   const [ignored, setIgnored] = useState([])
   // "Auto-fill": Claude suggests category, priority, length and steps from the title.
-  // Voice: dictated words land in the title, so "tomorrow 3pm" is parsed like typed text.
-  const Speech = typeof window !== 'undefined' ? window.SpeechRecognition || window.webkitSpeechRecognition : null
+  // Voice: dictated words land in the title, so "tomorrow 3pm" is parsed like typed text. It uses
+  // the same recogniser as Speak tasks (lib/speech.js): the browser's on the web, the phone's in
+  // the Android app. The Windows app has none, so there the button puts the cursor in the title
+  // and asks for Windows voice typing (Windows + H), which types into whatever box has focus.
+  const voiceKind = speechKind()
+  const titleRef = useRef(null)
   const [listening, setListening] = useState(false)
+  const [voiceMsg, setVoiceMsg] = useState('')
   const recRef = useRef(null)
-  const stopListening = () => recRef.current?.stop()
-  const startListening = () => {
-    if (!Speech) return
-    const rec = new Speech()
-    rec.lang = speechLang()
-    rec.interimResults = false
-    rec.onresult = (e) => {
-      const said = Array.from(e.results).map((r) => r[0].transcript).join(' ').trim()
-      if (said) set({ title: draft.title ? `${draft.title} ${said}` : said }, false)
+  const stopListening = () => { recRef.current?.stop(); setListening(false) }
+  const startListening = async () => {
+    setVoiceMsg('')
+    if (voiceKind === 'windows') {
+      titleRef.current?.focus()
+      setVoiceMsg('Press Windows + H, then speak: Windows types into the box.')
+      return
     }
-    rec.onend = () => setListening(false)
-    rec.onerror = () => setListening(false)
-    recRef.current = rec
+    const before = draft.title.trim()
     setListening(true)
-    rec.start()
+    try {
+      recRef.current = await listen({
+        onText: (said) => said && set({ title: before ? `${before} ${said}` : said }, false),
+        onEnd: (err) => { setListening(false); recRef.current = null; if (err) setVoiceMsg(err) },
+      })
+    } catch (e) {
+      setListening(false)
+      setVoiceMsg(e.message || 'Voice input could not start.')
+    }
   }
-  useEffect(() => () => recRef.current?.abort(), [])
+  useEffect(() => () => recRef.current?.stop(), [])
   const [ai, setAi] = useState({ busy: false, note: '', error: '' })
   const set = (p, byHand = true) => {
     if (byHand) Object.keys(p).forEach((k) => manual.current.add(k))
@@ -149,13 +158,14 @@ export default function QuickAddModal() {
       <form onSubmit={submit}>
         <div className="flex items-center gap-2">
           <input
+            ref={titleRef}
             autoFocus
             className="flex-1 min-w-0 bg-transparent outline-none h-display text-2xl max-sm:text-xl placeholder:text-faint placeholder:font-semibold"
             placeholder="What do you want to get done?"
             value={draft.title}
             onChange={(e) => set({ title: e.target.value }, false)}
           />
-          {Speech && (
+          {voiceKind && (
             <button type="button" onClick={listening ? stopListening : startListening}
               title={listening ? 'Stop listening' : 'Say a task, e.g. "call mom tomorrow 3pm"'}
               aria-label={listening ? 'Stop voice input' : 'Add by voice'}
@@ -165,6 +175,11 @@ export default function QuickAddModal() {
             </button>
           )}
         </div>
+        {(listening || voiceMsg) && (
+          <p role="status" className={cx('mt-1 text-xs font-semibold', voiceMsg && !listening ? 'text-peach-fg' : 'text-muted')}>
+            {listening ? 'Listening… say the task, then tap the microphone to stop.' : voiceMsg}
+          </p>
+        )}
 
         {templates.length > 0 && (
           <div className="mt-2 flex flex-wrap items-center gap-1.5" role="group" aria-label="Templates">

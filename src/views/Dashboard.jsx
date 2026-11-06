@@ -466,7 +466,7 @@ function Categories({ list }) {
 
 // 6. Priority split.
 function PrioritySplit({ list }) {
-  const COLORS = { high: '--coral-fg', medium: '--peach-fg', low: '--mint-fg' }
+  const COLORS = { high: '--coral-fg', medium: '--butter-fg', low: '--mint-fg' }
   return (
     <Card title="Priority split" span="xl:col-span-3">
       <ul className="space-y-3.5">
