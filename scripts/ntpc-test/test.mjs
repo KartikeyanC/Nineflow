@@ -5,7 +5,8 @@ import { accuracy, isWeak, planRevisions, practiceTotals, revisionTaskId, summar
 import { cleanNtpc, emptyNtpc, loadNtpc, saveNtpc, topicsOf } from '../../src/exams/ntpc/store.js'
 import { loadTasks, saveTasks } from '../../src/lib/storage.js'
 import { ensureRecurrences } from '../../src/lib/recurrence.js'
-import { createTask } from '../../src/lib/tasks.js'
+import { checkGate, cleanDepths, createTask, indentStep, newSubtask, tickStep } from '../../src/lib/tasks.js'
+import { cleanTemplates, taskFieldsFromTemplate, templateFromTask } from '../../src/lib/views.js'
 import { PLAN_ROWS, planRows, planTasks, startForExam } from '../../src/exams/ntpc/plan40.js'
 import { EXAMS, examById } from '../../src/exams/index.js'
 import { examPlanRows, examPlanTasks } from '../../src/exams/plan.js'
@@ -143,6 +144,29 @@ for (const e of [ssc, po]) {
   ok(examTasks(tasks, null, e.id).length === tasks.length && examTasks(tasks).length === 0, `${e.name}: its tasks never count as NTPC tasks`)
 }
 ok(revisionTaskId('cgl-quant:percentage', 1, ssc.revPrefix) === 'ssc-cgl-rev-cgl-quant-percentage-1' && revisionTaskId('maths:percentage', 1).startsWith('ntpc-rev-'), 'revision task ids carry the exam; NTPC keeps its own')
+
+// ---- Nested steps (lib/tasks.js) ----
+const st = (title, depth = 0, done = false) => ({ ...newSubtask(title, false, depth), done })
+const outline = [st('Plan'), st('Research', 1), st('Sources', 2), st('Write'), st('Draft', 1), st('Edit', 1)]
+const depths = (list) => list.map((x) => x.depth).join('')
+ok(depths(cleanDepths([st('a', 2), st('b', 2), st('c', 5)])) === '012', 'outline is cleaned: first step at 0, one level at most, never past 2')
+ok(depths(indentStep(outline, outline[3].id, 1)) === '012122', 'Tab moves a step under the one above, with its own steps', depths(indentStep(outline, outline[3].id, 1)))
+ok(indentStep(outline, outline[0].id, 1) === outline, 'the first step cannot be indented')
+ok(indentStep(outline, outline[1].id, 1) === outline, 'a step cannot go more than one level below the one above')
+ok(indentStep(outline, outline[2].id, 1) === outline, 'nothing goes past the third level')
+ok(depths(indentStep(outline, outline[1].id, -1)) === '001011', 'Shift+Tab moves a step out, its own steps with it', depths(indentStep(outline, outline[1].id, -1)))
+const ticked = tickStep(outline, outline[0].id)
+ok(ticked.slice(0, 3).every((x) => x.done) && !ticked[3].done, 'ticking a step ticks the steps under it, and only those')
+const unticked = tickStep(ticked, ticked[2].id)
+ok(!unticked[2].done && !unticked[1].done && !unticked[0].done, 'unticking a step unticks the steps it sits under')
+ok(checkGate({ subtasks: unticked }).required === 6, 'every step counts toward "before you finish", nested or not')
+saveTasks([createTask({ id: 'nest', subtasks: [{ id: 'a', title: 'A', depth: 0 }, { id: 'b', title: 'B', depth: 1 }, { id: 'c', title: 'C', depth: 9 }, { id: 'd', title: 'Old step' }] })])
+ok(depths(loadTasks().find((t) => t.id === 'nest').subtasks) === '0120', 'steps load with valid levels; old steps without one are top level')
+const repeats = ensureRecurrences([createTask({ id: 'rep', seriesId: 'rep', date: '2026-11-02', recurrence: { freq: 'daily', until: null, skip: [] }, subtasks: [{ ...st('Top'), done: true }, { ...st('Under', 1), done: true }] })], new Date('2026-11-04T09:00:00'))
+const copy = repeats.find((t) => t.id !== 'rep' && t.subtasks?.length)
+ok(copy && depths(copy.subtasks) === '01' && copy.subtasks.every((x) => !x.done), 'a repeat keeps the nesting, all unticked', copy && JSON.stringify(copy.subtasks))
+const tpl = cleanTemplates([templateFromTask({ title: 'T', subtasks: outline }, 'T', 't1')])[0]
+ok(depths(taskFieldsFromTemplate(tpl, []).subtasks) === '012011', 'a template keeps the nesting')
 
 console.log(`\n${pass} passed, ${fail} failed`)
 process.exit(fail ? 1 : 0)

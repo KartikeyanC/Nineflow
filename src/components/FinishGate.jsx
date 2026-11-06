@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { Check, Lock } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
-import { checkGate } from '../lib/tasks'
+import { checkGate, tickStep } from '../lib/tasks'
 import { Modal, cx } from './ui'
 
 // "Before you finish": a task with checklist steps can't be completed until they
@@ -24,7 +24,7 @@ export default function FinishGate() {
   const g = checkGate(task)
   const steps = g.steps
   const noun = g.explicit ? (steps.length === 1 ? 'a required step' : 'required steps') : steps.length === 1 ? 'a checklist step' : 'checklist steps'
-  const tick = (id) => updateTask(task.id, { subtasks: task.subtasks.map((s) => (s.id === id ? { ...s, done: !s.done } : s)) })
+  const tick = (id) => updateTask(task.id, { subtasks: tickStep(task.subtasks, id) })
   const why = reason.trim()
 
   return (

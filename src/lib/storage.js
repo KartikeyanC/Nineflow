@@ -181,6 +181,13 @@ function cleanSkipped(v) {
   return { at: typeof v.at === 'string' ? v.at : null, reason: v.reason.slice(0, 200), missing: Array.isArray(v.missing) ? v.missing.filter((m) => typeof m === 'string').slice(0, 30).map((m) => m.slice(0, 120)) : [] }
 }
 
+// Nested steps (lib/tasks.js cleanDepths, repeated here to keep storage free of imports from tasks):
+// the first step at level 0, none more than one level deeper than the one before, at most 2.
+function stepDepths(steps) {
+  let prev = -1
+  return steps.map((s) => { const d = Math.max(0, Math.min(2, prev + 1, Number.isInteger(s.depth) ? s.depth : 0)); prev = d; return { ...s, depth: d } })
+}
+
 function normalizeTask(t) {
   // A card left in the old "In review" column moves to the review status, which
   // is what that column meant. Idempotent: nothing keeps that column id after.
@@ -200,7 +207,7 @@ function normalizeTask(t) {
     completedAt: t.completedAt ?? null,
     createdAt: t.createdAt ?? new Date().toISOString(),
     sessions: Array.isArray(t.sessions) ? t.sessions : [],
-    subtasks: Array.isArray(t.subtasks) ? t.subtasks.filter((s) => s && typeof s.title === 'string').map((s) => ({ id: s.id || uid(), title: s.title, done: !!s.done, required: s.required === true })) : [],
+    subtasks: Array.isArray(t.subtasks) ? stepDepths(t.subtasks.filter((s) => s && typeof s.title === 'string').map((s) => ({ id: s.id || uid(), title: s.title, done: !!s.done, required: s.required === true, depth: s.depth }))) : [],
     requireRule: t.requireRule === 'any' ? 'any' : 'all',
     skippedChecks: cleanSkipped(t.skippedChecks),
     reminders: Array.isArray(t.reminders) ? t.reminders.filter((m) => Number.isFinite(m) && m >= 0).slice(0, 6) : null,

@@ -68,7 +68,7 @@ export function templateFromTask(task, name, id) {
     client: task.client || null,
     billable: task.billable === true,
     reminders: Array.isArray(task.reminders) ? task.reminders.filter((m) => Number.isFinite(m) && m >= 0).slice(0, 6) : null,
-    ...stepsOf((task.subtasks || []).map((s) => [s.title, s.required === true])),
+    ...stepsOf((task.subtasks || []).map((s) => [s.title, s.required === true, s.depth || 0])),
     rule: task.requireRule === 'any' ? 'any' : 'all',
   }
 }
@@ -76,8 +76,8 @@ export function templateFromTask(task, name, id) {
 // Steps are plain titles; `required` is a list of booleans in the same order (so templates saved
 // before required steps existed still load: none of their steps are required).
 function stepsOf(pairs) {
-  const kept = pairs.map(([title, req]) => [str(title, 120), req === true]).filter(([title]) => title).slice(0, 30)
-  return { steps: kept.map(([title]) => title), required: kept.map(([, req]) => req) }
+  const kept = pairs.map(([title, req, depth]) => [str(title, 120), req === true, Math.max(0, Math.min(2, Number.isInteger(depth) ? depth : 0))]).filter(([title]) => title).slice(0, 30)
+  return { steps: kept.map(([title]) => title), required: kept.map(([, req]) => req), depths: kept.map(([, , d]) => d) }
 }
 
 export function cleanTemplates(list) {
@@ -94,7 +94,7 @@ export function cleanTemplates(list) {
     client: typeof t.client === 'string' && t.client.trim() ? t.client.trim().slice(0, 60) : null,
     billable: t.billable === true,
     reminders: Array.isArray(t.reminders) ? t.reminders.filter((m) => Number.isFinite(m) && m >= 0).slice(0, 6) : null,
-    ...stepsOf((Array.isArray(t.steps) ? t.steps : []).map((s, i) => [s, Array.isArray(t.required) && t.required[i] === true])),
+    ...stepsOf((Array.isArray(t.steps) ? t.steps : []).map((s, i) => [s, Array.isArray(t.required) && t.required[i] === true, Array.isArray(t.depths) ? t.depths[i] : 0])),
     rule: t.rule === 'any' ? 'any' : 'all',
   }))
 }
@@ -110,7 +110,7 @@ export function taskFieldsFromTemplate(t, categories) {
     tags: t.tags,
     ...(t.client ? { client: t.client, billable: t.billable === true } : {}),
     reminders: t.reminders,
-    subtasks: t.steps.map((s, i) => newSubtask(s, t.required?.[i] === true)),
+    subtasks: t.steps.map((s, i) => newSubtask(s, t.required?.[i] === true, t.depths?.[i] || 0)),
     requireRule: t.rule === 'any' ? 'any' : 'all',
   }
 }

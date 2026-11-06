@@ -13,7 +13,57 @@ export const PRIORITY_LABEL = { high: 'High', medium: 'Medium', low: 'Low' }
 
 // `required` steps must be ticked before the task can be completed (see checkGate). It has to be
 // exactly `true`: callers also pass this to .map(), which hands over the index as 2nd argument.
-export const newSubtask = (title, required) => ({ id: uid(), title: String(title).slice(0, 120), done: false, required: required === true })
+export const newSubtask = (title, required, depth) => ({ id: uid(), title: String(title).slice(0, 120), done: false, required: required === true, depth: Number.isInteger(depth) ? depth : 0 })
+
+// ---- Nested steps ------------------------------------------------------------------------------
+// Steps stay one flat list; each has a `depth` (0 top level, at most MAX_STEP_DEPTH), and a step's
+// children are the steps right after it that are deeper. Everything that counts steps (progress,
+// required steps) counts every step, nested or not.
+export const MAX_STEP_DEPTH = 2
+// Keeps the outline valid: the first step at 0, and no step more than one deeper than the one before.
+export function cleanDepths(steps) {
+  let prev = -1
+  return steps.map((s) => {
+    const d = Math.max(0, Math.min(MAX_STEP_DEPTH, prev + 1, Number.isInteger(s.depth) ? s.depth : 0))
+    prev = d
+    return s.depth === d ? s : { ...s, depth: d }
+  })
+}
+// The index range [i, end) of a step and the steps under it.
+const subtreeOf = (steps, i) => {
+  let end = i + 1
+  while (end < steps.length && (steps[end].depth || 0) > (steps[i].depth || 0)) end += 1
+  return end
+}
+// Tab / Shift+Tab: move a step (and the steps under it) one level in or out, when the outline allows.
+export function indentStep(steps, id, delta) {
+  const i = steps.findIndex((s) => s.id === id)
+  if (i < 0) return steps
+  const end = subtreeOf(steps, i)
+  const depth = steps[i].depth || 0
+  if (delta > 0) {
+    const deepest = Math.max(...steps.slice(i, end).map((s) => s.depth || 0))
+    if (i === 0 || (steps[i - 1].depth || 0) < depth || deepest + 1 > MAX_STEP_DEPTH) return steps
+  } else if (depth === 0) return steps
+  return cleanDepths(steps.map((s, k) => (k >= i && k < end ? { ...s, depth: (s.depth || 0) + delta } : s)))
+}
+// Ticking a step ticks the steps under it; unticking one unticks the steps it sits under.
+export function tickStep(steps, id) {
+  const i = steps.findIndex((s) => s.id === id)
+  if (i < 0) return steps
+  const done = !steps[i].done
+  const next = steps.map((s) => ({ ...s }))
+  next[i].done = done
+  if (done) {
+    for (let k = i + 1; k < subtreeOf(steps, i); k += 1) next[k].done = true
+  } else {
+    let depth = steps[i].depth || 0
+    for (let k = i - 1; k >= 0 && depth > 0; k -= 1) {
+      if ((steps[k].depth || 0) < depth) { next[k].done = false; depth = steps[k].depth || 0 }
+    }
+  }
+  return next
+}
 export const subProgress = (task) => {
   const subs = task.subtasks || []
   return { done: subs.filter((s) => s.done).length, total: subs.length }

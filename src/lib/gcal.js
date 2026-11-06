@@ -32,7 +32,7 @@ export function eventFor(task, categoryName) {
   const day = parseISO(task.date)
   const done = task.status === 'completed'
   const tags = (task.tags || []).length ? task.tags.map((g) => `#${g}`).join(' ') : null
-  const steps = (task.subtasks || []).length ? (task.subtasks).map((s) => `${s.done ? '[x]' : '[ ]'} ${s.title}`).join(String.fromCharCode(10)) : null
+  const steps = (task.subtasks || []).length ? (task.subtasks).map((s) => `${'  '.repeat(s.depth || 0)}${s.done ? '[x]' : '[ ]'} ${s.title}`).join(String.fromCharCode(10)) : null
   const details = [task.description, steps, tags ? `Tags: ${tags}` : null, categoryName ? `Category: ${categoryName}` : null, `Priority: ${task.priority}`, 'From NineFlow'].filter(Boolean).join('\n')
   const when = task.startTime
     ? (() => {
