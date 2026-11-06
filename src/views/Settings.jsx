@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react'
-import { Plus, Trash2, Download, Upload, Sparkles, AlertTriangle, CalendarPlus, CalendarCheck, Check, Loader2, RefreshCw, ChevronRight, UserRound, Layers, Smartphone, Tag, SlidersHorizontal, Columns3, Bookmark, Database, CalendarDays, Plug, FileSpreadsheet, HardDrive, Receipt } from 'lucide-react'
+import { Plus, Trash2, Download, Upload, Sparkles, AlertTriangle, CalendarPlus, CalendarCheck, Check, Loader2, RefreshCw, ChevronRight, UserRound, Layers, Smartphone, Tag, SlidersHorizontal, Columns3, Bookmark, Database, CalendarDays, Plug, FileSpreadsheet, HardDrive, Receipt, History } from 'lucide-react'
 import { usePhone } from '../lib/usePhone'
 import TaskImport from '../components/TaskImport'
 import HowToConnect from '../components/HowToConnect'
@@ -25,6 +25,7 @@ import { COUNTRIES, countryFromBrowser } from '../lib/holidays'
 import { format } from '../lib/dateFormat'
 import AccountSection from '../features/Account'
 import { GuestAccount, isGuest } from '../features/Guest'
+import { HistorySection } from '../features/History'
 import InstallApp from '../features/InstallApp'
 import { WorkspacesSection } from '../features/Workspaces'
 import { usePlanner } from '../store/PlannerContext'
@@ -683,6 +684,8 @@ export default function Settings() {
           </Row>
         </section>
         </Group>
+
+        <Group icon={History} title="Version history"><HistorySection /></Group>
 
         {/* Billing */}
         <Group icon={Receipt} title="Billing and invoices">

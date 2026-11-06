@@ -20,6 +20,7 @@ import TelegramInbox from './features/TelegramInbox'
 import CalendarFeed from './features/CalendarFeed'
 import Notices from './features/Notices'
 import { GuestBar } from './features/Guest'
+import { HistoryKeeper } from './features/History'
 import Ritual from './features/Ritual'
 import WelcomeBack from './features/WelcomeBack'
 import Interrupt, { ResumePrompt } from './features/Interrupt'
@@ -147,6 +148,7 @@ function Shell() {
       <CommandPalette open={palette} onClose={() => setPalette(false)} />
       <Shortcuts open={shortcuts} onClose={() => setShortcuts(false)} />
       <NotesFolderSync />
+      <HistoryKeeper />
       <QuickAddModal />
       <GoalPlanner />
       <FinishGate />

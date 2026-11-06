@@ -34,7 +34,7 @@ export function collect(id = currentProfileId()) {
   return { json, text }
 }
 const sortKeys = (o) => Object.fromEntries(Object.keys(o).sort().map((k) => [k, o[k]]))
-const fingerprint = (data) => JSON.stringify({ json: sortKeys(data.json), text: sortKeys(data.text) })
+export const fingerprint = (data) => JSON.stringify({ json: sortKeys(data.json), text: sortKeys(data.text) })
 export const hasLocalData = (id) => Object.keys(collect(id).json).some((k) => k === 'tasks' || k === 'settings' || k === 'work')
 
 // Write a bundle into localStorage and tell the open screens to reload

@@ -7,6 +7,7 @@ import { loadTasks, saveTasks } from '../../src/lib/storage.js'
 import { ensureRecurrences } from '../../src/lib/recurrence.js'
 import { checkGate, cleanDepths, createTask, indentStep, newSubtask, tickStep } from '../../src/lib/tasks.js'
 import { cleanTemplates, taskFieldsFromTemplate, templateFromTask } from '../../src/lib/views.js'
+import { taskDiff, tasksIn, toPrune } from '../../src/lib/historyCore.js'
 import { PLAN_ROWS, planRows, planTasks, startForExam } from '../../src/exams/ntpc/plan40.js'
 import { EXAMS, examById } from '../../src/exams/index.js'
 import { examPlanRows, examPlanTasks } from '../../src/exams/plan.js'
@@ -167,6 +168,23 @@ const copy = repeats.find((t) => t.id !== 'rep' && t.subtasks?.length)
 ok(copy && depths(copy.subtasks) === '01' && copy.subtasks.every((x) => !x.done), 'a repeat keeps the nesting, all unticked', copy && JSON.stringify(copy.subtasks))
 const tpl = cleanTemplates([templateFromTask({ title: 'T', subtasks: outline }, 'T', 't1')])[0]
 ok(depths(taskFieldsFromTemplate(tpl, []).subtasks) === '012011', 'a template keeps the nesting')
+
+// ---- Version history (lib/history.js) ----
+const H = 3600_000, base = new Date(2026, 10, 6, 12).getTime()
+const snaps = [
+  ...Array.from({ length: 30 }, (_, i) => ({ id: `h${i}`, at: base - i * H })), // every hour for 30 hours
+  ...Array.from({ length: 40 }, (_, d) => [0, 6].map((h) => ({ id: `d${d}-${h}`, at: base - (2 + d) * 24 * H + h * H }))).flat(),
+]
+const drop = new Set(toPrune(snaps, base))
+ok(Array.from({ length: 24 }, (_, i) => `h${i}`).every((id) => !drop.has(id)), 'every copy from the last 24 hours is kept')
+const keptOld = snaps.filter((x) => base - x.at >= 24 * H && !drop.has(x.id))
+ok(new Set(keptOld.map((x) => new Date(x.at).toDateString())).size === keptOld.length, 'older copies: at most one a day', keptOld.length)
+ok(keptOld.every((x) => base - x.at <= 30 * 24 * H) && keptOld.length >= 28, 'older copies: kept for 30 days', `${keptOld.length}`)
+ok(keptOld.every((x) => !snaps.some((y) => y !== x && new Date(y.at).toDateString() === new Date(x.at).toDateString() && y.at > x.at && base - y.at >= 24 * H)), 'the newest copy of each day is the one kept')
+const t1 = createTask({ id: 'a', title: 'A' }), t2 = createTask({ id: 'b', title: 'B' }), t3 = createTask({ id: 'c', title: 'C' })
+const d = taskDiff([t1, t2], [{ ...t1, title: 'A2' }, t3])
+ok(d.deleted.map((x) => x.id).join() === 'b' && d.added.map((x) => x.id).join() === 'c' && d.changed.map((x) => x.id).join() === 'a', 'changes since a copy: deleted, added and changed tasks')
+ok(Object.keys(tasksIn({ json: { tasks: [], 'ws_x.tasks': [t1], settings: {}, habits: [] } })).join() === 'tasks,ws_x.tasks', 'a copy holds the task list of every workspace')
 
 console.log(`\n${pass} passed, ${fail} failed`)
 process.exit(fail ? 1 : 0)
