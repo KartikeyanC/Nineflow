@@ -8,6 +8,7 @@ import { MAX_CUSTOM_DAYS, RANGES, rangeWindow, shiftEnd, workSeries } from '../l
 import { dateKey, fmtMinutes, minutesInRange } from '../lib/tasks'
 import { colorOf, cssVar } from '../lib/colors'
 import { EmptyState, cx } from '../components/ui'
+import { DateField } from '../components/DatePicker'
 import { buildInvoice, money, rateOf } from '../lib/billing'
 import InvoiceDialog from '../components/InvoiceDialog'
 
@@ -65,10 +66,10 @@ function RangePicker({ r, name, compact = false }) {
   const customDates = (
     <div className="flex flex-wrap items-center gap-2">
       <label className="flex items-center gap-1.5 text-xs font-semibold text-muted">From
-        <input type="date" className="input h-8 py-0 w-36 text-xs" value={r.custom.from} max={dateKey(r.now)} onChange={(e) => r.setCustom((c) => ({ ...c, from: e.target.value }))} />
+        <DateField size="sm" className="w-40" ariaLabel="From" allowClear={false} value={r.custom.from} max={r.custom.to && r.custom.to < dateKey(r.now) ? r.custom.to : dateKey(r.now)} range={r.custom} onChange={(v) => v && r.setCustom((c) => ({ ...c, from: v }))} />
       </label>
       <label className="flex items-center gap-1.5 text-xs font-semibold text-muted">To
-        <input type="date" className="input h-8 py-0 w-36 text-xs" value={r.custom.to} onChange={(e) => r.setCustom((c) => ({ ...c, to: e.target.value }))} />
+        <DateField size="sm" className="w-40" ariaLabel="To" allowClear={false} value={r.custom.to} min={r.custom.from || undefined} range={r.custom} onChange={(v) => v && r.setCustom((c) => ({ ...c, to: v }))} />
       </label>
     </div>
   )

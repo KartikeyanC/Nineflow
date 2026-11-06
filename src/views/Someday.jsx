@@ -5,6 +5,7 @@ import { Inbox, Plus, Sun, Sunrise } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
 import { dateKey, fmtMinutes } from '../lib/tasks'
 import { CategoryTag, CheckCircle, EmptyState, PriorityPill } from '../components/ui'
+import { DateField } from '../components/DatePicker'
 
 // Open tasks with no day: ideas and "one day" work. Pull one onto a day when it's time.
 export default function Someday() {
@@ -44,8 +45,8 @@ export default function Someday() {
               <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
                 <button type="button" className="btn-ghost h-7 py-0 px-2.5 text-xs inline-flex items-center gap-1" onClick={() => plan(t.id, dateKey(now), 'Planned for today')}><Sun size={12} /> Today</button>
                 <button type="button" className="btn-ghost h-7 py-0 px-2.5 text-xs inline-flex items-center gap-1" onClick={() => plan(t.id, dateKey(addDays(now, 1)), 'Planned for tomorrow')}><Sunrise size={12} /> Tomorrow</button>
-                <input type="date" aria-label={`Pick a day for ${t.title}`} min={dateKey(now)} className="input h-7 py-0 px-2 text-xs w-[8.5rem]"
-                  onChange={(e) => e.target.value && plan(t.id, e.target.value, `Planned for ${format(parseISO(e.target.value), 'MMM d')}`)} />
+                <DateField size="sm" align="right" className="w-[8.5rem]" ariaLabel={`Pick a day for ${t.title}`} placeholder="Pick a day" allowClear={false} min={dateKey(now)} value={null}
+                  onChange={(v) => v && plan(t.id, v, `Planned for ${format(parseISO(v), 'MMM d')}`)} />
               </div>
             </li>
           ))}

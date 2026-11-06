@@ -5,6 +5,7 @@ import { BookOpen, CalendarClock, Check, ChevronDown, ExternalLink, Eye, EyeOff,
 import { usePlanner } from '../store/PlannerContext'
 import { dateKey, fmtMinutes, totalMinutes } from '../lib/tasks'
 import { CheckCircle, EmptyState, Modal, ProgressBar, Segmented, cx } from '../components/ui'
+import { DateField } from '../components/DatePicker'
 import { EXAMS, examById, subjectOf } from '../exams'
 import { examPlanRows, examPlanTasks } from '../exams/plan'
 import { CHECKPOINTS, DEFAULT_INTERVALS, STATUSES, accuracy, examTasks, isWeak, planRevisions, practiceTotals, statusLabel, studyMinutes, summarize, topicCompletion, topicStatus } from '../exams/ntpc/calc'
@@ -261,10 +262,10 @@ function PlanCard({ ctx, planner }) {
       <section className="card p-5">
         <h2 className="h-display text-base flex items-center gap-2"><CalendarClock size={16} /> {planName}</h2>
         <p className="text-sm text-muted mt-1">Set your exam date and the plan is laid out over the 40 days before it: mornings 5:00 to 7:30, evenings 8:00 to 9:30, with times, sources and topics.</p>
-        <label className="mt-3 inline-flex items-center gap-2 text-sm font-semibold">
+        <div className="mt-3 inline-flex items-center gap-2 text-sm font-semibold">
           Exam date
-          <input type="date" className="input w-auto py-1.5" min={today} value="" onChange={(e) => e.target.value && change(() => ({ examDate: e.target.value }))} />
-        </label>
+          <DateField className="w-48" ariaLabel="Exam date" placeholder="Pick the exam date" allowClear={false} min={today} value={null} onChange={(v) => v && change(() => ({ examDate: v }))} />
+        </div>
       </section>
     )
   }
@@ -554,7 +555,7 @@ function TopicSheet({ topicId, ctx, planner, onClose }) {
               <select className="input py-1.5 text-sm" value={plan.kind} onChange={(e) => setPlan((p) => ({ ...p, kind: e.target.value }))}>{KINDS.map((k) => <option key={k.id} value={k.id}>{k.label}</option>)}</select>
             </label>
             <label className="grid gap-1 text-xs font-semibold text-muted">Day
-              <input type="date" className="input py-1.5 text-sm" value={plan.date} min={today} onChange={(e) => setPlan((p) => ({ ...p, date: e.target.value || today }))} />
+              <DateField className="w-full" ariaLabel="Day" allowClear={false} value={plan.date} min={today} onChange={(v) => setPlan((p) => ({ ...p, date: v || today }))} />
             </label>
             <label className="grid gap-1 text-xs font-semibold text-muted">Time needed
               <select className="input py-1.5 text-sm" value={plan.minutes} onChange={(e) => setPlan((p) => ({ ...p, minutes: e.target.value }))}>{DURATIONS.map((m) => <option key={m} value={m}>{fmtMinutes(m)}</option>)}</select>
@@ -563,7 +564,7 @@ function TopicSheet({ topicId, ctx, planner, onClose }) {
               <select className="input py-1.5 text-sm" value={plan.priority} onChange={(e) => setPlan((p) => ({ ...p, priority: e.target.value }))}>{PRIORITY_LEVELS.map((p) => <option key={p} value={p}>{cap(p)}</option>)}</select>
             </label>
             <label className="grid gap-1 text-xs font-semibold text-muted">Deadline (optional)
-              <input type="date" className="input py-1.5 text-sm" value={plan.deadline} min={plan.date} onChange={(e) => setPlan((p) => ({ ...p, deadline: e.target.value }))} />
+              <DateField className="w-full" ariaLabel="Deadline" placeholder="No deadline" value={plan.deadline || null} min={plan.date} onChange={(v) => setPlan((p) => ({ ...p, deadline: v || '' }))} />
             </label>
             <label className="grid gap-1 text-xs font-semibold text-muted col-span-2 sm:col-span-1">Notes
               <input className="input py-1.5 text-sm" value={plan.notes} maxLength={500} placeholder="Chapter, book, video…" onChange={(e) => setPlan((p) => ({ ...p, notes: e.target.value }))} />
@@ -618,7 +619,7 @@ function TopicSheet({ topicId, ctx, planner, onClose }) {
               <select className="input py-1.5 text-sm" value={practice.level} onChange={(e) => setPractice((p) => ({ ...p, level: e.target.value }))}>{PRACTICE_LEVELS.map((l) => <option key={l} value={l}>{cap(l)}</option>)}</select>
             </label>
             <label className="grid gap-1 text-xs font-semibold text-muted">Date
-              <input type="date" className="input py-1.5 text-sm" value={practice.date} max={today} onChange={(e) => setPractice((p) => ({ ...p, date: e.target.value }))} />
+              <DateField className="w-full" ariaLabel="Date" allowClear={false} value={practice.date} max={today} onChange={(v) => v && setPractice((p) => ({ ...p, date: v }))} />
             </label>
             <label className="grid gap-1 text-xs font-semibold text-muted">Test score
               <input className="input py-1.5 text-sm" value={practice.score} maxLength={40} placeholder="e.g. 18/25" onChange={(e) => setPractice((p) => ({ ...p, score: e.target.value }))} />
@@ -721,7 +722,7 @@ function CurrentAffairs({ ctx, planner }) {
       <form onSubmit={add} className="card p-4 grid grid-cols-2 sm:grid-cols-4 gap-2">
         <h2 className="h-display text-base col-span-2 sm:col-span-4">Add a news item</h2>
         <label className="grid gap-1 text-xs font-semibold text-muted">Date
-          <input type="date" className="input py-1.5 text-sm" value={form.date} max={today} onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))} />
+          <DateField className="w-full" ariaLabel="Date" allowClear={false} value={form.date} max={today} onChange={(v) => v && setForm((f) => ({ ...f, date: v }))} />
         </label>
         <label className="grid gap-1 text-xs font-semibold text-muted">Category
           <select className="input py-1.5 text-sm" value={form.category} onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}>{CA_CATEGORIES.map((c) => <option key={c}>{c}</option>)}</select>
@@ -817,7 +818,7 @@ function Setup({ ctx, planner }) {
           <Segmented size="sm" value={data.category || ''} onChange={(v) => change(() => ({ category: v }))} options={exam.levels.map((c) => ({ value: c.id, label: c.label.replace('NTPC ', '') }))} />
         </Row>
         <Row label="Exam date" hint="Shows the days left, and sets the dates of the 40-day plan (a plan already added keeps its dates).">
-          <input type="date" className="input w-auto py-1.5" value={data.examDate || ''} onChange={(e) => change(() => ({ examDate: e.target.value || null }))} />
+          <DateField className="w-48" ariaLabel="Exam date" placeholder="Not set" value={data.examDate || null} onChange={(v) => change(() => ({ examDate: v || null }))} />
         </Row>
         <Row label="Daily study time" hint="Planned revisions don't go over this on any day.">
           <select className="input w-auto py-1.5" value={data.dailyMinutes} onChange={(e) => change(() => ({ dailyMinutes: Number(e.target.value) }))}>

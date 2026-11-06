@@ -5,6 +5,7 @@ import { PauseCircle, XCircle } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
 import { DROP_KEEP_DAYS, DROP_REASONS, PAUSE_REASONS, dateKey } from '../lib/tasks'
 import { Modal, cx } from './ui'
+import { DateField } from './DatePicker'
 
 // Pause or drop a task, with a reason (and, for a pause, a day to check again).
 // mode: 'pause' | 'drop'. See views/Paused.jsx.
@@ -51,7 +52,7 @@ export default function ParkDialog({ task, mode, onClose }) {
             {[['none', 'No date'], ['tomorrow', 'Tomorrow'], ['week', 'In a week'], ['pick', 'On a day…']].map(([k, label]) => (
               <button key={k} type="button" role="radio" aria-checked={when === k} onClick={() => setWhen(k)} className={chip(when === k)}>{label}</button>
             ))}
-            {when === 'pick' && <input type="date" className="input h-8 py-0 w-auto" min={dateKey(addDays(now, 1))} value={picked} onChange={(e) => setPicked(e.target.value)} aria-label="Day to check again" />}
+            {when === 'pick' && <DateField size="sm" className="w-40" ariaLabel="Day to check again" allowClear={false} min={dateKey(addDays(now, 1))} value={picked || null} onChange={(v) => v && setPicked(v)} />}
           </div>
           <p className="mt-2 text-xs text-faint">
             {until ? `It comes back to your plan on ${format(new Date(`${until}T12:00:00`), 'EEE, MMM d')}.` : 'It stays in Paused until you resume it.'} Until then it's off every list, board and reminder.

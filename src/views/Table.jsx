@@ -5,6 +5,7 @@ import { usePlanner } from '../store/PlannerContext'
 import { clock, format } from '../lib/dateFormat'
 import { PRIORITIES, PRIORITY_LABEL, STATUS_LABEL, dateKey, fmtMinutes, totalMinutes } from '../lib/tasks'
 import { CategoryTag, CheckCircle, ConfirmDialog, EmptyState, PriorityPill, cx } from '../components/ui'
+import { DateField } from '../components/DatePicker'
 import { cleanTaskFields, sortKeyOf, withValue } from '../lib/fields'
 
 // Every task as one sortable table, with filters, and ticks for changing many at once (the bulk bar:
@@ -191,7 +192,7 @@ function BulkBar({ ids, clear, today, now, updateTasks, removeTasks, categories,
         <option value="">Move to…</option><option value="today">Today</option><option value="tomorrow">Tomorrow</option>
         <option value="week">In a week</option><option value="someday">Someday (no date)</option>
       </select>
-      <input type="date" className={cx(sel, 'w-36')} aria-label="Move to a date" value="" onChange={(e) => e.target.value && day(e.target.value, format(parseISO(e.target.value), 'd MMM'))} />
+      <DateField size="sm" className="w-36" ariaLabel="Move to a date" placeholder="Move to a date" allowClear={false} value={null} onChange={(v) => v && day(v, format(parseISO(v), 'd MMM'))} />
       <select className={sel} aria-label="Priority" value="" onChange={(e) => e.target.value && run({ priority: e.target.value }, `Set ${n} tasks to ${PRIORITY_LABEL[e.target.value]}`)}>
         <option value="">Priority…</option>{PRIORITIES.map((p) => <option key={p} value={p}>{PRIORITY_LABEL[p]}</option>)}
       </select>

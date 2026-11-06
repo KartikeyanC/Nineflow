@@ -5,6 +5,7 @@ import { uid } from '../lib/storage'
 import { MAX_TEMPLATES, cleanTemplates, templateFromTask } from '../lib/views'
 import { MAX_TAGS, NAG_CHOICES, REMINDER_CHOICES, allTags, cleanTag, cleanTags, effectiveReminders, reminderLabel, reminderShort } from '../lib/taskMeta'
 import { cx } from './ui'
+import { DateField } from './DatePicker'
 import { cleanTaskFields, withValue } from '../lib/fields'
 
 // The "Reminders" and "Tags" rows of the task panel.
@@ -181,7 +182,7 @@ export function FieldInput({ task, field }) {
       </select>
     )
   }
-  if (field.type === 'date') return <input type="date" className={box} aria-label={field.name} value={value || ''} onChange={(e) => set(e.target.value)} />
+  if (field.type === 'date') return <DateField size="sm" className="w-full" ariaLabel={field.name} placeholder="—" value={value || null} onChange={(v) => set(v || '')} />
   // Text and numbers save when you leave the box (or press Enter), not on every key.
   return (
     <input key={`${task.id}:${value ?? ''}`} type={field.type === 'number' ? 'number' : 'text'} step="any" inputMode={field.type === 'number' ? 'decimal' : undefined}

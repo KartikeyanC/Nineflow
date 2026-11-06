@@ -20,6 +20,7 @@ import { describeCode, useWeather } from '../lib/weather'
 import { useHolidays } from '../lib/holidays'
 import { colorOf, cssVar, PRIORITY_STYLE } from '../lib/colors'
 import { CategoryTag, CheckCircle, Segmented, cx } from '../components/ui'
+import { DateField } from '../components/DatePicker'
 import RequiredBadge from '../components/RequiredBadge'
 import DayNav from '../components/DayNav'
 import { CapacityBar, CarriedOver } from '../features/Planning'
@@ -629,7 +630,7 @@ function Countdowns() {
         <form onSubmit={submit} className="mt-3 flex flex-wrap gap-2">
           <input autoFocus className="input flex-1 min-w-[8rem]" placeholder="e.g. Product launch" value={name} onChange={(e) => setName(e.target.value)}
             onKeyDown={(e) => e.key === 'Escape' && setAdding(false)} />
-          <input type="date" className="input w-auto" aria-label="Date" value={date} onChange={(e) => setDate(e.target.value)} />
+          <DateField className="w-44" ariaLabel="Date" allowClear={false} value={date} onChange={(v) => v && setDate(v)} />
           <button type="submit" className="btn-black h-9 py-0 px-3">Add</button>
         </form>
       )}
