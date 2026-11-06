@@ -495,6 +495,27 @@ export function PlannerProvider({ children }) {
     return found.length
   }, [offerUndo])
 
+  // Many tasks at once (Table view's bulk bar), with one Undo. `patch` is the fields to set, with
+  // `date` and `status` applied the same way single changes apply them. Completing skips tasks whose
+  // required steps aren't ticked (they need "Before you finish", one at a time). Returns how many changed.
+  const updateTasks = useCallback((ids, patch, undoLabel) => {
+    const want = new Set(ids)
+    const skip = patch.status === 'completed'
+      ? new Set(tasksRef.current.filter((t) => want.has(t.id) && t.status !== 'completed' && checkGate(t).blocked).map((t) => t.id))
+      : new Set()
+    const changed = tasksRef.current.filter((t) => want.has(t.id) && !skip.has(t.id)).length
+    if (!changed) return { changed: 0, skipped: skip.size }
+    offerUndo(undoLabel || `Changed ${changed} tasks`)
+    const { date, status, ...rest } = patch
+    setTasks((ts) => ts.map((t) => {
+      if (!want.has(t.id) || skip.has(t.id)) return t
+      let next = 'date' in patch ? withDate(t, date) : t
+      if (status) next = withStatus(next, status)
+      return { ...next, ...rest }
+    }))
+    return { changed, skipped: skip.size }
+  }, [offerUndo])
+
   const removeTask = useCallback((id) => {
     const gone = tasksRef.current.find((x) => x.id === id)
     if (gone) offerUndo(`Deleted “${gone.title}”`)
@@ -899,6 +920,7 @@ export function PlannerProvider({ children }) {
       addTask,
       addTasks,
       removeTasks,
+      updateTasks,
       gateTaskId,
       closeGate,
       finishGate,
@@ -957,7 +979,7 @@ export function PlannerProvider({ children }) {
     }),
     [
       activeTasks, tasks, pauseTask, resumeTask, dropTask, restoreTask, settings, now, view, setView, selectedId, quickAdd, dashboardDate, calendarMode, openDay,
-      addTask, addTasks, removeTasks, gateTaskId, closeGate, finishGate, moveToWorkspace, goalPlannerOpen, promptListOpen, askOpen, updateTask, setSessions, setStatus, toggleComplete, moveTask, sortStatus,
+      addTask, addTasks, removeTasks, updateTasks, gateTaskId, closeGate, finishGate, moveToWorkspace, goalPlannerOpen, promptListOpen, askOpen, updateTask, setSessions, setStatus, toggleComplete, moveTask, sortStatus,
       moveOverdueToToday, clearCompleted, removeTask, setRecurrence, removeSeries, applyToUpcoming, planDay,
       previewPlan, applyPlan, moveTasksTo,
       focus, startFocus, pauseFocus, resumeFocus, advanceFocus, stopFocus, setFocusOpen,

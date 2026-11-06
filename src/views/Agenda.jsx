@@ -65,7 +65,7 @@ export default function Agenda() {
                   onKeyDown={(e) => { if (e.target === e.currentTarget && e.key === 'Enter') setSelectedId(t.id) }}
                   className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer hover:bg-page focus-visible:bg-page outline-none transition max-sm:px-2 max-sm:gap-2.5">
                   <CheckCircle checked={false} onToggle={() => toggleComplete(t.id)} size="sm" />
-                  <span className="w-12 shrink-0 text-xs font-medium text-muted tnum max-sm:hidden">{t.startTime || '—'}</span>
+                  <span className="w-12 shrink-0 text-xs font-medium text-muted tnum max-sm:hidden">{t.startTime ? clock(t.startTime) : '—'}</span>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold truncate">{t.title}</p>
                     <div className="flex items-center gap-1.5 mt-0.5 min-w-0">

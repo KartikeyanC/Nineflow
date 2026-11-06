@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { LayoutDashboard, KanbanSquare, CalendarRange, CalendarDays, Grid2x2, Settings, Briefcase, ListTodo, Inbox, StickyNote, PauseCircle, MoreHorizontal, Search, X, Zap, GraduationCap, ChartColumn, Brain, Mic } from 'lucide-react'
+import { LayoutDashboard, KanbanSquare, CalendarRange, CalendarDays, Grid2x2, Settings, Briefcase, ListTodo, Inbox, StickyNote, PauseCircle, MoreHorizontal, Search, X, Zap, GraduationCap, ChartColumn, Brain, Mic, Table2 } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
 import { cx, useDialogFocus } from './ui'
 import { examById } from '../exams'
@@ -14,6 +14,7 @@ const NAV = [
 // Behind the "More" tab: the bar only has room for five.
 const MORE = [
   { id: 'agenda', label: 'Agenda', icon: ListTodo },
+  { id: 'table', label: 'Table', icon: Table2 },
   { id: 'matrix', label: 'Matrix', icon: Grid2x2 },
   { id: 'charts', label: 'Charts', icon: ChartColumn },
   { id: 'someday', label: 'Someday', icon: Inbox },

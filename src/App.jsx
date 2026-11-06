@@ -30,6 +30,7 @@ import Month from './views/Month'
 import Matrix from './views/Matrix'
 import Someday from './views/Someday'
 import Agenda from './views/Agenda'
+import Table from './views/Table'
 import Notes from './views/Notes'
 import Charts from './views/Charts'
 import Revise from './views/Revise'
@@ -41,7 +42,7 @@ import Settings from './views/Settings'
 import Work from './work/Work'
 import Ntpc from './views/Ntpc'
 
-const VIEWS = { dashboard: Dashboard, board: Board, week: Week, month: Month, matrix: Matrix, someday: Someday, agenda: Agenda, notes: Notes, revise: Revise, charts: Charts, paused: Paused, work: Work, ntpc: Ntpc, settings: Settings }
+const VIEWS = { dashboard: Dashboard, board: Board, week: Week, month: Month, matrix: Matrix, someday: Someday, agenda: Agenda, table: Table, notes: Notes, revise: Revise, charts: Charts, paused: Paused, work: Work, ntpc: Ntpc, settings: Settings }
 
 function Shell() {
   const { view, setView, setQuickAdd } = usePlanner()

@@ -565,6 +565,10 @@ export default function Settings() {
             <Segmented size="sm" value={settings.weekStart} onChange={(v) => updateSettings({ weekStart: v })}
               options={[{ value: 1, label: 'Monday' }, { value: 0, label: 'Sunday' }]} />
           </Row>
+          <Row label="Completed tasks" hint="Hide them on Board, Week, the Dashboard lists and Table. Counts and charts still include them.">
+            <Segmented size="sm" value={settings.hideDone ? 'hide' : 'show'} onChange={(v) => updateSettings({ hideDone: v === 'hide' })}
+              options={[{ value: 'show', label: 'Show' }, { value: 'hide', label: 'Hide' }]} />
+          </Row>
           <Row label="Dates" hint="How dates are written everywhere in the app.">
             <Segmented size="sm" value={settings.dateOrder || 'auto'} onChange={(v) => updateSettings({ dateOrder: v })}
               options={[{ value: 'auto', label: 'Like my device' }, { value: 'dmy', label: '4 Nov' }, { value: 'mdy', label: 'Nov 4' }]} />

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { Search, LayoutDashboard, KanbanSquare, CalendarRange, CalendarDays, Grid2x2, Inbox, Settings, Briefcase, Plus, Target, Sparkles, MessageCircle, Moon, CornerDownLeft, ListTodo, StickyNote, PauseCircle, GraduationCap, ChartColumn, Brain, Mic, Keyboard } from 'lucide-react'
+import { Search, LayoutDashboard, KanbanSquare, CalendarRange, CalendarDays, Grid2x2, Inbox, Settings, Briefcase, Plus, Target, Sparkles, MessageCircle, Moon, CornerDownLeft, ListTodo, StickyNote, PauseCircle, GraduationCap, ChartColumn, Brain, Mic, Keyboard, Table2, CheckCheck } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
 import { isDark } from '../lib/themes'
 import { examById } from '../exams'
@@ -23,6 +23,7 @@ export default function CommandPalette({ open, onClose }) {
       { label: 'Week', icon: CalendarRange, run: go('week') },
       { label: 'Month', icon: CalendarDays, run: go('month') },
       { label: 'Agenda', icon: ListTodo, run: go('agenda') },
+      { label: 'Table', icon: Table2, run: go('table') },
       { label: 'Matrix', icon: Grid2x2, run: go('matrix') },
       { label: 'Working charts', icon: ChartColumn, run: go('charts') },
       { label: 'Notes', icon: StickyNote, run: go('notes') },
@@ -39,6 +40,7 @@ export default function CommandPalette({ open, onClose }) {
       { label: 'Prompt to list', icon: Sparkles, run: () => setPromptListOpen(true) },
       { label: 'Speak tasks', icon: Mic, run: () => setPromptListOpen('voice') },
       { label: 'Ask NineFlow', icon: MessageCircle, run: () => setAskOpen(true) },
+      { label: settings.hideDone ? 'Show completed tasks' : 'Hide completed tasks', icon: CheckCheck, run: () => updateSettings({ hideDone: !settings.hideDone }) },
       { label: 'Keyboard shortcuts', icon: Keyboard, run: () => window.dispatchEvent(new Event('nineflow:shortcuts')) },
       { label: isDark(settings) ? 'Switch to light mode' : 'Switch to dark mode', icon: Moon, run: () => updateSettings({ theme: isDark(settings) ? 'light' : 'dark' }) },
     ].map((x) => ({ ...x, group: 'Actions' }))

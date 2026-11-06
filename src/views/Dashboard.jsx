@@ -102,7 +102,7 @@ export default function Dashboard() {
 
       {/* Main grid */}
       <div className="grid grid-cols-12 gap-4 items-stretch">
-        <Schedule list={list} isToday={isToday} now={now} />
+        <Schedule list={settings.hideDone ? list.filter((t) => t.status !== 'completed') : list} isToday={isToday} now={now} />
         <TaskList day={day} dayKey={dashboardDate} isToday={isToday} />
         <Productivity counts={counts} />
         <FocusTime day={day} now={now} tasks={tasks} isToday={isToday} />
@@ -277,14 +277,14 @@ function TaskList({ day, dayKey, isToday }) {
     const open = (t) => t.status !== 'completed'
     const weekEnd = dateKey(addDays(day, 7))
     let r
-    if (tab === 'today') r = tasksOn(tasks, dayKey)
+    if (tab === 'today') r = tasksOn(tasks, dayKey).filter((t) => !settings.hideDone || open(t))
     else if (tab === 'upcoming') r = tasks.filter((t) => open(t) && t.date && t.date > dayKey && t.date <= weekEnd)
-    else r = tasks.filter((t) => open(t) || t.date === dayKey)
+    else r = tasks.filter((t) => open(t) || (t.date === dayKey && !settings.hideDone))
     const sorted = sortByTime(r).sort((a, b) => (a.date || '9').localeCompare(b.date || '9'))
     if (tab !== 'today') return sorted
     const isEve = (t) => !!t.startTime && t.startTime >= eveningFrom
     return [...sorted.filter((t) => !isEve(t)), ...sorted.filter(isEve)]
-  }, [tasks, tab, day, dayKey, eveningFrom])
+  }, [tasks, tab, day, dayKey, eveningFrom, settings.hideDone])
   const firstEvening = tab === 'today' ? rows.findIndex((t) => t.startTime && t.startTime >= eveningFrom) : -1
   const showEvening = firstEvening > 0
 

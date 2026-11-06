@@ -155,8 +155,10 @@ export default function Board() {
   }, [visible, cols, colIds])
 
   // Finished columns show the newest few; the rest are one click away.
-  const hiddenDone = cols.filter((c) => c.base === 'completed').reduce((n, c) => n + Math.max(0, columns[c.id].length - RECENT_COMPLETED), 0)
-  const shownColumns = useMemo(() => Object.fromEntries(cols.map((c) => [c.id, c.base === 'completed' && !showAllDone ? columns[c.id].slice(0, RECENT_COMPLETED) : columns[c.id]])), [cols, columns, showAllDone])
+  // "Hide completed" (Settings) keeps the column, so cards can still be dropped there, but shows none of them.
+  const recent = settings.hideDone ? 0 : RECENT_COMPLETED
+  const hiddenDone = cols.filter((c) => c.base === 'completed').reduce((n, c) => n + Math.max(0, columns[c.id].length - recent), 0)
+  const shownColumns = useMemo(() => Object.fromEntries(cols.map((c) => [c.id, c.base === 'completed' && !showAllDone ? columns[c.id].slice(0, recent) : columns[c.id]])), [cols, columns, showAllDone, recent])
   const completedCount = cols.filter((c) => c.base === 'completed').reduce((n, c) => n + columns[c.id].length, 0)
   const [editingColumns, setEditingColumns] = useState(false)
 
@@ -445,10 +447,10 @@ export default function Board() {
                     { label: 'Edit columns…', icon: Columns3, onSelect: () => setEditingColumns(true) },
                   ]}
                   footer={
-                    done && hiddenDone > 0 && !showAllDone && columns[s].length > RECENT_COMPLETED ? (
+                    done && hiddenDone > 0 && !showAllDone && columns[s].length > recent ? (
                       <button type="button" onClick={() => setShowAllDone(true)}
                         className="text-xs font-semibold text-mint-fg hover:underline py-1">
-                        Show {columns[s].length - RECENT_COMPLETED} older completed task{columns[s].length - RECENT_COMPLETED === 1 ? '' : 's'}
+                        Show {columns[s].length - recent} {recent ? 'older ' : ''}completed task{columns[s].length - recent === 1 ? '' : 's'}
                       </button>
                     ) : null
                   }

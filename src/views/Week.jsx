@@ -96,13 +96,14 @@ export default function Week() {
   // events share the lanes, so they sit beside tasks instead of under them.
   const byDay = useMemo(() => days.map((day) => {
     const key = dateKey(day)
-    const list = tasksOn(tasks, key)
+    // "Hide completed" (Settings) leaves finished tasks off the grid.
+    const list = tasksOn(tasks, key).filter((t) => !settings.hideDone || t.status !== 'completed')
     const timed = list.filter((t) => t.startTime)
     const untimed = list.filter((t) => !t.startTime)
     const todays = eventsOn(events, key)
     const timedEvents = todays.filter((e) => !e.allDay).map((e) => ({ id: `ev:${e.id}:${key}`, startTime: toHHMM(Math.min(e.startMin, 1439)), durationMinutes: Math.max(15, e.endMin - e.startMin), event: e }))
     return { day, key, list, untimed, allDayEvents: todays.filter((e) => e.allDay), lanes: layoutLanes([...timed, ...timedEvents]) }
-  }), [tasks, days, events])
+  }), [tasks, days, events, settings.hideDone])
 
   // Scroll the grid so "now" (or, outside 06:00–22:00, the start of your
   // working day) sits ~160px from the top on load.

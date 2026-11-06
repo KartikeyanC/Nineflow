@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react'
-import { LayoutDashboard, KanbanSquare, CalendarRange, CalendarDays, Grid2x2, Inbox, ListTodo, StickyNote, PauseCircle, Settings, Plus, Moon, Sun, Briefcase, GraduationCap, ChartColumn, Brain } from 'lucide-react'
+import { LayoutDashboard, KanbanSquare, CalendarRange, CalendarDays, Grid2x2, Inbox, ListTodo, StickyNote, PauseCircle, Settings, Plus, Moon, Sun, Briefcase, GraduationCap, ChartColumn, Brain, Table2 } from 'lucide-react'
 import { BrandMark, Wordmark } from './Brand'
 import { usePlanner } from '../store/PlannerContext'
 import { isDark } from '../lib/themes'
@@ -22,6 +22,7 @@ const NAV = [
   { id: 'week', label: 'Week', icon: CalendarRange },
   { id: 'month', label: 'Month', icon: CalendarDays },
   { id: 'agenda', label: 'Agenda', icon: ListTodo },
+  { id: 'table', label: 'Table', icon: Table2 },
   { id: 'matrix', label: 'Matrix', icon: Grid2x2 },
   { id: 'charts', label: 'Charts', icon: ChartColumn },
   { id: 'someday', label: 'Someday', icon: Inbox },
