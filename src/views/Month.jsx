@@ -162,20 +162,15 @@ function Tile({ cell, onOpen }) {
         strong ? 'text-white' : 'text-ink',
       )}
       style={{ background: level ? cssVar('--lav-fg', LEVEL_ALPHA[level]) : undefined }}>
-      <div className="flex items-start justify-between gap-1 max-sm:flex-col-reverse max-sm:items-center max-sm:justify-start max-sm:gap-1.5 max-sm:pt-0.5">
-        {list.length > 0 ? (
-          <span className={cx('rounded-full px-1.5 py-0.5 text-[11px] font-semibold max-sm:min-w-[18px] max-sm:text-center max-sm:px-1 max-sm:py-0 max-sm:leading-[16px]', strong ? 'bg-white/20' : 'bg-card border border-line text-muted')}>
-            {list.length}<span className="hidden sm:inline"> task{list.length === 1 ? '' : 's'}</span>
+      <div className="flex items-center justify-between gap-1 max-sm:flex-col max-sm:justify-start max-sm:gap-1 max-sm:pt-0.5">
+        <span className={cx('text-sm font-bold leading-none tnum', today && (strong ? 'text-white underline underline-offset-4' : 'text-coral-fg'))}>{format(day, 'd')}</span>
+        {level > 0 && (
+          <span aria-hidden="true" className="flex gap-0.5">
+            {[1, 2, 3, 4].map((i) => <span key={i} className={cx('h-1.5 w-1.5 rounded-full', i <= level ? (strong ? 'bg-white' : 'bg-lav-fg') : (strong ? 'bg-white/30' : 'bg-line'), i > 1 && 'max-sm:hidden')} />)}
           </span>
-        ) : <span />}
-        <span className="flex items-center gap-1.5">
-          {level > 0 && (
-            <span aria-hidden="true" className="hidden sm:flex gap-0.5">
-              {[1, 2, 3, 4].map((i) => <span key={i} className={cx('h-1.5 w-1.5 rounded-full', i <= level ? (strong ? 'bg-white' : 'bg-lav-fg') : (strong ? 'bg-white/30' : 'bg-line'))} />)}
-            </span>
-          )}
-          <span className={cx('text-sm font-bold leading-none', today && 'text-coral-fg')}>{format(day, 'd')}</span>
-        </span>
+        )}
+        {/* Phones show no titles, so the count stays there */}
+        {list.length > 0 && <span className={cx('sm:hidden text-[11px] font-semibold leading-none tnum', strong ? 'text-white/80' : 'text-muted')}>{list.length}</span>}
       </div>
       <div className="mt-auto space-y-0.5 hidden sm:block">
         {holiday && <p className={cx('text-[11px] font-bold truncate inline-flex items-center gap-1 max-w-full', strong ? 'text-white' : 'text-peach-fg')}><PartyPopper size={10} className="shrink-0" />{holiday}</p>}

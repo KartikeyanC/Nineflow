@@ -161,8 +161,13 @@ export default function Week() {
   // The days the time grid shows: on phones only the chosen one.
   const gridDays = phone ? byDay.filter(({ day }) => isSameDay(day, anchor)) : byDay
   const axisW = phone ? 46 : AXIS_W
-  // A week needs ~110px per day; narrower screens scroll sideways.
-  const colTemplate = `${axisW}px repeat(${gridDays.length}, minmax(${gridDays.length > 1 ? 110 : 0}px, 1fr))`
+  // A week fits down to ~64px a day; only narrower than that does it scroll sideways.
+  const colTemplate = `${axisW}px repeat(${gridDays.length}, minmax(${gridDays.length > 1 ? 64 : 0}px, 1fr))`
+  // Hours outside the working day are shaded (a night shift wraps past midnight).
+  const offHours = useMemo(() => {
+    const a = toMin(settings.workHours.start), b = toMin(settings.workHours.end)
+    return b > a ? [[GRID_START, a], [b, GRID_END]] : b < a ? [[b, a]] : []
+  }, [settings.workHours.start, settings.workHours.end])
   const planButton = unscheduled > 0 && !planMsg && (
     <button type="button" className={cx('btn-ghost h-9 py-0 text-lav-fg', phone && 'h-10 px-3')}
       onClick={() => { setPlanMsg(describePlan(planDay(planKey))); setTimeout(() => setPlanMsg(null), 4000) }}
@@ -235,22 +240,20 @@ export default function Week() {
         <DndContext sensors={sensors} collisionDetection={pointerWithin} onDragEnd={onDragEnd}>
           {/* Day tiles (phones have the strip above instead) */}
           {!phone && <div className="grid gap-2 px-3 pt-3" style={{ gridTemplateColumns: colTemplate }}>
-            <div className="rounded-2xl bg-page flex flex-col items-center justify-center py-2">
-              <span className="text-[11px] font-bold text-faint">W</span>
-              <span className="text-sm font-bold">{getISOWeek(days[0])}</span>
-            </div>
-            {days.map((day) => {
+            <div className="flex items-center justify-center text-[11px] font-bold text-faint" title="Week number">W{getISOWeek(days[0])}</div>
+            {byDay.map(({ day, key, list }) => {
               const today = isSameDay(day, now)
-              const holiday = holidays?.[dateKey(day)]
+              const holiday = holidays?.[key]
+              const planned = list.reduce((m, t) => m + (t.durationMinutes || 0), 0)
               return (
-                <button key={dateKey(day)} type="button" title={holiday || undefined} aria-label={holiday ? `${format(day, 'EEEE d')}, ${holiday}` : undefined}
+                <button key={key} type="button" title={[holiday, planned ? `${fmtMinutes(planned)} planned` : ''].filter(Boolean).join(' · ') || undefined}
+                  aria-label={`${format(day, 'EEEE d MMMM')}${holiday ? `, ${holiday}` : ''}${planned ? `, ${fmtMinutes(planned)} planned` : ''}. Open this day`}
                   onClick={() => { setAnchor(day); setMode('day') }}
-                  className={cx('rounded-2xl py-2 flex flex-col items-center transition hover:-translate-y-0.5',
-                    today ? 'bg-brand text-white' : 'bg-page text-ink hover:bg-lav/60')}>
-                  <span className={cx('text-[11px] font-bold uppercase tracking-wider', today ? 'text-white/80' : 'text-faint')}>{format(day, 'EEE')}</span>
-                  {/* .h-display sets text-ink, so today's date needs its colour set here or it vanishes on the ink tile. */}
-                  <span className={cx('h-display text-2xl leading-tight', today && 'text-white')}>{format(day, 'd')}</span>
-                  {holiday && <PartyPopper size={11} className={cx('mt-0.5', today ? 'text-white' : 'text-peach-fg')} aria-hidden="true" />}
+                  className="group rounded-2xl py-1.5 flex items-center justify-center gap-2 transition hover:bg-page min-w-0">
+                  <span className={cx('text-[11px] font-bold uppercase tracking-wider', today ? 'text-brand' : 'text-faint')}>{format(day, 'EEE')}</span>
+                  <span className={cx('h-8 w-8 shrink-0 rounded-full inline-flex items-center justify-center text-base font-bold tnum transition',
+                    today ? 'bg-brand text-white' : 'text-ink group-hover:bg-lav/60')}>{format(day, 'd')}</span>
+                  {holiday && <PartyPopper size={11} className="text-peach-fg shrink-0" aria-hidden="true" />}
                 </button>
               )
             })}
@@ -287,7 +290,7 @@ export default function Week() {
               </div>
 
               {gridDays.map(({ day, key, lanes }) => (
-                <DayColumn key={key} dayKey={key} isToday={isSameDay(day, now)} hours={hours}
+                <DayColumn key={key} dayKey={key} isToday={isSameDay(day, now)} hours={hours} offHours={offHours}
                   onSlot={(min) => setQuickAdd({ date: key, startTime: toHHMM(min), durationMinutes: 60 })}>
                   {lanes.map(({ task, lane, lanes: n }) => (task.event
                     ? <EventBlock key={task.id} item={task} lane={lane} lanes={n} />
@@ -344,11 +347,14 @@ export default function Week() {
   )
 }
 
-function DayColumn({ dayKey, isToday, hours, onSlot, children }) {
+function DayColumn({ dayKey, isToday, hours, offHours = [], onSlot, children }) {
   const { setNodeRef, isOver } = useDroppable({ id: dayKey })
   const [hover, setHover] = useState(null)
   return (
     <div ref={setNodeRef} className={cx('relative border-l border-line', isToday && 'bg-lav/20', isOver && 'bg-lav/40')}>
+      {offHours.map(([a, b]) => (
+        <div key={a} aria-hidden="true" className="absolute left-0 right-0 bg-ink/[0.035] pointer-events-none" style={{ top: (a - GRID_START) * PX_PER_MIN, height: (b - a) * PX_PER_MIN }} />
+      ))}
       {hours.map((m) => (
         <React.Fragment key={m}>
           <div className="absolute left-0 right-0 border-t border-line" style={{ top: (m - GRID_START) * PX_PER_MIN }} />
@@ -369,12 +375,36 @@ function DayColumn({ dayKey, isToday, hours, onSlot, children }) {
   )
 }
 
+// Dragging the bottom edge changes how long a task takes, in 15-minute steps (from 15 minutes to midnight).
+function useResize(task, updateTask) {
+  const [preview, setPreview] = useState(null)
+  const onPointerDown = (e) => {
+    e.stopPropagation()
+    e.preventDefault() // no text selection, and no mouse events for the block's drag to pick up
+    const y0 = e.clientY, d0 = task.durationMinutes, start = toMin(task.startTime)
+    const len = (y) => Math.max(15, Math.min(GRID_END - start, d0 + Math.round((y - y0) / PX_PER_MIN / 15) * 15))
+    let last = d0
+    const move = (ev) => { last = len(ev.clientY); setPreview(last) }
+    const up = () => {
+      window.removeEventListener('pointermove', move)
+      window.removeEventListener('pointerup', up)
+      setPreview(null)
+      if (last !== d0) updateTask(task.id, { durationMinutes: last })
+    }
+    window.addEventListener('pointermove', move)
+    window.addEventListener('pointerup', up)
+  }
+  return { preview, onPointerDown }
+}
+
 function Block({ task, lane, lanes, onOpen }) {
-  const { categoryById } = usePlanner()
+  const { categoryById, updateTask } = usePlanner()
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: task.id })
   const c = colorOf(categoryById(task.category).color)
   const start = toMin(task.startTime)
-  const height = Math.max(22, task.durationMinutes * PX_PER_MIN)
+  const resize = useResize(task, updateTask)
+  const minutes = resize.preview ?? task.durationMinutes
+  const height = Math.max(22, minutes * PX_PER_MIN)
   const done = task.status === 'completed'
   const width = 100 / lanes
   const style = {
@@ -395,16 +425,28 @@ function Block({ task, lane, lanes, onOpen }) {
         listeners?.onKeyDown?.(e)
       }}
       aria-label={`${task.title}, ${toHHMM(start)} to ${toHHMM(start + task.durationMinutes)}. Enter to open, Space to move.`}
-      className={cx('absolute rounded-xl border-l-[3px] px-2 py-1 cursor-pointer overflow-hidden select-none transition-shadow',
-        c.bg, isDragging ? 'shadow-lift' : 'hover:shadow-soft', done && 'opacity-60')}>
-      <p className={cx('text-xs font-bold leading-tight line-clamp-2 flex items-start gap-1', c.text, done && 'line-through')}>
-        {done && <Check size={11} strokeWidth={3} className="mt-0.5 shrink-0" />}
-        {task.title}
-      </p>
-      {height >= 40 && (
-        <p className={cx('text-[11px] font-medium opacity-80', c.text)}>{clock(toHHMM(start))} – {clock(toHHMM(start + task.durationMinutes))}</p>
+      className={cx('group/block absolute rounded-xl border-l-[3px] px-2 cursor-pointer overflow-hidden select-none transition-shadow',
+        height < 40 ? 'py-0.5 flex items-center' : 'py-1', c.bg, isDragging || resize.preview ? 'shadow-lift' : 'hover:shadow-soft', done && 'opacity-60')}>
+      {/* Short blocks: one line, time first. Taller ones: the title on up to three lines, then the time. */}
+      {height < 40 ? (
+        <p className={cx('text-xs font-bold leading-tight truncate min-w-0', c.text, done && 'line-through')}>
+          <span className="font-medium opacity-80 mr-1">{clock(toHHMM(start))}</span>{task.title}
+        </p>
+      ) : (
+        <>
+          <p className={cx('text-xs font-bold leading-tight break-words', height < 64 ? 'line-clamp-1' : height < 96 ? 'line-clamp-2' : 'line-clamp-3', c.text, done && 'line-through')}>
+            {done && <Check size={11} strokeWidth={3} className="inline -mt-0.5 mr-0.5" />}
+            {task.title}
+          </p>
+          <p className={cx('text-[11px] font-medium opacity-80 truncate', c.text)}>{clock(toHHMM(start))} – {clock(toHHMM(start + minutes))}</p>
+          {height >= 110 && <PriorityPill priority={task.priority} className="mt-1 text-[11px] py-0" />}
+        </>
       )}
-      {height >= 72 && <PriorityPill priority={task.priority} className="mt-1 text-[11px] py-0" />}
+      <span aria-hidden="true" onPointerDown={resize.onPointerDown} onMouseDown={(e) => e.stopPropagation()} onTouchStart={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}
+        title="Drag to change how long it takes"
+        className="absolute left-0 right-0 bottom-0 h-2 cursor-ns-resize touch-none opacity-0 group-hover/block:opacity-100 [@media(hover:none)]:opacity-100 [@media(hover:none)]:h-3 transition">
+        <i className={cx('block mx-auto mt-0.5 h-1 w-6 rounded-full opacity-60', c.dot)} />
+      </span>
     </div>
   )
 }
@@ -421,7 +463,7 @@ function EventBlock({ item, lane, lanes }) {
       aria-label={`Calendar event: ${e.title}, ${toHHMM(e.startMin)} to ${toHHMM(Math.min(e.endMin, 1439))}`}
       style={{ top: (start - GRID_START) * PX_PER_MIN, height, left: `calc(${lane * width}% + 3px)`, width: `calc(${width}% - 6px)`, zIndex: 4 }}
       className={cx('absolute rounded-xl border border-dashed border-faint/60 bg-subtle/80 px-2 py-1 overflow-hidden select-none text-muted hover:text-ink hover:border-faint transition', e.free && 'opacity-70')}>
-      <p className="text-xs font-bold leading-tight line-clamp-2 flex items-start gap-1"><CalendarDays size={11} className="mt-0.5 shrink-0" />{e.title}</p>
+      <p className={cx('text-xs font-bold leading-tight break-words', height < 64 ? 'line-clamp-1' : 'line-clamp-2')}><CalendarDays size={11} className="inline -mt-0.5 mr-1" />{e.title}</p>
       {height >= 40 && <p className="text-[11px] font-medium opacity-80">{clock(toHHMM(e.startMin))} – {clock(toHHMM(Math.min(e.endMin, 1439)))}</p>}
     </Tag>
   )
