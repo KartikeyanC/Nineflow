@@ -116,6 +116,8 @@ export function createTask(fields = {}) {
     trail: [], // the days it was on before it moved on unfinished: [{ date, status, column }] (see leaveTrail)
     hold: null, // paused on purpose: { reason, since, until: 'yyyy-MM-dd' | null } | null (see Paused)
     dropped: null, // let go, kept 30 days: { reason, at } | null
+    dueDate: null, // the end day you set, 'yyyy-MM-dd' | null
+    history: [], // every change made to it: [{ at, field, from, to }] (lib/taskHistory.js)
     ...fields,
   }
   // The day it started: the day it was first planned for. Fixed here, and read-only everywhere.

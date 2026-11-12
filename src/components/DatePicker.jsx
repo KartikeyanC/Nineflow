@@ -57,7 +57,7 @@ export function Calendar({ value, onChange, allowClear = true, onClose, min, max
           const bandEnd = inRange && (key === to || addDays(d, 1).getDay() === settings.weekStart)
           return (
             <div key={key} className={cx('h-9 flex items-center justify-center', inRange && 'bg-lav/60', bandStart && 'rounded-l-full', bandEnd && 'rounded-r-full')}>
-              <button type="button" onClick={() => pick(d)} disabled={!ok} aria-label={format(d, 'EEEE d MMMM yyyy')} aria-pressed={!!isSel}
+              <button type="button" data-date={key} onClick={() => pick(d)} disabled={!ok} aria-label={format(d, 'EEEE d MMMM yyyy')} aria-pressed={!!isSel}
                 className={cx('h-8 w-8 rounded-full text-xs font-semibold tnum transition',
                   isSel ? 'bg-brand text-white shadow-soft' : ok && 'hover:bg-lav hover:text-lav-fg',
                   !isSel && isToday && 'text-lav-fg ring-1 ring-inset ring-lav-fg/50',

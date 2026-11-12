@@ -95,3 +95,47 @@ test('no errors in the console while moving between views', async ({ page, isMob
   }
   expect(errors).toEqual([])
 })
+
+test('End day can be changed, and each change is noted in History', async ({ page }) => {
+  await page.getByRole('button', { name: /new task|add task/i }).filter({ visible: true }).first().click()
+  const title = page.getByPlaceholder('What do you want to get done?')
+  await title.fill('History check')
+  await title.press('Enter')
+  await openView(page, 'Agenda')
+  await page.getByText('History check').first().click()
+  const panel = page.getByRole('dialog', { name: 'Task: History check' })
+  await expect(panel).toBeVisible()
+  const history = panel.getByRole('region', { name: 'Change history' })
+  await expect(history).toContainText('No changes yet')
+
+  const pick = async (daysAhead) => {
+    await panel.getByRole('button', { name: /^End day:/ }).click()
+    const cal = page.getByRole('dialog', { name: 'Choose a date' })
+    const d = new Date(); d.setDate(d.getDate() + daysAhead)
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+    // Days from next month also show at the end of a month's grid, so only go forward when it isn't there.
+    if (!(await cal.locator(`button[data-date="${key}"]`).count())) await cal.getByRole('button', { name: 'Next month' }).click()
+    await cal.locator(`button[data-date="${key}"]`).click()
+    return d
+  }
+  await pick(3)
+  await expect(panel.getByText(/3 days left/)).toBeVisible()
+  await pick(6)
+  await expect(panel.getByText(/6 days left/)).toBeVisible()
+
+  const items = history.getByRole('listitem')
+  await expect(items).toHaveCount(2)
+  await expect(items.first()).toContainText('End day')
+  await expect(items.nth(1)).toContainText('No end day')
+  // Newest first: the second change goes from the first end day to the second.
+  const first = await items.nth(1).textContent()
+  const second = await items.first().textContent()
+  expect(second).not.toContain('No end day')
+  expect(first).toMatch(/End day/)
+
+  // It survives a reload (saved with the task).
+  await page.reload()
+  await openView(page, 'Agenda')
+  await page.getByText('History check').first().click()
+  await expect(page.getByRole('dialog', { name: 'Task: History check' }).getByRole('region', { name: 'Change history' }).getByRole('listitem')).toHaveCount(2)
+})

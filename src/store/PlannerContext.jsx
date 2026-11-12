@@ -21,6 +21,7 @@ import { setDatePrefs } from '../lib/dateFormat'
 import { removeTasksFromWorkspace, sendTasksToWorkspace } from '../lib/workspaces'
 import { ensureRecurrences } from '../lib/recurrence'
 import { planDay as planDayPure } from '../lib/schedule'
+import { withHistory } from '../lib/taskHistory'
 import { hhmm, toMin, workEnd } from '../lib/capacity'
 
 const PlannerContext = createContext(null)
@@ -43,7 +44,14 @@ function chime(phase) {
 }
 
 export function PlannerProvider({ children }) {
-  const [tasks, setTasks] = useState(loadTasks)
+  const [tasks, setTasksRaw] = useState(loadTasks)
+  // Every change made through an update (setTasks(fn)) is written into the changed tasks' history
+  // (lib/taskHistory.js). Replacing the whole list (undo, a backup, another tab, sign-in) is not a
+  // change to note, so it goes straight in.
+  const setTasks = useCallback((u) => {
+    if (typeof u !== 'function') { setTasksRaw(u); return }
+    setTasksRaw((prev) => withHistory(prev, u(prev)))
+  }, [])
   const [settings, setSettings] = useState(loadSettings)
   // Date order and clock, set before anything below is drawn (lib/dateFormat.js).
   setDatePrefs(settings)

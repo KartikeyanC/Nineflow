@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { parseISO } from 'date-fns'
+import { differenceInCalendarDays, parseISO } from 'date-fns'
 import { format } from '../lib/dateFormat'
+import TaskHistory from './TaskHistory'
 import { Activity, CalendarCheck, CalendarDays, Clock, Timer, Tag, Flag, Trash2, X, Repeat, ArrowRight, CalendarPlus, Layers, Bell, Hash, Columns3, Video, Paperclip, MoreHorizontal, PauseCircle, XCircle, Briefcase, ListPlus } from 'lucide-react'
 import { googleCalendarUrl } from '../lib/calendar'
 import { meetLinkFor } from '../lib/gcal'
@@ -140,10 +141,21 @@ export default function TaskPanel() {
             <Row icon={CalendarDays} label="Start day">
               <AutoDay day={startDayOf(task)} empty="Not planned yet" title="Set automatically: the day this task was first planned for" />
             </Row>
-            <Row icon={CalendarCheck} label="End day">
-              {endDayOf(task)
-                ? <AutoDay day={endDayOf(task)} note={daysOnPlan(task, now) > 1 ? `${daysOnPlan(task, now)} days` : 'same day'} title="Set automatically: the day this task was completed" />
-                : <AutoDay empty="Not finished yet" note={daysOnPlan(task, now) ? `day ${daysOnPlan(task, now)}` : ''} title="Set automatically when the task is completed" />}
+            {/* The end day you set (dueDate) can be changed any time; each change goes into History below.
+                Once finished, the day it was really finished is shown too. */}
+            <Row icon={CalendarCheck} label="End day" top={!!endDayOf(task)}>
+              <div className="flex flex-col gap-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <DateField value={task.dueDate || null} onChange={(dueDate) => updateTask(task.id, { dueDate: dueDate || null })}
+                    min={startDayOf(task) || undefined} placeholder="Set an end day" ariaLabel="End day" className="w-44" />
+                  {!endDayOf(task) && <DueNote due={task.dueDate} now={now} />}
+                </div>
+                {endDayOf(task) && (
+                  <AutoDay day={endDayOf(task)}
+                    note={[daysOnPlan(task, now) > 1 ? `${daysOnPlan(task, now)} days` : 'same day', dueNote(task.dueDate, endDayOf(task))].filter(Boolean).join(' · ')}
+                    title="Set automatically: the day this task was completed" prefix="Finished" />
+                )}
+              </div>
             </Row>
             {(task.trail || []).length > 0 && (
               <Row icon={CalendarDays} label="Day trail">
@@ -262,6 +274,7 @@ export default function TaskPanel() {
           </dl>
 
           <SessionLog task={task} now={now} />
+          <TaskHistory task={task} />
 
           {task.date && (
             <a href={googleCalendarUrl(task, categoryById(task.category)?.name)} target="_blank" rel="noopener noreferrer"
@@ -435,9 +448,29 @@ function SessionLog({ task, now }) {
 }
 
 // A day that is worked out for you: plain text, not a field.
-function AutoDay({ day, empty, note, title }) {
+// How the finish day compares with the end day that was set.
+function dueNote(due, done) {
+  if (!due || !done) return ''
+  const d = differenceInCalendarDays(parseISO(done), parseISO(due))
+  return d === 0 ? 'on the end day' : d < 0 ? `${-d} ${d === -1 ? 'day' : 'days'} early` : `${d} ${d === 1 ? 'day' : 'days'} late`
+}
+
+// Days left until the end day, or how far past it an open task is.
+function DueNote({ due, now }) {
+  if (!due) return null
+  const d = differenceInCalendarDays(parseISO(due), now)
+  const late = d < 0
+  return (
+    <span className={cx('text-xs font-semibold', late ? 'text-coral-fg' : 'text-faint')}>
+      {d === 0 ? 'ends today' : late ? `${-d} ${d === -1 ? 'day' : 'days'} past the end day` : `${d} ${d === 1 ? 'day' : 'days'} left`}
+    </span>
+  )
+}
+
+function AutoDay({ day, empty, note, title, prefix }) {
   return (
     <p className="text-sm font-semibold" title={title}>
+      {prefix && <span className="text-xs font-medium text-faint">{prefix} </span>}
       {day ? format(parseISO(day), 'EEE, d MMM yyyy') : <span className="font-medium text-faint">{empty}</span>}
       {note && <>{" "}<span className="text-xs font-medium text-faint">· {note}</span></>}
     </p>

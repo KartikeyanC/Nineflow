@@ -9,6 +9,7 @@ import { cleanTags } from './taskMeta'
 import { THEMES } from './themes'
 import { cleanBilling } from './billing'
 import { cleanFields } from './fields'
+import { cleanHistory } from './taskHistory'
 import { COLUMNS_VERSION, DEFAULT_COLUMNS, LEGACY_REVIEW_ID, cleanColumns, migrateColumns } from './columns'
 
 // Keys live inside the signed-in profile's namespace (see profiles.js).
@@ -200,6 +201,7 @@ function normalizeTask(t) {
     description: t.description ?? '',
     date: t.date ?? null,
     startDate: typeof t.startDate === 'string' ? t.startDate : (t.date ?? null), // the day it started; old tasks start on their planned day
+    dueDate: /^\d{4}-\d{2}-\d{2}$/.test(t.dueDate || '') ? t.dueDate : null, // the end day you set (the day it was finished is worked out from completedAt)
     startTime: t.startTime ?? null,
     durationMinutes: Number.isFinite(t.durationMinutes) ? t.durationMinutes : 30,
     category: t.category ?? DEFAULT_CATEGORIES[0].id,
@@ -229,6 +231,7 @@ function normalizeTask(t) {
     meet: t.meet === true, // add a Google Meet link to its calendar event (lib/gcal.js)
     dropped: t.dropped && typeof t.dropped === 'object' ? { reason: String(t.dropped.reason || 'Let go').slice(0, 120), at: typeof t.dropped.at === 'string' ? t.dropped.at : new Date().toISOString() } : null,
     exam: cleanExamLink(t.exam),
+    history: cleanHistory(t.history), // every change: [{ at, field, from, to }] (lib/taskHistory.js)
   }
 }
 
