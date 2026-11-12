@@ -74,14 +74,16 @@ function RangePicker({ r, name, compact = false }) {
     </div>
   )
   return (
-    <div className="flex flex-col gap-1.5">
-      <div className="flex flex-wrap items-center gap-2">
+    // min-w-0 + max-w-full: on a phone the row of range buttons scrolls inside the card instead of
+    // making the whole page wider than the screen.
+    <div className="flex flex-col gap-1.5 min-w-0 max-w-full">
+      <div className="flex flex-wrap items-center gap-2 min-w-0">
         {compact ? (
           <select className="input h-8 py-0 w-auto text-xs font-semibold" value={r.range} onChange={(e) => r.setRange(e.target.value)} aria-label={`${name}: range`}>
             {RANGES.map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}
           </select>
         ) : (
-          <div role="group" aria-label="Range" className="inline-flex flex-nowrap max-w-full overflow-x-auto rounded-full p-1 gap-0.5 bg-ink/5 dark:bg-ink/10 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div role="group" aria-label="Range" className="inline-flex flex-nowrap min-w-0 max-w-full overflow-x-auto rounded-full p-1 gap-0.5 bg-ink/5 dark:bg-ink/10 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {RANGES.map((x) => (
               <button key={x.id} type="button" aria-pressed={r.range === x.id} onClick={() => r.setRange(x.id)}
                 className={cx('rounded-full px-3 py-1.5 text-sm font-semibold transition whitespace-nowrap', r.range === x.id ? 'bg-brand text-white shadow-sm' : 'text-ink/70 hover:text-ink')}>

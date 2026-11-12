@@ -320,10 +320,6 @@
   }
   input[type='checkbox']:focus-visible, input[type='radio']:focus-visible { outline: 2px solid rgb(var(--accent)); outline-offset: 2px; }
   input[type='checkbox']:disabled, input[type='radio']:disabled { opacity: 0.45; cursor: default; }
-  /* Charts (Recharts) make the chart and its tooltip focusable for the keyboard, so a tap on a phone
-     drew the browser's orange-and-white focus box around the bars. The tooltip and the highlighted
-     bar already show where you are, so the box is turned off. */
-  .recharts-responsive-container, .recharts-wrapper, .recharts-wrapper *, .recharts-surface { outline: none !important; -webkit-tap-highlight-color: transparent; }
   /* Sliders and progress bars keep the browser's look in the theme's accent. */
   input[type='range'], progress { accent-color: rgb(var(--accent)); }
   /* Touch screens (phones, and the phone app): no grey flash on tap, no double-tap-zoom delay, no
@@ -421,4 +417,13 @@
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* Charts (Recharts) make the chart and its tooltip focusable for the keyboard, so a tap on a phone
+   drew the browser's orange-and-white focus box around the bars. The tooltip and the highlighted
+   bar already show where you are, so the box is turned off. Kept outside @layer: Tailwind drops
+   layered rules whose class names (these come from Recharts) never appear in src. */
+.recharts-responsive-container, .recharts-wrapper, .recharts-wrapper *, .recharts-surface {
+  outline: none !important;
+  -webkit-tap-highlight-color: transparent;
 }
