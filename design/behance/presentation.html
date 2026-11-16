@@ -46,6 +46,9 @@ img { display: block; }
 .phone::after { content: ''; position: absolute; right: -5px; top: 190px; width: 5px; height: 96px; border-radius: 0 4px 4px 0; background: #2a2a2a; }
 
 .caption { font: 500 22px/1.5 'Inter'; color: var(--muted); }
+.shotcard { display: block; border-radius: 22px; background: #fff; box-shadow: 0 40px 90px -30px rgba(60,20,0,.35), 0 0 0 1px rgba(0,0,0,.06); }
+.shotcard.fade { -webkit-mask-image: linear-gradient(#000 82%, transparent); mask-image: linear-gradient(#000 82%, transparent); }
+.dot { display: inline-block; width: 14px; height: 14px; border-radius: 50%; margin-right: 10px; vertical-align: 1px; }
 .caption b { color: var(--ink); font-weight: 700; }
 .tag { font: 700 16px/1 'Inter'; letter-spacing: .14em; text-transform: uppercase; }
 .wordmark { font-family: 'Inter'; font-weight: 800; letter-spacing: -0.045em; }
@@ -314,11 +317,124 @@ img { display: block; }
   </div>
 </section>
 
+<!-- ============ 11a PLAN THE DAY ============ -->
+<section class="page" id="p11a-day" style="height:1380px;">
+  <div class="pad" style="padding-bottom:0;display:flex;justify-content:space-between;align-items:flex-end">
+    <div><div class="num">11 — PLAN THE DAY</div><h2 style="margin-top:40px;font-size:72px;font-weight:800;line-height:1">A plan that bends, not breaks</h2></div>
+    <p class="caption" style="width:600px">Real days don't go to plan. NineFlow shows when a day is too full, keeps yesterday's leftovers in one calm place, and makes room for the urgent thing someone just asked for.</p>
+  </div>
+  <div style="position:absolute;left:140px;top:430px;width:1000px;display:flex;flex-direction:column;gap:30px">
+    <div><div class="tag" style="color:var(--orange)">Today's load</div><img class="shotcard" src="shots/crop-loadbar.png" style="width:1000px;margin-top:16px"><p class="caption" style="margin-top:14px">Planned hours against the working day, with the finish time. Too full? <b>One tap moves a lower-priority task to tomorrow.</b></p></div>
+    <div><div class="tag" style="color:var(--orange)">Carried over</div><img class="shotcard" src="shots/crop-carried.png" style="width:1000px;margin-top:16px"><p class="caption" style="margin-top:14px">Unfinished work from earlier days waits here, not in a red overdue list. Give each one a day, or let it go.</p></div>
+    <div style="background:var(--ink);color:#fff;border-radius:28px;padding:38px 44px;display:flex;gap:40px;align-items:center">
+      <div class="display" style="font-size:72px;font-weight:800;color:var(--sun);line-height:1">8+</div>
+      <p style="font:400 23px/1.5 'Inter';color:#D8D2C6"><b style="color:#fff">Welcome back.</b> After a week away, people rarely return to a wall of overdue tasks. NineFlow offers a fresh start instead: park the old work in Someday and plan just today.</p>
+    </div>
+  </div>
+  <div style="position:absolute;right:140px;top:430px;width:520px">
+    <div class="tag" style="color:var(--orange)">Interruptions · Ctrl+I</div>
+    <img class="shotcard" src="shots/crop-interrupt.png" style="width:520px;margin-top:16px">
+    <p class="caption" style="margin-top:16px">Log urgent work in seconds. It goes onto today's plan, pauses what you were doing, and warns when the day is now over capacity.</p>
+  </div>
+</section>
+
+<!-- ============ 11b PLAN A GOAL ============ -->
+<section class="page" id="p11b-goal" style="height:1560px;background:var(--peach)">
+  <div class="pad" style="padding-bottom:0">
+    <div class="num" style="color:var(--deep)">12 — PLAN A GOAL</div>
+    <h2 style="margin-top:40px;font-size:72px;font-weight:800;line-height:1;max-width:1100px">An exam in 24 days? Here is every evening, planned.</h2>
+  </div>
+  <div style="position:absolute;left:140px;top:470px;width:600px"><img class="shotcard fade" src="shots/crop-goal-form.png" style="width:600px"><div class="tag" style="color:var(--deep);margin-top:26px">1 · Say what and when</div><p class="caption" style="margin-top:10px">Name it, pick the date, list the topics, choose the hours and the days you're free.</p></div>
+  <div style="position:absolute;left:800px;top:540px;width:600px"><img class="shotcard" src="shots/crop-goal-plan.png" style="width:600px"><div class="tag" style="color:var(--deep);margin-top:26px">2 · Check the plan</div><p class="caption" style="margin-top:10px">Each topic is split over free days, revision comes at the end, and a free day is kept before the exam.</p></div>
+  <div class="phone" style="position:absolute;right:120px;top:400px;width:330px"><img src="shots/phone-feat-goal-plan.png"></div>
+  <p class="caption" style="position:absolute;right:140px;top:1180px;width:300px;text-align:center">Nothing is added until you press <b>Add 21 tasks</b>.</p>
+</section>
+
+<!-- ============ 11c ADD FAST ============ -->
+<section class="page" id="p11c-add" style="height:1100px;">
+  <div class="pad" style="padding-bottom:0">
+    <div class="num">13 — ADD TASKS FAST</div>
+    <h2 style="margin-top:40px;font-size:72px;font-weight:800;line-height:1">Type it, say it, or press Ctrl+K</h2>
+  </div>
+  <div style="margin:70px 140px 0;display:grid;grid-template-columns:1.05fr 1fr 0.8fr;gap:40px;align-items:start">
+    <div><img class="shotcard" src="shots/crop-quickadd.png" style="width:100%"><div class="tag" style="color:var(--orange);margin-top:28px">Quick add in plain words</div><p class="caption" style="margin-top:10px">"Edit trailer tomorrow 2pm 90m #work !high" becomes chips for the day, time, length, category and priority as you type.</p></div>
+    <div><img class="shotcard" src="shots/crop-voice.png" style="width:100%"><div class="tag" style="color:var(--orange);margin-top:28px">Speak a run of tasks</div><p class="caption" style="margin-top:10px">Say "next" between tasks and "delete that" to take one back. Here "buy milk" is dropped before the list is made.</p></div>
+    <div><img class="shotcard fade" src="shots/crop-palette.png" style="width:100%"><div class="tag" style="color:var(--orange);margin-top:28px">Command palette</div><p class="caption" style="margin-top:10px">Ctrl+K jumps to any screen, runs an action or finds a task or note.</p></div>
+  </div>
+</section>
+
+<!-- ============ 11d FINISH ============ -->
+<section class="page" id="p11d-finish" style="height:1840px;background:#F2EDE2">
+  <div class="pad" style="padding-bottom:0;display:flex;justify-content:space-between;align-items:flex-end">
+    <div><div class="num">14 — FOCUS & FINISH</div><h2 style="margin-top:40px;font-size:72px;font-weight:800;line-height:1">Start it, stay on it, finish it properly</h2></div>
+  </div>
+  <div class="win" style="position:absolute;left:140px;top:430px;width:1100px"><div class="bar"><i></i><i></i><i></i><span>Focus mode</span></div><img src="shots/feat-focus.png"></div>
+  <div style="position:absolute;left:140px;top:1180px;width:1100px"><div class="tag" style="color:var(--orange)">Focus mode</div><p class="caption" style="margin-top:10px">A full-screen Pomodoro timer for one task. Minimise it to a small pill and keep working; the real minutes are logged on the task.</p></div>
+  <div class="phone" style="position:absolute;right:140px;top:400px;width:330px"><img src="shots/phone-feat-focus.png"></div>
+  <div style="position:absolute;left:140px;top:1320px;display:flex;gap:40px;align-items:flex-start">
+    <img class="shotcard" src="shots/crop-finishgate.png" style="width:470px">
+    <div style="width:560px"><div class="tag" style="color:var(--orange)">Checklists with required steps</div><p class="caption" style="margin-top:10px">Lock the steps that matter. A task can't be marked done until they are ticked, from the board, the list or the timer. <b>"Finish anyway"</b> is still there when you need it.</p></div>
+  </div>
+</section>
+
+<!-- ============ 11e TIME & MONEY ============ -->
+<section class="page" id="p11e-money" style="height:1480px;">
+  <div class="pad" style="padding-bottom:0;display:flex;justify-content:space-between;align-items:flex-end">
+    <div><div class="num">15 — TIME & MONEY</div><h2 style="margin-top:40px;font-size:72px;font-weight:800;line-height:1">From hours worked to an invoice</h2></div>
+    <p class="caption" style="width:560px">For freelancers: tag a task with a client, mark it billable, and the timer does the rest.</p>
+  </div>
+  <div style="position:absolute;left:140px;top:430px;width:900px">
+    <img class="shotcard" src="shots/crop-clients.png" style="width:900px"><div class="tag" style="color:var(--orange);margin-top:24px">Hours by client</div><p class="caption" style="margin-top:10px">Billable hours, each client's rate and the amount, for any range.</p>
+    <img class="shotcard" src="shots/crop-ask.png" style="width:620px;margin-top:56px"><div class="tag" style="color:var(--orange);margin-top:24px">Ask NineFlow</div><p class="caption" style="margin-top:10px">Ask about your own planner in plain words: "What's overdue?", "How much did I log on Design this week?"</p>
+  </div>
+  <div style="position:absolute;right:140px;top:430px;width:640px">
+    <img class="shotcard" src="shots/crop-invoice.png" style="width:640px"><div class="tag" style="color:var(--orange);margin-top:24px">One-click invoice</div><p class="caption" style="margin-top:10px">Every billable task × the client's rate, with tax and a total. Print it, save it as a PDF, or export a CSV.</p>
+  </div>
+</section>
+
+<!-- ============ 11f REVISE ============ -->
+<section class="page" id="p11f-revise" style="height:1500px;background:var(--ink);color:#fff">
+  <div class="pad" style="padding-bottom:0">
+    <div class="num" style="color:#8C877C">16 — LEARN & REMEMBER</div>
+    <h2 style="margin-top:40px;font-size:72px;font-weight:800;line-height:1;max-width:1000px">Notes that turn into flashcards</h2>
+    <p style="margin-top:26px;font:400 25px/1.55 'Inter';color:#CFCAC0;width:820px">Write <b style="color:var(--sun)">question :: answer</b> on any line of a note. Revise shows today's cards one at a time, then brings each back after 1, 3, 7, 21, 45 and 90 days, while you still remember it.</p>
+  </div>
+  <div class="win" style="position:absolute;left:140px;top:640px;width:1060px"><div class="bar"><i></i><i></i><i></i><span>Revise</span></div><img src="shots/feat-revise-answer.png"></div>
+  <div class="phone" style="position:absolute;left:1260px;top:420px;width:300px;box-shadow:0 60px 120px -20px rgba(0,0,0,.8), inset 0 0 0 2px #3A3A3A"><img src="shots/phone-feat-revise.png"></div>
+  <div class="phone" style="position:absolute;left:1500px;top:560px;width:300px;box-shadow:0 60px 120px -20px rgba(0,0,0,.8), inset 0 0 0 2px #3A3A3A"><img src="shots/phone-feat-revise-answer.png"></div>
+</section>
+
+<!-- ============ 11g SAFE ============ -->
+<section class="page" id="p11g-safe" style="height:980px;">
+  <div class="pad" style="padding-bottom:0">
+    <div class="num">17 — ORGANISED & SAFE</div>
+    <h2 style="margin-top:40px;font-size:72px;font-weight:800;line-height:1">Separate planners, and nothing lost</h2>
+  </div>
+  <div style="margin:80px 140px 0;display:grid;grid-template-columns:0.75fr 1.25fr;gap:56px;align-items:start">
+    <div><img class="shotcard" src="shots/crop-workspaces.png" style="width:100%"><div class="tag" style="color:var(--orange);margin-top:28px">Workspaces</div><p class="caption" style="margin-top:10px">Up to six separate planners under one sign-in: work, study, a side project. Each keeps its own tasks, notes and settings.</p></div>
+    <div><img class="shotcard" src="shots/crop-versions.png" style="width:100%"><div class="tag" style="color:var(--orange);margin-top:28px">Version history</div><p class="caption" style="margin-top:10px">A copy of the whole planner when it opens and every hour while you work, kept for 30 days. See what changed, bring back one deleted task, or restore everything. And every delete has an <b>Undo</b> (Ctrl+Z).</p></div>
+  </div>
+</section>
+
+<!-- ============ 11h THEMES ============ -->
+<section class="page" id="p11h-themes" style="height:1680px;background:#F2EDE2">
+  <div class="pad" style="padding-bottom:0;display:flex;justify-content:space-between;align-items:flex-end">
+    <div><div class="num">18 — COLOUR THEMES</div><h2 style="margin-top:40px;font-size:72px;font-weight:800;line-height:1">Make it yours</h2></div>
+    <p class="caption" style="width:620px">Five colour themes, each in light and dark. The theme recolours sections and buttons; <b>the logo stays orange</b>, so NineFlow always looks like NineFlow.</p>
+  </div>
+  <div style="margin:70px 140px 0;display:grid;grid-template-columns:1fr 1fr;gap:48px 40px">
+    <div><div class="win"><div class="bar"><i></i><i></i><i></i></div><img src="shots/theme-ocean.png"></div><p class="caption" style="margin-top:18px"><span class="dot" style="background:#2563EB"></span><b>Ocean</b></p></div>
+    <div><div class="win"><div class="bar"><i></i><i></i><i></i></div><img src="shots/theme-forest.png"></div><p class="caption" style="margin-top:18px"><span class="dot" style="background:#16805A"></span><b>Forest</b></p></div>
+    <div><div class="win"><div class="bar"><i></i><i></i><i></i></div><img src="shots/theme-berry.png"></div><p class="caption" style="margin-top:18px"><span class="dot" style="background:#BE2469"></span><b>Berry</b></p></div>
+    <div><div class="win"><div class="bar"><i></i><i></i><i></i></div><img src="shots/theme-graphite.png"></div><p class="caption" style="margin-top:18px"><span class="dot" style="background:#6348DC"></span><b>Graphite</b></p></div>
+  </div>
+</section>
+
 <!-- ============ 12 MOBILE SHOWCASE ============ -->
 <section class="page onorange" id="p12-mobile" style="height:1560px;background:var(--grad)">
   <div class="watermark" style="left:-20px;top:40px;font-size:430px">MOBILE</div>
   <div class="pad" style="padding-bottom:0;color:#fff;position:relative">
-    <div class="num" style="color:rgba(255,255,255,.8)">11 — MOBILE APP</div>
+    <div class="num" style="color:rgba(255,255,255,.8)">19 — MOBILE APP</div>
     <h2 style="margin-top:40px;font-size:80px;font-weight:800;line-height:1">Made for one hand</h2>
     <p style="margin-top:22px;font:500 25px/1.5 'Inter';color:rgba(255,255,255,.9);width:880px">The real Android app: a bottom bar for the four views you use most, a big + for new tasks, and the rest one tap away under More.</p>
   </div>
@@ -334,7 +450,7 @@ img { display: block; }
 <!-- ============ 13 MOBILE DETAIL ============ -->
 <section class="page" id="p13-mobile-detail" style="height:1500px;">
   <div class="pad" style="padding-bottom:0">
-    <div class="num">12 — MOBILE DETAILS</div>
+    <div class="num">20 — MOBILE DETAILS</div>
     <h2 style="margin-top:40px;font-size:72px;font-weight:800;line-height:1">Everything from desktop, sized for a phone</h2>
   </div>
   <div style="margin:90px 140px 0;display:grid;grid-template-columns:repeat(4,1fr);gap:44px">
@@ -348,7 +464,7 @@ img { display: block; }
 <!-- ============ 14 DARK MODE ============ -->
 <section class="page" id="p14-dark" style="height:1500px;background:#0F0E0D;color:#fff">
   <div class="pad" style="padding-bottom:0;display:flex;justify-content:space-between;align-items:flex-end">
-    <div><div class="num" style="color:#8C877C">13 — DARK MODE</div><h2 style="margin-top:40px;font-size:72px;font-weight:800;line-height:1">Easy on the eyes after dark</h2></div>
+    <div><div class="num" style="color:#8C877C">21 — DARK MODE</div><h2 style="margin-top:40px;font-size:72px;font-weight:800;line-height:1">Easy on the eyes after dark</h2></div>
     <p class="caption" style="width:560px;color:#A9A398">Warm greys instead of pure black, and the same orange, so the brand looks the same day and night.</p>
   </div>
   <div class="win dark" style="position:absolute;left:140px;top:420px;width:1240px"><div class="bar"><i></i><i></i><i></i><span>nineflow.app</span></div><img src="shots/desk-dark-dashboard.png"></div>
