@@ -210,7 +210,13 @@ function Note({ note, flash, autoFocus, onFocused, onText, onColor, onPin, onDel
       onDragOver={(e) => { if ([...e.dataTransfer.types].includes('Files')) { e.preventDefault(); setDragOver(true) } }}
       onDragLeave={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setDragOver(false) }}
       onDrop={(e) => { if (e.dataTransfer.files?.length) { e.preventDefault(); setDragOver(false); take(e.dataTransfer.files) } }}
-      className={cx('group break-inside-avoid rounded-2xl p-4 shadow-soft transition-shadow', c.bg, flash && 'ring-2 ring-brand', dragOver && 'ring-2 ring-lav-fg')}>
+      className={cx('relative group break-inside-avoid rounded-2xl p-4 shadow-soft transition-shadow', c.bg, flash && 'ring-2 ring-brand', dragOver && 'ring-2 ring-lav-fg')}>
+      {dragOver && (
+        <div className="pointer-events-none absolute inset-1.5 z-10 rounded-xl border-2 border-dashed border-lav-fg/70 bg-lav/80 flex flex-col items-center justify-center gap-1 text-lav-fg">
+          <ImagePlus size={22} aria-hidden="true" />
+          <span className="text-sm font-semibold">{images.length >= MAX_IMAGES ? `This note is full (${MAX_IMAGES} pictures)` : 'Drop to add the picture'}</span>
+        </div>
+      )}
       <NoteTime note={note} />
       {images.length > 0 && (
         <div className={cx('mb-2 grid gap-1.5', images.length === 1 ? 'grid-cols-1' : 'grid-cols-2')}>
@@ -257,9 +263,28 @@ function Note({ note, flash, autoFocus, onFocused, onText, onColor, onPin, onDel
               className={cx('h-4 w-4 rounded-full', colorOf(id).dot, note.color === id ? 'ring-2 ring-ink/50 ring-offset-1 ring-offset-transparent' : 'opacity-60 hover:opacity-100')} />
           ))}
         </div>
-        <button type="button" onClick={() => fileRef.current?.click()} disabled={images.length >= MAX_IMAGES || adding}
-          title={images.length >= MAX_IMAGES ? `Up to ${MAX_IMAGES} pictures in a note` : 'Add a picture (or paste or drop one)'} aria-label="Add a picture"
-          className="h-7 w-7 rounded-full inline-flex items-center justify-center text-ink/60 hover:bg-card/60 hover:text-ink disabled:opacity-30 transition"><ImagePlus size={14} /></button>
+        <span className="relative group/pic">
+          <button type="button" onClick={() => fileRef.current?.click()} disabled={images.length >= MAX_IMAGES || adding}
+            aria-label={images.length >= MAX_IMAGES ? `Add a picture (the note already has ${MAX_IMAGES})` : 'Add a picture'}
+            aria-describedby={`pic-tip-${note.id}`}
+            className={cx('h-7 rounded-full inline-flex items-center gap-1 text-xs font-semibold transition disabled:opacity-40 disabled:cursor-not-allowed',
+              images.length ? 'pl-2 pr-2.5 bg-card/70 text-ink ring-1 ring-ink/10 hover:bg-card' : 'w-7 justify-center text-ink/60 hover:bg-card/60 hover:text-ink')}>
+            {adding ? <span className="h-3.5 w-3.5 rounded-full border-2 border-ink/25 border-t-ink/70 animate-spin" aria-hidden="true" /> : <ImagePlus size={14} aria-hidden="true" />}
+            {images.length > 0 && <span className="tnum">{images.length}/{MAX_IMAGES}</span>}
+          </button>
+          <span id={`pic-tip-${note.id}`} role="tooltip"
+            className="max-sm:hidden pointer-events-none absolute bottom-full right-0 mb-2 z-20 w-max max-w-[220px] rounded-xl bg-ink px-3 py-2 text-left shadow-lift opacity-0 translate-y-1 transition duration-150 group-hover/pic:opacity-100 group-hover/pic:translate-y-0 group-focus-within/pic:opacity-100 group-focus-within/pic:translate-y-0">
+            {images.length >= MAX_IMAGES ? (
+              <span className="block text-xs font-semibold text-page">This note has {MAX_IMAGES} pictures, the most it can hold</span>
+            ) : (
+              <>
+                <span className="flex items-center gap-1.5 text-xs font-semibold text-page"><ImagePlus size={12} aria-hidden="true" /> Add a picture</span>
+                <span className="mt-1 block text-[11px] leading-snug text-page/70">Or paste one (Ctrl+V), or drop it on the note. Up to {MAX_IMAGES}.</span>
+              </>
+            )}
+            <span className="absolute -bottom-1 right-2.5 h-2 w-2 rotate-45 bg-ink" aria-hidden="true" />
+          </span>
+        </span>
         <button type="button" onClick={() => { commit(); onTask() }} disabled={!text.trim()} title="Turn into a task" aria-label="Turn into a task"
           className="h-7 w-7 rounded-full inline-flex items-center justify-center text-ink/60 hover:bg-card/60 hover:text-ink disabled:opacity-30 transition"><ListPlus size={14} /></button>
         <button type="button" onClick={onPin} title={note.pinned ? 'Unpin' : 'Pin to top'} aria-label={note.pinned ? 'Unpin' : 'Pin to top'}
