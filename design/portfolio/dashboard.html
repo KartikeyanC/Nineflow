@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NineFlow Dashboard</title>
+<meta name="description" content="UI/UX case study of the NineFlow desktop and web app: dashboard, views and features.">
+<link rel="icon" href="assets/img/nineflow-tile.webp">
+<link rel="stylesheet" href="assets/site.css">
+<style>
+  .hero-shot { margin-top: clamp(48px, 7vw, 96px); }
+  .principles .card h3 { margin-bottom: 10px; }
+  .on-orange .principles .card { background: rgba(17, 17, 17, .82); border: 0; color: #fff; }
+  .on-orange .principles .card p { color: #DCD6CB; }
+  .feature { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: clamp(28px, 5vw, 80px); align-items: center; padding: clamp(28px, 4vw, 56px) 0; }
+  .feature + .feature { border-top: 1px solid var(--line); }
+  .feature.rev > :first-child { order: 2; }
+  .feature h3 { font-size: clamp(26px, 2.8vw, 40px); margin: 12px 0 14px; }
+  .feature .stack { display: grid; gap: 20px; }
+  @media (max-width: 900px) { .feature { grid-template-columns: minmax(0, 1fr); } .feature.rev > :first-child { order: 0; } }
+  .themes .dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 8px; }
+  .dark-pair { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: clamp(20px, 3vw, 40px); align-items: end; }
+  @media (max-width: 900px) { .dark-pair { grid-template-columns: minmax(0, 1fr); } }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap">
+    <a class="brand" href="website.html"><img src="assets/img/nineflow-tile.webp" alt=""><span class="wordmark">Nine<em>Flow</em></span></a>
+    <nav class="tabs" aria-label="Portfolio pages">
+      <a href="logo.html">Logo</a>
+      <a href="dashboard.html" aria-current="page">Dashboard</a>
+      <a href="mobile.html">Mobile</a>
+      <a href="website.html">Website</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <!-- Hero -->
+  <section class="hero on-orange">
+    <div class="watermark" aria-hidden="true">DASHBOARD</div>
+    <div class="wrap">
+      <div class="num">UI/UX case study · Web and desktop</div>
+      <h1 style="margin-top:22px">Today, at a glance</h1>
+      <p class="lead">A planner, focus timer and work log in one app. The dashboard answers three questions first: what's left, how long it takes, and when you'll finish.</p>
+      <div class="chips"><span class="chip">Web</span><span class="chip">Windows / Mac</span><span class="chip">Works offline</span><span class="chip">React · Tailwind</span></div>
+      <div class="win hero-shot"><div class="bar"><i></i><i></i><i></i><span>nineflow.app/dashboard</span></div><img src="assets/img/desk-light-dashboard.webp" alt="The NineFlow dashboard: today's load, carried-over work, task counts, schedule and productivity" width="2000" height="1250"></div>
+    </div>
+  </section>
+
+  <!-- Overview -->
+  <section>
+    <div class="wrap">
+      <div class="split" style="align-items:start">
+        <div class="reveal">
+          <div class="num">01 — Overview</div>
+          <h2 style="margin-top:22px">One calm place for the day: <span class="grad-text">plan it, do it, see it.</span></h2>
+          <p class="lead" style="margin-top:26px">Most planners stop at a list. NineFlow follows the work from the plan to the finish: what is due today, how long it really took, and what changed on the way.</p>
+        </div>
+        <div class="grid g2 reveal">
+          <div class="card stat"><div class="display">13</div><p class="muted">views from one set of tasks</p></div>
+          <div class="card stat"><div class="display">3</div><p class="muted">platforms from one codebase</p></div>
+          <div class="card stat"><div class="display">0</div><p class="muted">sign-ups needed: guest mode</p></div>
+          <div class="card stat"><div class="display">100%</div><p class="muted">usable offline</p></div>
+        </div>
+      </div>
+      <div class="facts reveal">
+        <div><div class="num">Role</div><strong>Brand, UI/UX design and development</strong></div>
+        <div><div class="num">Year</div><strong>2026</strong></div>
+        <div><div class="num">Platforms</div><strong>Web · Windows · Mac · Android</strong></div>
+        <div><div class="num">Built with</div><strong>React · Tailwind · Electron · Capacitor</strong></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Principles -->
+  <section class="on-orange">
+    <div class="wrap">
+      <div class="head reveal"><div><div class="num">02 — Principles</div><h2>Designed for the next five minutes, and the next five weeks</h2></div></div>
+      <div class="grid g3 principles">
+        <div class="card reveal"><h3>One look at today</h3><p>The load bar compares planned hours with the working day, so an over-full day shows before it starts.</p></div>
+        <div class="card reveal"><h3>Add in plain words</h3><p>"Call the bank tomorrow 3pm !high" fills in the day, time and priority. Speak tasks, or paste messy notes.</p></div>
+        <div class="card reveal"><h3>Nothing gets lost</h3><p>Works offline, carries unfinished work forward, and keeps a history of every change on each task.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Views -->
+  <section class="on-sand">
+    <div class="wrap">
+      <div class="head reveal"><div><div class="num">03 — Views</div><h2>The same tasks, seen many ways</h2></div><p class="lead">Every view reads the same tasks, so a change in one shows in all of them at once.</p></div>
+      <div class="grid g2">
+        <figure class="reveal"><div class="win"><div class="bar"><i></i><i></i><i></i></div><img src="assets/img/desk-light-board.webp" alt="Board view" width="2000" height="1250" loading="lazy"></div><figcaption class="cap"><b>Board.</b> Drag a card to Working and its timer starts.</figcaption></figure>
+        <figure class="reveal"><div class="win"><div class="bar"><i></i><i></i><i></i></div><img src="assets/img/desk-light-week.webp" alt="Week view" width="2000" height="1250" loading="lazy"></div><figcaption class="cap"><b>Week.</b> Time blocks with a live "now" line.</figcaption></figure>
+        <figure class="reveal"><div class="win"><div class="bar"><i></i><i></i><i></i></div><img src="assets/img/desk-light-month.webp" alt="Month view" width="2000" height="1250" loading="lazy"></div><figcaption class="cap"><b>Month.</b> Each day's colour shows how full it is.</figcaption></figure>
+        <figure class="reveal"><div class="win"><div class="bar"><i></i><i></i><i></i></div><img src="assets/img/desk-light-charts.webp" alt="Charts view" width="2000" height="1250" loading="lazy"></div><figcaption class="cap"><b>Charts.</b> Hours worked and tasks done over any range.</figcaption></figure>
+        <figure class="reveal"><div class="win"><div class="bar"><i></i><i></i><i></i></div><img src="assets/img/desk-light-matrix.webp" alt="Eisenhower matrix" width="2000" height="1250" loading="lazy"></div><figcaption class="cap"><b>Matrix.</b> Urgent and important, sorted for you.</figcaption></figure>
+        <figure class="reveal"><div class="win"><div class="bar"><i></i><i></i><i></i></div><img src="assets/img/desk-light-table.webp" alt="Table view" width="2000" height="1250" loading="lazy"></div><figcaption class="cap"><b>Table.</b> Sort, filter and edit many tasks together.</figcaption></figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section>
+    <div class="wrap">
+      <div class="head reveal"><div><div class="num">04 — Features</div><h2>Small features that save the day</h2></div></div>
+
+      <div class="feature reveal">
+        <div class="stack"><img class="shot" src="assets/img/crop-loadbar.webp" alt="Today's load bar" loading="lazy"><img class="shot" src="assets/img/crop-carried.webp" alt="Carried over card" loading="lazy"></div>
+        <div><span class="kicker">Plan the day</span><h3>A plan that bends, not breaks</h3><p class="muted">Planned hours against the working day, with the finish time. Too full? One tap moves a lower-priority task to tomorrow. Unfinished work from earlier days waits in <b>Carried over</b>, not in a red overdue list.</p></div>
+      </div>
+
+      <div class="feature rev reveal">
+        <img class="shot" src="assets/img/crop-interrupt.webp" alt="Interruption dialog" loading="lazy" style="max-width:520px;justify-self:end">
+        <div><span class="kicker">Interruptions · Ctrl+I</span><h3>Something came up?</h3><p class="muted">Log urgent work in seconds. It goes onto today's plan, pauses what you were doing, and warns when the day is now over capacity, so the day's report stays honest.</p></div>
+      </div>
+
+      <div class="feature reveal">
+        <div class="grid g2" style="align-items:start"><img class="shot fade" src="assets/img/crop-goal-form.webp" alt="Plan a goal form" loading="lazy"><img class="shot" src="assets/img/crop-goal-plan.webp" alt="The generated study plan" loading="lazy" style="margin-top:40px"></div>
+        <div><span class="kicker">Plan a goal</span><h3>An exam in 24 days? Every evening, planned.</h3><p class="muted">Name the goal, pick the date, list the topics and the days you're free. NineFlow spreads the work, adds revision at the end and keeps a free day before the deadline. Nothing is added until you confirm.</p></div>
+      </div>
+
+      <div class="feature rev reveal">
+        <div class="stack"><img class="shot" src="assets/img/crop-quickadd.webp" alt="Quick add with parsed chips" loading="lazy"><img class="shot" src="assets/img/crop-voice.webp" alt="Prompt to list with spoken text" loading="lazy"></div>
+        <div><span class="kicker">Add tasks fast</span><h3>Type it, say it, or press Ctrl+K</h3><p class="muted">"Edit trailer tomorrow 2pm 90m #work !high" turns into chips as you type. Speak a run of tasks, saying "next" between them and "delete that" to take one back. Or paste meeting notes and let AI pick out the tasks.</p></div>
+      </div>
+
+      <div class="feature reveal">
+        <div class="win"><div class="bar"><i></i><i></i><i></i><span>Focus mode</span></div><img src="assets/img/feat-focus.webp" alt="Full-screen focus timer" loading="lazy"></div>
+        <div><span class="kicker">Focus & finish</span><h3>Start it, stay on it, finish it properly</h3><p class="muted">A full-screen Pomodoro timer for one task logs the real minutes. Checklists can lock required steps, so a task can't be marked done until they are ticked.</p><img class="shot" src="assets/img/crop-finishgate.webp" alt="Before you finish dialog" loading="lazy" style="margin-top:24px;max-width:420px"></div>
+      </div>
+
+      <div class="feature rev reveal">
+        <img class="shot" src="assets/img/crop-invoice.webp" alt="Invoice for a client" loading="lazy" style="max-width:560px;justify-self:end">
+        <div><span class="kicker">Time & money</span><h3>From hours worked to an invoice</h3><p class="muted">Tag tasks with a client and mark them billable. Charts show billable hours by client, and one click makes an invoice with the rate, tax and total, ready to print, save as a PDF or export as CSV.</p><img class="shot" src="assets/img/crop-clients.webp" alt="Hours by client" loading="lazy" style="margin-top:24px"></div>
+      </div>
+
+      <div class="feature reveal">
+        <div class="win"><div class="bar"><i></i><i></i><i></i></div><img src="assets/img/desk-light-task.webp" alt="Task panel with details and history" loading="lazy"></div>
+        <div><span class="kicker">Task panel</span><h3>Every detail, and every change</h3><p class="muted">Start day, end day, time, length, steps, reminders and a full <b>change history</b>: what changed, from what, to what, and when.</p></div>
+      </div>
+
+      <div class="feature rev reveal">
+        <div class="stack"><img class="shot" src="assets/img/crop-versions.webp" alt="Version history" loading="lazy"><img class="shot" src="assets/img/crop-ask.webp" alt="Ask NineFlow" loading="lazy" style="max-width:560px"></div>
+        <div><span class="kicker">Safe & smart</span><h3>Nothing lost, and answers on hand</h3><p class="muted">A copy of the whole planner every hour, kept for 30 days, with Undo on every delete. Up to six separate workspaces. And <b>Ask NineFlow</b> answers questions about your own planner in plain words.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Themes -->
+  <section class="on-sand themes">
+    <div class="wrap">
+      <div class="head reveal"><div><div class="num">05 — Themes</div><h2>Make it yours</h2></div><p class="lead">Five colour themes, each in light and dark. The theme recolours sections and buttons; <b>the logo stays orange.</b></p></div>
+      <div class="grid g2">
+        <figure class="reveal"><div class="win"><div class="bar"><i></i><i></i><i></i></div><img src="assets/img/theme-ocean.webp" alt="Ocean theme" loading="lazy"></div><figcaption class="cap"><span class="dot" style="background:#2563EB"></span><b>Ocean</b></figcaption></figure>
+        <figure class="reveal"><div class="win"><div class="bar"><i></i><i></i><i></i></div><img src="assets/img/theme-forest.webp" alt="Forest theme" loading="lazy"></div><figcaption class="cap"><span class="dot" style="background:#16805A"></span><b>Forest</b></figcaption></figure>
+        <figure class="reveal"><div class="win"><div class="bar"><i></i><i></i><i></i></div><img src="assets/img/theme-berry.webp" alt="Berry theme" loading="lazy"></div><figcaption class="cap"><span class="dot" style="background:#BE2469"></span><b>Berry</b></figcaption></figure>
+        <figure class="reveal"><div class="win"><div class="bar"><i></i><i></i><i></i></div><img src="assets/img/theme-graphite.webp" alt="Graphite theme" loading="lazy"></div><figcaption class="cap"><span class="dot" style="background:#6348DC"></span><b>Graphite</b></figcaption></figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- Dark -->
+  <section class="on-night">
+    <div class="wrap">
+      <div class="head reveal"><div><div class="num">06 — Dark mode</div><h2>Easy on the eyes after dark</h2></div><p class="lead">Warm greys instead of pure black, and the same orange, so the brand looks the same day and night.</p></div>
+      <div class="dark-pair">
+        <div class="win dark reveal"><div class="bar"><i></i><i></i><i></i><span>nineflow.app</span></div><img src="assets/img/desk-dark-dashboard.webp" alt="Dashboard in dark mode" loading="lazy"></div>
+        <div class="win dark reveal"><div class="bar"><i></i><i></i><i></i></div><img src="assets/img/desk-dark-week.webp" alt="Week in dark mode" loading="lazy"></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    <span>© 2026 Kartikeyan · NineFlow UI/UX</span>
+    <nav aria-label="More"><a href="logo.html">Logo</a><a href="mobile.html">Mobile →</a><a href="website.html">Website</a><a href="https://github.com/KartikeyanC/Nineflow">GitHub</a></nav>
+  </div>
+</footer>
+<script src="assets/site.js"></script>
+</body>
+</html>

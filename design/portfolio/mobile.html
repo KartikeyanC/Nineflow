@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NineFlow Mobile</title>
+<meta name="description" content="UI/UX case study of the NineFlow Android app: real screens from the phone layout.">
+<link rel="icon" href="assets/img/nineflow-tile.webp">
+<link rel="stylesheet" href="assets/site.css">
+<style>
+  .hero-phones { margin-top: clamp(48px, 7vw, 90px); }
+  .hero-phones .phone:nth-child(1), .hero-phones .phone:nth-child(5) { margin-top: 120px; }
+  .hero-phones .phone:nth-child(2), .hero-phones .phone:nth-child(4) { margin-top: 56px; }
+  .hero-phones .phone:nth-child(3) { flex-basis: 330px; }
+  @media (max-width: 760px) { .hero-phones .phone:nth-child(n+4) { display: none; } .hero-phones .phone { flex-basis: 30% !important; } }
+  .pair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(28px, 5vw, 80px); align-items: center; padding: clamp(28px, 4vw, 56px) 0; }
+  .pair + .pair { border-top: 1px solid var(--line); }
+  .pair .phones { justify-content: flex-start; }
+  .pair.rev > :first-child { order: 2; }
+  .pair h3 { font-size: clamp(26px, 2.8vw, 40px); margin: 12px 0 14px; }
+  @media (max-width: 860px) { .pair { grid-template-columns: minmax(0, 1fr); } .pair.rev > :first-child { order: 0; } .pair .phones { justify-content: center; } }
+  .gallery { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: clamp(18px, 3vw, 40px); }
+  .gallery figure:nth-child(even) { margin-top: 70px; }
+  @media (max-width: 860px) { .gallery { grid-template-columns: repeat(2, minmax(0, 1fr)); } .gallery figure:nth-child(even) { margin-top: 40px; } }
+  .nav-anatomy { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
+  .nav-anatomy .card { padding: 20px; text-align: center; }
+  .nav-anatomy b { display: block; font-size: 17px; }
+  @media (max-width: 760px) { .nav-anatomy { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap">
+    <a class="brand" href="website.html"><img src="assets/img/nineflow-tile.webp" alt=""><span class="wordmark">Nine<em>Flow</em></span></a>
+    <nav class="tabs" aria-label="Portfolio pages">
+      <a href="logo.html">Logo</a>
+      <a href="dashboard.html">Dashboard</a>
+      <a href="mobile.html" aria-current="page">Mobile</a>
+      <a href="website.html">Website</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <!-- Hero -->
+  <section class="hero on-orange" style="padding-bottom:0">
+    <div class="watermark" aria-hidden="true" style="top:30%">MOBILE</div>
+    <div class="wrap">
+      <div class="num">UI/UX case study · Android app</div>
+      <h1 style="margin-top:22px">Made for one hand</h1>
+      <p class="lead">The real NineFlow Android app, built with Capacitor from the same React code as the web app. Every screen here is a capture of the running app.</p>
+      <div class="phones hero-phones">
+        <div class="phone"><img src="assets/img/phone-light-board.webp" alt="Board on a phone" width="780" height="1688"></div>
+        <div class="phone"><img src="assets/img/phone-light-agenda.webp" alt="Agenda on a phone" width="780" height="1688"></div>
+        <div class="phone"><img src="assets/img/phone-light-home.webp" alt="Home screen on a phone" width="780" height="1688"></div>
+        <div class="phone"><img src="assets/img/phone-light-month.webp" alt="Month on a phone" width="780" height="1688"></div>
+        <div class="phone"><img src="assets/img/phone-light-notes.webp" alt="Notes on a phone" width="780" height="1688"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Navigation -->
+  <section>
+    <div class="wrap">
+      <div class="head reveal"><div><div class="num">01 — Navigation</div><h2>Four tabs and a big +</h2></div><p class="lead">The bottom bar holds the four views people open most. Everything else is one tap away under More, and the orange + adds a task from any screen.</p></div>
+      <div class="nav-anatomy reveal">
+        <div class="card"><b>Home</b><span class="muted">today's plan</span></div>
+        <div class="card"><b>Board</b><span class="muted">drag between columns</span></div>
+        <div class="card"><b>Week</b><span class="muted">swipe through days</span></div>
+        <div class="card"><b>Month</b><span class="muted">how full each day is</span></div>
+        <div class="card"><b>More</b><span class="muted">Agenda, Charts, Notes, Revise…</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Screens in detail -->
+  <section class="on-sand">
+    <div class="wrap">
+      <div class="head reveal"><div><div class="num">02 — Screens</div><h2>Everything from desktop, sized for a phone</h2></div></div>
+
+      <div class="pair reveal">
+        <div class="phones"><div class="phone" style="flex-basis:320px"><img src="assets/img/phone-light-home.webp" alt="Home" loading="lazy" width="780" height="1688"></div></div>
+        <div><span class="kicker">Home</span><h3>Today's load, in your thumb's reach</h3><p class="muted">The load bar shows planned hours against the working day and the finish time. When the day is too full, <b>one tap moves a lower-priority task to tomorrow.</b> Work carried over from earlier days waits just below.</p></div>
+      </div>
+
+      <div class="pair rev reveal">
+        <div class="phones"><div class="phone" style="flex-basis:300px"><img src="assets/img/phone-light-week.webp" alt="Week" loading="lazy" width="780" height="1688"></div><div class="phone" style="flex-basis:300px;margin-top:60px"><img src="assets/img/phone-light-task.webp" alt="Task panel" loading="lazy" width="780" height="1688"></div></div>
+        <div><span class="kicker">Week & task</span><h3>Swipe the week, tap a task</h3><p class="muted">The day strip switches days with a swipe and the red line marks now. A task opens as a sheet with its status, days, timer and steps, and a big Done button at the bottom.</p></div>
+      </div>
+
+      <div class="pair reveal">
+        <div class="phones"><div class="phone" style="flex-basis:300px"><img src="assets/img/phone-feat-quickadd.webp" alt="Quick add on a phone" loading="lazy" width="780" height="1688"></div><div class="phone" style="flex-basis:300px;margin-top:60px"><img src="assets/img/phone-feat-goal-plan.webp" alt="Goal plan on a phone" loading="lazy" width="780" height="1688"></div></div>
+        <div><span class="kicker">Add & plan</span><h3>Plain words in, a plan out</h3><p class="muted">Type "tomorrow 2pm 90m #work !high" and the chips fill themselves, or hold the mic and speak. Plan a goal turns an exam date and a list of topics into an evening-by-evening plan.</p></div>
+      </div>
+
+      <div class="pair rev reveal">
+        <div class="phones"><div class="phone" style="flex-basis:300px"><img src="assets/img/phone-feat-focus.webp" alt="Focus timer on a phone" loading="lazy" width="780" height="1688"></div><div class="phone" style="flex-basis:300px;margin-top:60px"><img src="assets/img/phone-feat-finishgate.webp" alt="Before you finish sheet" loading="lazy" width="780" height="1688"></div></div>
+        <div><span class="kicker">Focus & finish</span><h3>A timer you can hold</h3><p class="muted">The focus timer fills the screen with one task and one big button. Required checklist steps must be ticked before a task is done, with "Finish anyway" still there when it matters.</p></div>
+      </div>
+
+      <div class="pair reveal">
+        <div class="phones"><div class="phone" style="flex-basis:300px"><img src="assets/img/phone-feat-revise.webp" alt="Revise flashcards" loading="lazy" width="780" height="1688"></div><div class="phone" style="flex-basis:300px;margin-top:60px"><img src="assets/img/phone-feat-revise-answer.webp" alt="Flashcard answer" loading="lazy" width="780" height="1688"></div></div>
+        <div><span class="kicker">Revise</span><h3>Flashcards on the bus</h3><p class="muted">Write <b>question :: answer</b> in any note. Revise shows today's cards one at a time and brings each back after 1, 3, 7, 21, 45 and 90 days.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Gallery -->
+  <section>
+    <div class="wrap">
+      <div class="head reveal"><div><div class="num">03 — More screens</div><h2>The rest of the app</h2></div></div>
+      <div class="gallery">
+        <figure class="reveal"><div class="phone"><img src="assets/img/phone-light-charts.webp" alt="Charts" loading="lazy" width="780" height="1688"></div><figcaption class="cap"><b>Charts.</b> The week's hours without scrolling sideways.</figcaption></figure>
+        <figure class="reveal"><div class="phone"><img src="assets/img/phone-light-matrix.webp" alt="Matrix" loading="lazy" width="780" height="1688"></div><figcaption class="cap"><b>Matrix.</b> Urgent and important, sorted for you.</figcaption></figure>
+        <figure class="reveal"><div class="phone"><img src="assets/img/phone-light-agenda.webp" alt="Agenda" loading="lazy" width="780" height="1688"></div><figcaption class="cap"><b>Agenda.</b> Overdue, today and the days ahead.</figcaption></figure>
+        <figure class="reveal"><div class="phone"><img src="assets/img/phone-light-notes.webp" alt="Notes" loading="lazy" width="780" height="1688"></div><figcaption class="cap"><b>Notes.</b> Pictures, links, #tags and flashcards.</figcaption></figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- Themes -->
+  <section class="on-peach">
+    <div class="wrap">
+      <div class="head reveal"><div><div class="num" style="color:var(--deep)">04 — Themes</div><h2>Your colour, same logo</h2></div><p class="lead" style="color:var(--deep)">Ocean, Forest and Berry recolour the buttons and highlights. The NineFlow logo stays orange in all of them.</p></div>
+      <div class="phones reveal">
+        <div class="phone"><img src="assets/img/phone-theme-ocean.webp" alt="Ocean theme" loading="lazy" width="780" height="1688"></div>
+        <div class="phone" style="margin-top:60px"><img src="assets/img/phone-theme-forest.webp" alt="Forest theme" loading="lazy" width="780" height="1688"></div>
+        <div class="phone"><img src="assets/img/phone-theme-berry.webp" alt="Berry theme" loading="lazy" width="780" height="1688"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Dark -->
+  <section class="on-night">
+    <div class="wrap">
+      <div class="head reveal"><div><div class="num">05 — Dark mode</div><h2>Easy on the eyes after dark</h2></div><p class="lead">Warm greys, the same orange, and every screen tuned for low light.</p></div>
+      <div class="phones reveal">
+        <div class="phone"><img src="assets/img/phone-dark-home.webp" alt="Home in dark mode" loading="lazy" width="780" height="1688"></div>
+        <div class="phone" style="margin-top:60px"><img src="assets/img/phone-dark-week.webp" alt="Week in dark mode" loading="lazy" width="780" height="1688"></div>
+        <div class="phone"><img src="assets/img/phone-dark-month.webp" alt="Month in dark mode" loading="lazy" width="780" height="1688"></div>
+        <div class="phone" style="margin-top:60px"><img src="assets/img/phone-dark-board.webp" alt="Board in dark mode" loading="lazy" width="780" height="1688"></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="wrap">
+    <span>© 2026 Kartikeyan · NineFlow mobile</span>
+    <nav aria-label="More"><a href="logo.html">Logo</a><a href="dashboard.html">Dashboard</a><a href="website.html">Website →</a><a href="https://github.com/KartikeyanC/Nineflow">GitHub</a></nav>
+  </div>
+</footer>
+<script src="assets/site.js"></script>
+</body>
+</html>

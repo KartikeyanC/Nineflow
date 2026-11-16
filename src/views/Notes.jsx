@@ -263,7 +263,7 @@ function Note({ note, flash, autoFocus, onFocused, onText, onColor, onPin, onDel
               className={cx('h-4 w-4 rounded-full', colorOf(id).dot, note.color === id ? 'ring-2 ring-ink/50 ring-offset-1 ring-offset-transparent' : 'opacity-60 hover:opacity-100')} />
           ))}
         </div>
-        <span className="relative group/pic">
+        <span className="relative group/tip">
           <button type="button" onClick={() => fileRef.current?.click()} disabled={images.length >= MAX_IMAGES || adding}
             aria-label={images.length >= MAX_IMAGES ? `Add a picture (the note already has ${MAX_IMAGES})` : 'Add a picture'}
             aria-describedby={`pic-tip-${note.id}`}
@@ -272,25 +272,28 @@ function Note({ note, flash, autoFocus, onFocused, onText, onColor, onPin, onDel
             {adding ? <span className="h-3.5 w-3.5 rounded-full border-2 border-ink/25 border-t-ink/70 animate-spin" aria-hidden="true" /> : <ImagePlus size={14} aria-hidden="true" />}
             {images.length > 0 && <span className="tnum">{images.length}/{MAX_IMAGES}</span>}
           </button>
-          <span id={`pic-tip-${note.id}`} role="tooltip"
-            className="max-sm:hidden pointer-events-none absolute bottom-full right-0 mb-2 z-20 w-max max-w-[220px] rounded-xl bg-ink px-3 py-2 text-left shadow-lift opacity-0 translate-y-1 transition duration-150 group-hover/pic:opacity-100 group-hover/pic:translate-y-0 group-focus-within/pic:opacity-100 group-focus-within/pic:translate-y-0">
-            {images.length >= MAX_IMAGES ? (
-              <span className="block text-xs font-semibold text-page">This note has {MAX_IMAGES} pictures, the most it can hold</span>
-            ) : (
-              <>
-                <span className="flex items-center gap-1.5 text-xs font-semibold text-page"><ImagePlus size={12} aria-hidden="true" /> Add a picture</span>
-                <span className="mt-1 block text-[11px] leading-snug text-page/70">Or paste one (Ctrl+V), or drop it on the note. Up to {MAX_IMAGES}.</span>
-              </>
-            )}
-            <span className="absolute -bottom-1 right-2.5 h-2 w-2 rotate-45 bg-ink" aria-hidden="true" />
-          </span>
+          {images.length >= MAX_IMAGES
+            ? <NoteTip id={`pic-tip-${note.id}`} icon={ImagePlus} title="Pictures full" hint={`This note has ${MAX_IMAGES} pictures, the most it can hold.`} />
+            : <NoteTip id={`pic-tip-${note.id}`} icon={ImagePlus} title="Add a picture" hint={`Or paste one (Ctrl+V), or drop it on the note. Up to ${MAX_IMAGES}.`} />}
         </span>
-        <button type="button" onClick={() => { commit(); onTask() }} disabled={!text.trim()} title="Turn into a task" aria-label="Turn into a task"
-          className="h-7 w-7 rounded-full inline-flex items-center justify-center text-ink/60 hover:bg-card/60 hover:text-ink disabled:opacity-30 transition"><ListPlus size={14} /></button>
-        <button type="button" onClick={onPin} title={note.pinned ? 'Unpin' : 'Pin to top'} aria-label={note.pinned ? 'Unpin' : 'Pin to top'}
-          className="h-7 w-7 rounded-full inline-flex items-center justify-center text-ink/60 hover:bg-card/60 hover:text-ink transition">{note.pinned ? <PinOff size={14} /> : <Pin size={14} />}</button>
-        <button type="button" onClick={onDelete} title="Delete note" aria-label="Delete note"
-          className="h-7 w-7 rounded-full inline-flex items-center justify-center text-ink/60 hover:bg-card/60 hover:text-coral-fg transition"><Trash2 size={14} /></button>
+        <span className="relative group/tip">
+          <button type="button" onClick={() => { commit(); onTask() }} disabled={!text.trim()} aria-label="Turn into a task" aria-describedby={`task-tip-${note.id}`}
+            className="h-7 w-7 rounded-full inline-flex items-center justify-center text-ink/60 hover:bg-card/60 hover:text-ink disabled:opacity-30 transition"><ListPlus size={14} /></button>
+          <NoteTip id={`task-tip-${note.id}`} icon={ListPlus} title="Turn into a task"
+            hint={!text.trim() ? 'Write something first.' : images.length ? 'The first line becomes the title. The note stays here for its pictures.' : 'The first line becomes the title, the rest its details.'} />
+        </span>
+        <span className="relative group/tip">
+          <button type="button" onClick={onPin} aria-label={note.pinned ? 'Unpin' : 'Pin to top'} aria-describedby={`pin-tip-${note.id}`}
+            className="h-7 w-7 rounded-full inline-flex items-center justify-center text-ink/60 hover:bg-card/60 hover:text-ink transition">{note.pinned ? <PinOff size={14} /> : <Pin size={14} />}</button>
+          {note.pinned
+            ? <NoteTip id={`pin-tip-${note.id}`} icon={PinOff} title="Unpin" hint="Puts it back with the other notes." />
+            : <NoteTip id={`pin-tip-${note.id}`} icon={Pin} title="Pin to top" hint="Keeps this note above the others." />}
+        </span>
+        <span className="relative group/tip">
+          <button type="button" onClick={onDelete} aria-label="Delete note" aria-describedby={`del-tip-${note.id}`}
+            className="h-7 w-7 rounded-full inline-flex items-center justify-center text-ink/60 hover:bg-card/60 hover:text-coral-fg transition"><Trash2 size={14} /></button>
+          <NoteTip id={`del-tip-${note.id}`} icon={Trash2} title="Delete note" hint={images.length ? 'Removes the note and its pictures.' : 'Removes this note.'} />
+        </span>
       </div>
       <Modal open={!!viewing} onClose={() => setViewing(null)} width="max-w-3xl">
         {viewing && (
@@ -304,6 +307,19 @@ function Note({ note, flash, autoFocus, onFocused, onText, onColor, onPin, onDel
         )}
       </Modal>
     </article>
+  )
+}
+
+// The dark tooltip over a note's buttons: an icon and a name, then a line on what it does.
+// Its wrapper must be `relative group/tip`; it shows on hover and keyboard focus.
+function NoteTip({ id, icon: Icon, title, hint }) {
+  return (
+    <span id={id} role="tooltip"
+      className="max-sm:hidden pointer-events-none absolute bottom-full right-0 mb-2 z-20 w-max max-w-[220px] rounded-xl bg-ink px-3 py-2 text-left shadow-lift opacity-0 translate-y-1 transition duration-150 group-hover/tip:opacity-100 group-hover/tip:translate-y-0 group-focus-within/tip:opacity-100 group-focus-within/tip:translate-y-0">
+      <span className="flex items-center gap-1.5 text-xs font-semibold text-page"><Icon size={12} aria-hidden="true" /> {title}</span>
+      {hint && <span className="mt-1 block text-[11px] leading-snug text-page/70">{hint}</span>}
+      <span className="absolute -bottom-1 right-2.5 h-2 w-2 rotate-45 bg-ink" aria-hidden="true" />
+    </span>
   )
 }
 
