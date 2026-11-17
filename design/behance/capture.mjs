@@ -5,7 +5,7 @@ import { addNotes, openTask, openView, setTheme, shot, startGuest } from './help
 
 const NOTES = [
   'Ideas for the portfolio site\n- case study for NineFlow\n- dark mode screens\n#design',
-  'Exam plan: polity on Mon/Wed, maths mock every Sunday. #ntpc',
+  'Exam plan: polity on Mon/Wed, CSAT mock every Sunday. #upsc',
   'What is the capital of Australia? :: Canberra',
   'https://www.behance.net\nCollect references for the cover',
 ]

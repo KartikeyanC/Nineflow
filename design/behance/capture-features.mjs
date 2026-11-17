@@ -16,7 +16,7 @@ async function step(page, name, fn) {
 }
 
 const FLASHCARDS = [
-  'Polity flashcards #ntpc\nWho appoints the Chief Election Commissioner? :: The President\nArticle 21 protects? :: Life and personal liberty\nFundamental Duties were added by? :: The 42nd Amendment',
+  'Polity flashcards #upsc\nWho appoints the Chief Election Commissioner? :: The President\nArticle 21 protects? :: Life and personal liberty\nFundamental Duties were added by? :: The 42nd Amendment',
   'What is 15% of 240? :: 36',
 ]
 
@@ -48,18 +48,22 @@ async function features(page, prefix, isPhone) {
   })
 
   await step(page, 'goal', async () => {
+    // A long working day for this shot only, so no sample-data day counts as full ("Skipped N days").
+    await patchStorage(page, { settings: { workHours: { start: '07:00', end: '23:00', breakMinutes: 0 } } })
     if (isPhone) await page.keyboard.press('Control+k').catch(() => {})
     const btn = page.getByRole('button', { name: 'Plan a goal' }).filter({ visible: true })
     if (await btn.count()) await btn.first().click()
     else await page.getByRole('dialog').getByText('Plan a goal', { exact: true }).first().click()
-    await page.getByPlaceholder(/Maths exam/).fill('RRB NTPC exam')
+    await page.getByPlaceholder(/Maths exam/).fill('UPSC Prelims')
     await page.locator('button:has-text("Pick a date")').filter({ visible: true }).last().click()
     await pickDay(page, 24)
-    await page.getByPlaceholder(/Chapter 1/).fill('Polity\nHistory\nMaths: percentages\nMaths: time and work\nReasoning\nGeneral science\nPast papers')
+    await page.getByPlaceholder(/Chapter 1/).fill('Polity\nModern history\nGeography\nIndian economy\nEnvironment\nScience and tech\nCurrent affairs')
     await shot(page, `${prefix}-goal-form`)
     await page.getByPlaceholder(/Maths exam/).press('Enter') // submits the form (the button can sit below the fold)
     await page.getByRole('list', { name: 'Planned tasks' }).waitFor({ timeout: 8000 })
     await shot(page, `${prefix}-goal-plan`)
+    await page.keyboard.press('Escape').catch(() => {})
+    await patchStorage(page, { settings: { workHours: { start: '09:00', end: '18:00', breakMinutes: 60 } } })
   })
 
   await step(page, 'palette', async () => {
