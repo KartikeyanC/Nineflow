@@ -6,6 +6,7 @@ import { parseISO, isValid, differenceInCalendarDays } from 'date-fns'
 import { format } from './dateFormat'
 import { describe } from './recurrence'
 import { STATUS_LABEL, fmtMinutes, totalMinutes } from './tasks'
+import { isUnclear } from './workFor'
 
 export const FINISHED_CHOICES = [30, 90, 365]
 export const NOTE_MAX = 4000
@@ -26,6 +27,8 @@ function item(t, now) {
     due: t.dueDate ? day(t.dueDate) : '',
     priority: PRIORITY[t.priority] || '',
     description: (t.description || '').trim(),
+    askedBy: t.askedBy || '',
+    why: t.why || '',
     steps: (t.subtasks || []).filter((s) => s.title).map((s) => ({ title: s.title, done: !!s.done, depth: s.depth || 0 })),
     files: (t.files || []).filter((f) => f.url).map((f) => ({ name: f.name || f.url, url: f.url })),
     tags: t.tags || [],
@@ -70,7 +73,9 @@ export function buildHandover({ tasks, name, now = new Date(), finishedDays = 90
     .map((t) => ({ title: t.title || 'Untitled', on: day(t.completedAt.slice(0, 10)), spent: fmtMinutes(totalMinutes(t, now)) }))
 
   const openCount = groups.reduce((n, g) => n + g.items.length, 0)
-  return { name, recurring, groups, finished, finishedDays, privateCount, openCount, empty: !openCount && !recurring.length && !finished.length }
+  // Open tasks that may not make sense to the next person: worth a line before handing over.
+  const unclear = open.filter((t) => isUnclear(t, now)).map((t) => ({ id: t.id, title: t.title || 'Untitled' }))
+  return { name, recurring, groups, finished, finishedDays, privateCount, openCount, unclear, empty: !openCount && !recurring.length && !finished.length }
 }
 
 // ---- as a page ---------------------------------------------------------------------------------
@@ -81,14 +86,24 @@ const safeUrl = (u) => (/^https?:\/\//i.test(u) ? u : '')
 function taskHtml(t) {
   const meta = [t.status + (t.waiting ? `: ${t.waiting}` : ''), t.date, t.due && `ends ${t.due}`, t.priority && `${t.priority} priority`, t.estimate && `about ${t.estimate}`, t.spent && `${t.spent} spent so far`].filter(Boolean)
   return `<div class="task"><h3>${esc(t.title)}</h3><p class="meta">${meta.map(esc).join(' · ')}</p>
-  ${t.description ? `<p>${para(t.description)}</p>` : '<p class="muted">No notes on this task.</p>'}
+  ${t.why ? `<p><b>Why:</b> ${esc(t.why)}</p>` : ''}${t.askedBy ? `<p><b>Asked by:</b> ${esc(t.askedBy)}</p>` : ''}
+  ${t.description ? `<p>${para(t.description)}</p>` : t.why ? '' : '<p class="muted">No notes on this task.</p>'}
   ${t.steps.length ? `<ul class="steps">${t.steps.map((s) => `<li style="margin-left:${s.depth * 18}px">${s.done ? '&#9745;' : '&#9744;'} ${esc(s.title)}</li>`).join('')}</ul>` : ''}
   ${t.files.length ? `<p class="files">Files: ${t.files.map((f) => (safeUrl(f.url) ? `<a href="${esc(f.url)}">${esc(f.name)}</a>` : esc(f.name))).join(', ')}</p>` : ''}
   ${t.tags.length ? `<p class="muted">${t.tags.map((x) => `#${esc(x)}`).join(' ')}</p>` : ''}
   <p class="muted small">Added ${esc(t.added)}${t.lastTouched && t.lastTouched !== t.added ? ` · last changed ${esc(t.lastTouched)}` : ''}</p></div>`
 }
 
-export function handoverHtml(pack, { from, date, note, label }) {
+function peopleHtml(people) {
+  if (!people?.length) return ''
+  return `<h2>People</h2><table>${people.map((p) => `<tr><td><b>${esc(p.who)}</b>${p.role ? `<br><span class="muted small">${esc(p.role)}</span>` : ''}</td><td class="n">${esc(p.contact)}</td></tr>`).join('')}</table>`
+}
+function glossaryHtml(words) {
+  if (!words?.length) return ''
+  return `<h2>Words and short forms</h2><table>${words.map((w) => `<tr><td style="width:30%"><b>${esc(w.term)}</b></td><td>${esc(w.meaning)}</td></tr>`).join('')}</table>`
+}
+
+export function handoverHtml(pack, { from, date, note, label, people, glossary }) {
   return `<!doctype html><html><head><meta charset="utf-8"><title>Handover: ${esc(pack.name)}</title><style>
   *{box-sizing:border-box}body{font:14px/1.55 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#111;margin:0;padding:40px;max-width:860px}
   h1{font-size:28px;margin:0}h2{font-size:18px;margin:32px 0 8px;padding-bottom:6px;border-bottom:2px solid #111}
@@ -103,6 +118,7 @@ export function handoverHtml(pack, { from, date, note, label }) {
   <div class="sum"><div><b>${pack.openCount}</b><span class="muted">open task${pack.openCount === 1 ? '' : 's'}</span></div><div><b>${pack.recurring.length}</b><span class="muted">regular dut${pack.recurring.length === 1 ? 'y' : 'ies'}</span></div><div><b>${pack.finished.length}</b><span class="muted">finished, last ${pack.finishedDays} days</span></div></div>
   <h2>Notes for the next person</h2>
   ${note?.trim() ? `<div class="note">${para(note.trim())}</div>` : '<p class="muted">No notes were added.</p>'}
+  ${peopleHtml(people)}${glossaryHtml(glossary)}
   ${pack.recurring.length ? `<h2>Regular duties</h2><table>${pack.recurring.map((r) => `<tr><td><b>${esc(r.title)}</b>${r.description ? `<br><span class="muted small">${para(r.description)}</span>` : ''}</td><td class="n">${esc(r.how)}${r.at ? ` at ${esc(r.at)}` : ''}${r.estimate ? ` · ${esc(r.estimate)}` : ''}</td></tr>`).join('')}</table>` : ''}
   ${pack.groups.map((g) => `<h2>${esc(g.title)} <span class="muted small">(${g.items.length})</span></h2>${g.items.map(taskHtml).join('')}`).join('')}
   ${pack.finished.length ? `<h2>Finished in the last ${pack.finishedDays} days</h2><table>${pack.finished.map((f) => `<tr><td>${esc(f.title)}</td><td class="n">${esc(f.on)}${f.spent && f.spent !== '0m' ? ` · ${esc(f.spent)}` : ''}</td></tr>`).join('')}</table>` : ''}
@@ -112,10 +128,18 @@ export function handoverHtml(pack, { from, date, note, label }) {
 }
 
 // ---- as plain text (for an email or chat) ------------------------------------------------------
-export function handoverText(pack, { from, date, note, label }) {
+export function handoverText(pack, { from, date, note, label, people, glossary }) {
   const out = [`HANDOVER · ${label}: ${pack.name}`, `Prepared${from ? ` by ${from}` : ''} on ${date}`, '',
     `${many(pack.openCount, 'open task', 'open tasks')} · ${many(pack.recurring.length, 'regular duty', 'regular duties')} · ${pack.finished.length} finished in the last ${pack.finishedDays} days`]
   out.push('', 'NOTES FOR THE NEXT PERSON', note?.trim() || '(none)')
+  if (people?.length) {
+    out.push('', 'PEOPLE')
+    for (const p of people) out.push(`- ${p.who}${p.role ? `, ${p.role}` : ''}${p.contact ? `: ${p.contact}` : ''}`)
+  }
+  if (glossary?.length) {
+    out.push('', 'WORDS AND SHORT FORMS')
+    for (const w of glossary) out.push(`- ${w.term}: ${w.meaning}`)
+  }
   if (pack.recurring.length) {
     out.push('', 'REGULAR DUTIES')
     for (const r of pack.recurring) out.push(`- ${r.title}: ${r.how}${r.at ? ` at ${r.at}` : ''}${r.estimate ? `, about ${r.estimate}` : ''}`)
@@ -124,6 +148,8 @@ export function handoverText(pack, { from, date, note, label }) {
     out.push('', `${g.title.toUpperCase()} (${g.items.length})`)
     for (const t of g.items) {
       out.push(`- ${t.title}  [${[t.status + (t.waiting ? `: ${t.waiting}` : ''), t.date, t.due && `ends ${t.due}`, t.priority].filter(Boolean).join(' · ')}]`)
+      if (t.why) out.push(`    Why: ${t.why}`)
+      if (t.askedBy) out.push(`    Asked by: ${t.askedBy}`)
       if (t.description) out.push(...t.description.split('\n').map((l) => `    ${l}`))
       for (const s of t.steps) out.push(`    ${'  '.repeat(s.depth)}[${s.done ? 'x' : ' '}] ${s.title}`)
       for (const f of t.files) out.push(`    File: ${f.name} ${f.url}`)

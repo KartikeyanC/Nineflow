@@ -23,7 +23,7 @@ import { ensureRecurrences } from '../lib/recurrence'
 import { planDay as planDayPure } from '../lib/schedule'
 import { withHistory } from '../lib/taskHistory'
 import { hhmm, toMin, workEnd } from '../lib/capacity'
-import { loadFocus as loadWorkFocus, matchesFocus, saveFocus as saveWorkFocus, stampFor } from '../lib/workFor'
+import { loadFocus as loadWorkFocus, saveFocus as saveWorkFocus, shows, stampFor } from '../lib/workFor'
 
 const PlannerContext = createContext(null)
 
@@ -109,7 +109,8 @@ export function PlannerProvider({ children }) {
   const workFocusRef = useRef(workFocus)
   workFocusRef.current = workFocus
   const setWorkFocus = useCallback((v) => { setWorkFocusState(v || null); saveWorkFocus(v || null) }, [])
-  const shownTasks = useMemo(() => (workFocus ? activeTasks.filter((t) => matchesFocus(t, workFocus)) : activeTasks), [activeTasks, workFocus])
+  const archived = settings.workFor?.archived
+  const shownTasks = useMemo(() => (workFocus || archived?.length ? activeTasks.filter((t) => shows(t, workFocus, settingsRef.current)) : activeTasks), [activeTasks, workFocus, archived]) // eslint-disable-line react-hooks/exhaustive-deps
   // A new task is for the one being shown, or the one set in Settings, unless it already says.
   const stamped = (fields) => {
     if (fields && fields.client !== undefined) return fields

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { Briefcase, Check, ChevronsUpDown, Handshake, Pencil, Plus, Trash2, X } from 'lucide-react'
+import { Archive, ArchiveRestore, Briefcase, Check, ChevronsUpDown, Handshake, Pencil, Plus, Trash2, X } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
 import { currentProfile } from '../lib/profiles'
 import { COLOR_IDS, colorOf } from '../lib/colors'
@@ -14,7 +14,9 @@ export function useWorkFor() {
   const { allTasks, settings } = usePlanner()
   const label = labelOf(settings, currentProfile()?.occupation)
   const names = useMemo(() => namesIn(allTasks, settings), [allTasks, settings])
-  return { label, names, color: (name) => colorOf(colorFor(settings, name)) }
+  const archived = settings.workFor?.archived || []
+  const active = useMemo(() => names.filter((n) => !archived.includes(n)), [names, archived])
+  return { label, names, active, archived, color: (name) => colorOf(colorFor(settings, name)) }
 }
 
 // A small square-cornered badge (categories are round pills, so the two never look alike).
@@ -39,7 +41,7 @@ const Dot = ({ name, none, settings, size = 10 }) => (
 // The list in the switch: All, each name with how many tasks, and "No company".
 function FocusList({ onPick, onHandover }) {
   const { allTasks, everyActiveTask, settings, workFocus, setWorkFocus, setView } = usePlanner()
-  const { label, names } = useWorkFor()
+  const { label, active, archived } = useWorkFor()
   const counts = useMemo(() => {
     const m = new Map()
     for (const t of everyActiveTask) if (t.status !== 'completed') m.set(t.client || NONE, (m.get(t.client || NONE) || 0) + 1)
@@ -65,10 +67,14 @@ function FocusList({ onPick, onHandover }) {
       <p className="px-1 pb-2 text-xs font-semibold uppercase tracking-[0.14em] text-faint">Show tasks for</p>
       <ul className="space-y-0.5 max-h-[50vh] overflow-y-auto">
         <Row value={null}><Briefcase size={13} className="shrink-0 text-faint" aria-hidden="true" /><span className="flex-1">All {label.many === label.one ? '' : label.many.toLowerCase()}</span></Row>
-        {names.map((n) => (
+        {active.map((n) => (
           <Row key={n} value={n} count={counts.get(n) || 0}><Dot name={n} settings={settings} /><span className="flex-1 min-w-0 truncate">{n}</span></Row>
         ))}
         {unset && <Row value={NONE} count={counts.get(NONE) || 0}><Dot none /><span className="flex-1 text-muted">{label.none}</span></Row>}
+        {archived.length > 0 && <li className="px-2 pt-2 pb-0.5 text-[10.5px] font-bold uppercase tracking-[0.12em] text-faint">Archived</li>}
+        {archived.map((n) => (
+          <Row key={n} value={n}><Dot name={n} settings={settings} /><span className="flex-1 min-w-0 truncate text-muted">{n}</span></Row>
+        ))}
       </ul>
       <div className="mt-2 pt-2 border-t border-line">
         {workFocus && workFocus !== NONE && (
@@ -184,10 +190,14 @@ export function WorkForSettings() {
     if (ids.length) updateTasks(ids, { client: to }, `Renamed ${from} to ${to}`)
     const { [from]: color, ...colors } = wf.colors
     const { [from]: note, ...notes } = wf.notes || {}
+    const move = (obj) => { const { [from]: v, ...rest } = obj || {}; return v ? { ...rest, [to]: v } : rest }
     const billing = settings.billing
     const clients = billing?.clients?.[from] ? (({ [from]: b, ...rest }) => ({ ...rest, [to]: b }))(billing.clients) : null
     updateSettings({
-      workFor: { ...wf, colors: { ...colors, [to]: color || colorFor(settings, from) }, notes: note ? { ...notes, [to]: note } : notes, stamp: wf.stamp === from ? to : wf.stamp },
+      workFor: {
+        ...wf, colors: { ...colors, [to]: color || colorFor(settings, from) }, notes: note ? { ...notes, [to]: note } : notes, stamp: wf.stamp === from ? to : wf.stamp,
+        people: move(wf.people), glossary: move(wf.glossary), archived: (wf.archived || []).map((n) => (n === from ? to : n)),
+      },
       ...(clients ? { billing: { ...billing, clients } } : {}),
     })
     if (workFocus === from) setWorkFocus(to)
@@ -196,9 +206,17 @@ export function WorkForSettings() {
   const remove = (n) => {
     const { [n]: _, ...colors } = wf.colors
     const { [n]: __, ...notes } = wf.notes || {}
-    save({ colors, notes, stamp: wf.stamp === n ? null : wf.stamp })
+    save({ colors, notes, stamp: wf.stamp === n ? null : wf.stamp, archived: (wf.archived || []).filter((x) => x !== n) })
     if (workFocus === n) setWorkFocus(null)
   }
+  // Archived: finished with (you left, the project ended). Its tasks leave every plan and list but are
+  // all kept: pick it in the switch to see them, or bring it back here.
+  const isArch = (n) => (wf.archived || []).includes(n)
+  const archive = (n) => {
+    if (isArch(n)) save({ archived: wf.archived.filter((x) => x !== n) })
+    else save({ archived: [...(wf.archived || []), n], stamp: wf.stamp === n ? null : wf.stamp })
+  }
+  const keeps = (n) => used.get(n) > 0 || !!wf.notes?.[n] || !!wf.people?.[n]?.length || !!wf.glossary?.[n]?.length
 
   return (
     <section id="work-for-settings" className="card p-5 scroll-mt-4">
@@ -222,7 +240,7 @@ export function WorkForSettings() {
           <span className="text-sm font-semibold">New tasks get</span>
           <select className="input mt-1.5" value={wf.stamp || ''} onChange={(e) => save({ stamp: e.target.value || null })}>
             <option value="">Nothing ({label.none.toLowerCase()})</option>
-            {names.map((n) => <option key={n} value={n}>{n}</option>)}
+            {names.filter((n) => !isArch(n)).map((n) => <option key={n} value={n}>{n}</option>)}
           </select>
           <span className="mt-1 block text-xs text-muted">While you show only one, new tasks get that one instead.</span>
         </label>
@@ -232,7 +250,7 @@ export function WorkForSettings() {
       {names.length === 0 && <p className="text-sm text-muted mb-2">None yet. Add one below, or type one in a task's {label.one} box.</p>}
       <ul className="space-y-1.5 max-w-2xl">
         {names.map((n) => (
-          <li key={n} className="flex flex-wrap items-center gap-2 rounded-xl border border-line bg-page px-2.5 py-1.5">
+          <li key={n} className={cx('flex flex-wrap items-center gap-2 rounded-xl border border-line px-2.5 py-1.5', isArch(n) ? 'bg-subtle' : 'bg-page')}>
             {editing === n ? (
               <>
                 <input autoFocus value={text} maxLength={60} aria-label={`New name for ${n}`} onChange={(e) => { setText(e.target.value); setError(null) }}
@@ -243,7 +261,8 @@ export function WorkForSettings() {
               </>
             ) : (
               <>
-                <WorkForBadge name={n} className="text-[12px]" />
+                <WorkForBadge name={n} className={cx('text-[12px]', isArch(n) && 'opacity-60')} />
+                {isArch(n) && <span className="rounded-md border border-line px-1.5 py-0.5 text-[10.5px] font-bold uppercase tracking-wide text-muted">Archived</span>}
                 <span className="text-xs text-faint tnum">{used.get(n) ? `${used.get(n)} task${used.get(n) === 1 ? '' : 's'}` : 'no tasks yet'}</span>
                 <span className="ml-auto flex items-center gap-0.5" role="group" aria-label={`Colour for ${n}`}>
                   {COLOR_IDS.map((id) => (
@@ -256,10 +275,13 @@ export function WorkForSettings() {
                 </span>
                 <button type="button" onClick={() => setHandover(n)} aria-label={`Hand over ${n}`} title="Make a handover for the next person"
                   className="h-8 rounded-full px-2.5 inline-flex items-center gap-1.5 text-[12px] font-semibold text-muted hover:bg-card hover:text-ink"><Handshake size={13} aria-hidden="true" /><span className="max-sm:hidden">Hand over</span></button>
+                <button type="button" onClick={() => archive(n)} aria-label={isArch(n) ? `Bring back ${n}` : `Archive ${n}`}
+                  title={isArch(n) ? 'Bring it back into your plans and lists' : 'Finished with it? Its tasks leave your plans and lists, all kept, and can be brought back'}
+                  className="h-8 w-8 rounded-full inline-flex items-center justify-center text-faint hover:bg-card hover:text-ink">{isArch(n) ? <ArchiveRestore size={13} /> : <Archive size={13} />}</button>
                 <button type="button" onClick={() => { setEditing(n); setText(n); setError(null) }} aria-label={`Rename ${n}`} title="Rename everywhere"
                   className="h-8 w-8 rounded-full inline-flex items-center justify-center text-faint hover:bg-card hover:text-ink"><Pencil size={13} /></button>
-                <button type="button" onClick={() => remove(n)} disabled={used.get(n) > 0 || !!wf.notes?.[n]} aria-label={`Remove ${n}`}
-                  title={used.get(n) ? `${used.get(n)} task${used.get(n) === 1 ? ' still has' : 's still have'} it. Rename it, or change those tasks first.` : wf.notes?.[n] ? 'It has handover notes. Clear them first.' : 'Remove from the list'}
+                <button type="button" onClick={() => remove(n)} disabled={keeps(n)} aria-label={`Remove ${n}`}
+                  title={used.get(n) ? `${used.get(n)} task${used.get(n) === 1 ? ' still has' : 's still have'} it. Archive it instead, or change those tasks first.` : keeps(n) ? 'It has handover notes, people or words. Clear them first.' : 'Remove from the list'}
                   className="h-8 w-8 rounded-full inline-flex items-center justify-center text-faint hover:bg-coral/60 hover:text-coral-fg disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-faint"><Trash2 size={13} /></button>
               </>
             )}

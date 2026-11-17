@@ -110,6 +110,8 @@ export function createTask(fields = {}) {
     client: null, // who the work is for, e.g. 'Acme' (Charts: Hours by client)
     billable: false, // the time on it can be charged to the client
     private: false, // personal: left out of every handover (lib/handover.js)
+    askedBy: '', // who asked for it: a name, 'Priya (marketing)', an email sender
+    why: '', // one line on why it matters, so it still makes sense months later
     fields: {}, // custom field values: { [field id]: value } (lib/fields.js)
     seriesId: null,
     recurrence: null, // { freq, until, skip } | null

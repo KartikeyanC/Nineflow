@@ -55,6 +55,7 @@ export function emailsToTasks(items, { parse, categories = [], existingIds = new
       id,
       title: (p.title || subject || (it.text || '').split('\n')[0] || 'Email').slice(0, 200),
       description: notes.slice(0, 4000),
+      askedBy: (it.fromName || it.from || '').slice(0, 80),
       date: p.date ?? null,
       startTime: p.date ? p.startTime ?? null : null,
       ...(p.durationMinutes ? { durationMinutes: p.durationMinutes } : {}),

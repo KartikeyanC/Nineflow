@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import { differenceInCalendarDays, parseISO } from 'date-fns'
 import { format } from '../lib/dateFormat'
 import TaskHistory from './TaskHistory'
-import { Activity, CalendarCheck, CalendarDays, Clock, Timer, Tag, Flag, Trash2, X, Repeat, ArrowRight, CalendarPlus, Layers, Bell, Hash, Columns3, Video, Paperclip, MoreHorizontal, PauseCircle, XCircle, Briefcase, ListPlus } from 'lucide-react'
+import { Activity, CalendarCheck, CalendarDays, Clock, Timer, Tag, Flag, Trash2, X, Repeat, ArrowRight, CalendarPlus, Layers, Bell, Hash, Columns3, Video, Paperclip, MoreHorizontal, PauseCircle, XCircle, Briefcase, ListPlus, UserRound, HelpCircle, Lightbulb } from 'lucide-react'
 import { googleCalendarUrl } from '../lib/calendar'
 import { meetLinkFor } from '../lib/gcal'
 import { pickDriveFiles, pickerAvailable } from '../lib/picker'
@@ -17,10 +17,11 @@ import { STATUSES, STATUS_LABEL, carriedLabel, daysOnPlan, endDayOf, fmtMinutes,
 import { FREQS, FREQ_LABEL, describe } from '../lib/recurrence'
 import { CategoryPills, IconButton, Menu, PriorityPills, Segmented, cx, useDialogFocus } from './ui'
 import Checklist from './Checklist'
-import { ClientField, FieldInput, RemindersField, SaveAsTemplate, TagsField } from './TaskExtras'
+import { ClientField, ContextField, FieldInput, RemindersField, SaveAsTemplate, TagsField } from './TaskExtras'
 import { DateField } from './DatePicker'
 import { TimeField } from './TimePicker'
 import { useWorkFor } from './WorkFor'
+import { isUnclear } from '../lib/workFor'
 
 const ESTIMATES = [15, 30, 45, 60, 90, 120, 180, 240]
 const STATUS_PILL = { todo: 'bg-todo-soft text-todo', working: 'bg-sky text-sky-fg', review: 'bg-violet text-violet-fg', completed: 'bg-mint text-mint-fg' }
@@ -121,6 +122,13 @@ export default function TaskPanel() {
             value={task.description}
             onChange={(e) => updateTask(task.id, { description: e.target.value })}
           />
+
+          {isUnclear(task, now) && (
+            <p className="mt-2 flex items-start gap-2 rounded-xl bg-butter/70 px-3 py-2 text-[12.5px] text-butter-fg">
+              <Lightbulb size={14} className="mt-0.5 shrink-0" aria-hidden="true" />
+              <span>This may be hard to understand in a few months. Add a line in <b>Why</b> or the description, so you (or whoever takes over) know what it was.</span>
+            </p>
+          )}
 
           <Checklist task={task} />
 
@@ -233,6 +241,12 @@ export default function TaskPanel() {
             </Row>
             <Row icon={Briefcase} label={workFor.one}>
               <ClientField key={task.id} task={task} />
+            </Row>
+            <Row icon={UserRound} label="Asked by">
+              <ContextField key={`a${task.id}`} task={task} field="askedBy" max={80} placeholder="Who asked for it" />
+            </Row>
+            <Row icon={HelpCircle} label="Why">
+              <ContextField key={`w${task.id}`} task={task} field="why" max={200} placeholder="Why it matters, in a line" />
             </Row>
             {(settings.fields || []).map((f) => (
               <Row key={f.id} icon={ListPlus} label={f.name}>

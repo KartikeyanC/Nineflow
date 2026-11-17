@@ -12,7 +12,7 @@ import { cleanColumns } from '../lib/columns'
 const LABEL = {
   title: 'Title', description: 'Description', status: 'Status', column: 'Board column', date: 'Date', dueDate: 'End day',
   startTime: 'Start time', durationMinutes: 'Estimate', priority: 'Priority', category: 'Category', recurrence: 'Repeat',
-  tags: 'Tags', client: 'Client', billable: 'Billable', private: 'Personal', reminders: 'Reminders', steps: 'Checklist', files: 'Files',
+  tags: 'Tags', client: 'Client', billable: 'Billable', private: 'Personal', askedBy: 'Asked by', why: 'Why', reminders: 'Reminders', steps: 'Checklist', files: 'Files',
   hold: 'Paused', dropped: 'Dropped', fields: 'Custom fields',
 }
 

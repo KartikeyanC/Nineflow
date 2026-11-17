@@ -1,4 +1,4 @@
-import React, { useId, useState } from 'react'
+import React, { useId, useMemo, useState } from 'react'
 import { BookmarkPlus, Check, Lock, X } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
 import { uid } from '../lib/storage'
@@ -103,12 +103,41 @@ export function TagsField({ task }) {
   )
 }
 
+// "Asked by" and "Why": a line each, saved when the box is left. Asked by suggests the people already
+// named on this company's tasks (or listed in its handover), so the same person is spelled one way.
+export function ContextField({ task, field, placeholder, max }) {
+  const { allTasks, updateTask, settings } = usePlanner()
+  const [text, setText] = useState(task[field] || '')
+  const listId = useId()
+  const suggestions = useMemo(() => {
+    if (field !== 'askedBy') return []
+    const set = new Set()
+    for (const t of allTasks) if (t.askedBy && (!task.client || t.client === task.client)) set.add(t.askedBy)
+    for (const p of settings.workFor?.people?.[task.client] || []) set.add(p.role ? `${p.who} (${p.role})` : p.who)
+    return [...set].sort((a, b) => a.localeCompare(b)).slice(0, 30)
+  }, [allTasks, settings.workFor, task.client, field])
+  const save = () => {
+    const v = text.replace(/\s+/g, ' ').trim().slice(0, max)
+    if (v !== text) setText(v)
+    if (v !== (task[field] || '')) updateTask(task.id, { [field]: v })
+  }
+  return (
+    <>
+      <input value={text} maxLength={max} placeholder={placeholder} aria-label={placeholder} list={suggestions.length ? listId : undefined}
+        onChange={(e) => setText(e.target.value)} onBlur={save}
+        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur() } }}
+        className="input h-9 py-0 w-full" />
+      {suggestions.length > 0 && <datalist id={listId}>{suggestions.map((s) => <option key={s} value={s} />)}</datalist>}
+    </>
+  )
+}
+
 // The "Work for" row (called Company, Client, Project… by role): who the work is for, suggesting
 // every name already in use, and whether its time is billable. A name typed in another case
 // ("acme") becomes the one already on the list ("Acme"), so one company never turns into two.
 export function ClientField({ task }) {
   const { updateTask } = usePlanner()
-  const { label, names, color } = useWorkFor()
+  const { label, names, active, color } = useWorkFor()
   const [text, setText] = useState(task.client || '')
   const listId = useId()
   const save = () => {
@@ -126,7 +155,7 @@ export function ClientField({ task }) {
           onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur() } }}
           className={cx('input h-9 py-0 w-full', task.client && 'pl-7')} />
       </span>
-      <datalist id={listId}>{names.map((c) => <option key={c} value={c} />)}</datalist>
+      <datalist id={listId}>{active.map((c) => <option key={c} value={c} />)}</datalist>
       <button type="button" role="switch" aria-checked={!!task.billable} onClick={() => updateTask(task.id, { billable: !task.billable })}
         className={pill(task.billable)}>
         {task.billable && <Check size={12} />} Billable
