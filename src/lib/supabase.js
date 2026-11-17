@@ -10,6 +10,7 @@
 import { SignInError } from './google'
 import { AuthError, OfflineError } from './syncErrors'
 import { mockEnabled, createMockDriver } from './supabaseMock'
+import { HandoffError } from './syncErrors'
 
 const URL_ = import.meta.env.VITE_SUPABASE_URL || ''
 const KEY = import.meta.env.VITE_SUPABASE_KEY || ''
@@ -53,6 +54,19 @@ function authFail(e) {
   if (isNetwork(e)) return new SignInError('offline', 'Could not reach the sign-in service.')
   return new SignInError(AUTH_CODES[e?.code] || e?.code || 'unknown', e?.message || 'Sign-in failed.')
 }
+// Handoffs (sending work to another account, lib/transfer.js): their own messages.
+export { HandoffError }
+function handoffFail(e) {
+  if (['42P01', 'PGRST205'].includes(e?.code)) return new HandoffError('Sending to an account isn\'t set up on this NineFlow yet. Use the transfer file instead.')
+  if (/too_many_handoffs/.test(e?.message || '')) return new HandoffError('You already have 20 waiting to be taken over. Take some back, or wait for them to be taken.')
+  return dataFail(e)
+}
+export const HANDOFF_COLUMNS = 'id, from_user, from_email, from_name, to_email, title, created_at, expires_at'
+const toHandoff = (r, me) => ({
+  id: r.id, fromName: r.from_name, fromEmail: r.from_email, toEmail: r.to_email, title: r.title,
+  createdAt: r.created_at, expiresAt: r.expires_at, mine: r.from_user === me, expired: Date.parse(r.expires_at) <= Date.now(),
+})
+
 function dataFail(e) {
   const msg = e?.message || ''
   if (!e?.code && isNetwork(e)) return new OfflineError('No connection to your account.')
@@ -156,6 +170,34 @@ const real = {
     const { error } = await c.from('planner_conflicts').insert({ data: bundle })
     if (error) throw dataFail(error)
   },
+
+  // Handoffs: the server sets who sent it, when, and when it expires (docs/SUPABASE_SETUP.md, step 5).
+  async sendHandoff({ toEmail, fromName, title, file }) {
+    const c = await client()
+    const { data, error } = await c.from('handoffs').insert({ to_email: toEmail, from_name: fromName, title, file }).select('id').single()
+    if (error) throw handoffFail(error)
+    return data.id
+  },
+  async listHandoffs() {
+    const c = await client()
+    const me = (await c.auth.getSession()).data.session?.user?.id
+    if (!me) throw new AuthError('Your session ended.')
+    const { data, error } = await c.from('handoffs').select(HANDOFF_COLUMNS).order('created_at', { ascending: false }).limit(100)
+    if (error) throw handoffFail(error)
+    return (data || []).map((r) => toHandoff(r, me))
+  },
+  async fetchHandoff(id) {
+    const c = await client()
+    const { data, error } = await c.from('handoffs').select('file').eq('id', id).maybeSingle()
+    if (error) throw handoffFail(error)
+    if (!data) throw new HandoffError('This one is no longer waiting: it was taken back, taken over, or it expired.')
+    return data.file
+  },
+  async deleteHandoff(id) {
+    const c = await client()
+    const { error } = await c.from('handoffs').delete().eq('id', id)
+    if (error) throw handoffFail(error)
+  },
 }
 
 const driver = mockEnabled ? createMockDriver(onEvent, toAccount) : real
@@ -165,5 +207,5 @@ if (!mockEnabled && URL_ && KEY) client()
 
 export const {
   signUp, signIn, resendConfirmation, verifySignupCode, sendPasswordReset, setPassword, setName, signOut, currentAccount,
-  rowInfo, download, save, saveConflict,
+  rowInfo, download, save, saveConflict, sendHandoff, listHandoffs, fetchHandoff, deleteHandoff,
 } = driver

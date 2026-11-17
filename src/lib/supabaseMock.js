@@ -12,9 +12,10 @@
 //   mock-supabase-confirm = '0'  skip the code: new sign-ups go straight in
 //   mock-supabase-offline = '1'  every call fails as if there were no connection
 //   mock-supabase-expired = '1'  data calls fail as if the session had ended
+//   mock-supabase-handoffs = '0' the handoffs table is missing (not set up)
 // "Forgot password" logs a reset link to the console instead of emailing it.
 import { SignInError } from './google'
-import { AuthError, OfflineError } from './syncErrors'
+import { AuthError, HandoffError, OfflineError } from './syncErrors'
 
 export const mockEnabled = import.meta.env.DEV && import.meta.env.VITE_SUPABASE_MOCK === '1'
 
@@ -48,6 +49,13 @@ export function createMockDriver(onEvent, toAccount) {
     if (!u || flag('expired')) throw new AuthError('Your session ended.')
     return u
   }
+  const handoffCall = async () => {
+    const u = await dataCall()
+    if (localStorage.getItem('mock-supabase-handoffs') === '0') throw new HandoffError('Sending to an account isn\'t set up on this NineFlow yet. Use the transfer file instead.')
+    return u
+  }
+  // What a person may see: what they sent, and what was sent to their email until it expires.
+  const seen = (h, u) => h.from_user === u.id || (h.to_email === u.email && Date.parse(h.expires_at) > Date.now())
   const link = (kind, id) => console.info(`[NineFlow] Mock Supabase ${kind} link: ${window.location.origin}/#mock-${kind}=${id}`)
   // A fresh sign-up code, "emailed" to the console.
   const newCode = (u) => {
@@ -165,6 +173,38 @@ export function createMockDriver(onEvent, toAccount) {
       const u = await dataCall()
       const d = read()
       d.conflicts.push({ user_id: u.id, data: bundle, created_at: new Date().toISOString() })
+      write(d)
+    },
+
+    // Handoffs, with the same rules as the policies in docs/SUPABASE_SETUP.md (step 5).
+    async sendHandoff({ toEmail, fromName, title, file }) {
+      const u = await handoffCall()
+      const d = read()
+      const list = d.handoffs || []
+      if (list.filter((h) => h.from_user === u.id && Date.parse(h.expires_at) > Date.now()).length >= 20) throw new HandoffError('You already have 20 waiting to be taken over. Take some back, or wait for them to be taken.')
+      const h = { id: crypto.randomUUID(), from_user: u.id, from_email: u.email, from_name: String(fromName || '').slice(0, 80), to_email: norm(toEmail), title, file,
+        created_at: new Date().toISOString(), expires_at: new Date(Date.now() + 14 * 864e5).toISOString() }
+      d.handoffs = [h, ...list]
+      write(d)
+      return h.id
+    },
+    async listHandoffs() {
+      const u = await handoffCall()
+      return (read().handoffs || []).filter((h) => seen(h, u)).map((h) => ({
+        id: h.id, fromName: h.from_name, fromEmail: h.from_email, toEmail: h.to_email, title: h.title, createdAt: h.created_at, expiresAt: h.expires_at,
+        mine: h.from_user === u.id, expired: Date.parse(h.expires_at) <= Date.now(),
+      }))
+    },
+    async fetchHandoff(id) {
+      const u = await handoffCall()
+      const h = (read().handoffs || []).find((x) => x.id === id && seen(x, u))
+      if (!h) throw new HandoffError('This one is no longer waiting: it was taken back, taken over, or it expired.')
+      return h.file
+    },
+    async deleteHandoff(id) {
+      const u = await handoffCall()
+      const d = read()
+      d.handoffs = (d.handoffs || []).filter((h) => !(h.id === id && (h.from_user === u.id || h.to_email === u.email)))
       write(d)
     },
   }

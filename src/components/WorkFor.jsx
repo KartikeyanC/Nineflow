@@ -6,7 +6,7 @@ import { COLOR_IDS, colorOf } from '../lib/colors'
 import { LABELS, LABEL_CHOICES, NONE, autoLabelId, cleanName, colorFor, labelOf, namesIn } from '../lib/workFor'
 import { cx, useDialogFocus } from './ui'
 import HandoverDialog from './Handover'
-import { TakeOverDialog } from './Transfer'
+import { HandoffList, TakeOverDialog } from './Transfer'
 
 // "Work for": which company / client / project a task is for (lib/workFor.js).
 
@@ -299,6 +299,7 @@ export function WorkForSettings() {
         <p className="text-xs text-muted max-w-sm">Starting where someone else left off? Open the transfer file they made, and their work moves into your planner.</p>
         <button type="button" className="btn-ghost" onClick={() => setTakeOver(true)}><FileUp size={14} /> Take over work from a file</button>
       </div>
+      <HandoffList />
       {handover && <HandoverDialog name={handover} onClose={() => setHandover(null)} />}
       {takeOver && <TakeOverDialog onClose={() => setTakeOver(false)} />}
     </section>

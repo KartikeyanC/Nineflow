@@ -1,15 +1,49 @@
-import React, { useMemo, useRef, useState } from 'react'
-import { Archive, ArrowLeft, Check, Eye, EyeOff, FileUp, Lock, LockOpen, Send } from 'lucide-react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Archive, ArrowLeft, AtSign, Check, Eye, EyeOff, FileDown, FileUp, Inbox, Lock, LockOpen, Send, Undo2, X } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
 import { EXT, MAX_BYTES, MIN_PASSWORD, TransferError, buildBundle, makeFile, mergeWorkFor, openFile, readHead, summary, tasksForPlanner } from '../lib/transfer'
-import { currentProfile, currentProfileId } from '../lib/profiles'
+import { currentProfile, currentProfileId, isEmailProfile } from '../lib/profiles'
+import { deleteHandoff, fetchHandoff, hasSession, isConfigured as supabaseReady, listHandoffs, sendHandoff } from '../lib/supabase'
+import { HandoffError } from '../lib/syncErrors'
 import { WORKSPACE_LIMIT, WorkspaceError, addWorkspace, listWorkspaces, reopenPlanner, sendTasksToWorkspace, switchWorkspace } from '../lib/workspaces'
 import { cleanName, namesIn } from '../lib/workFor'
 import { format } from '../lib/dateFormat'
 import { Modal, cx } from './ui'
 import { WorkForBadge, useWorkFor } from './WorkFor'
 
-// Passing one company's / client's work to the next person's NineFlow, as a file (lib/transfer.js).
+// Passing one company's / client's work to the next person's NineFlow (lib/transfer.js): as a file,
+// or, between email accounts, straight to their account (a "handoff", docs/SUPABASE_SETUP.md step 5).
+// A handoff carries the same locked file text; it waits for them for 14 days.
+
+// Only email accounts can send or receive straight to an account (Google accounts keep their planner
+// in their own Drive, which nobody else can write to).
+export const canHandoff = () => supabaseReady() && isEmailProfile(currentProfile()) && hasSession()
+const EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
+const HANDOFF_EVENT = 'nineflow:handoffs'
+const handoffsChanged = () => window.dispatchEvent(new Event(HANDOFF_EVENT))
+
+// What is waiting: sent to me, and sent by me. Checked when opened, every few minutes, and when the
+// window comes back. A missing table or no connection just means nothing to show.
+export function useHandoffs() {
+  const [list, setList] = useState([])
+  const [error, setError] = useState(null)
+  const on = canHandoff()
+  const refresh = useCallback(async () => {
+    if (!canHandoff()) { setList([]); return }
+    try { setList(await listHandoffs()); setError(null) } catch (e) { setList([]); setError(e instanceof HandoffError ? e.message : null) }
+  }, [])
+  useEffect(() => {
+    if (!on) return undefined
+    refresh()
+    const t = setInterval(refresh, 5 * 60 * 1000)
+    const back = () => { if (document.visibilityState === 'visible') refresh() }
+    document.addEventListener('visibilitychange', back)
+    window.addEventListener(HANDOFF_EVENT, refresh)
+    return () => { clearInterval(t); document.removeEventListener('visibilitychange', back); window.removeEventListener(HANDOFF_EVENT, refresh) }
+  }, [on, refresh])
+  return { incoming: list.filter((h) => !h.mine && !h.expired), sent: list.filter((h) => h.mine), error, refresh, on }
+}
+const when = (iso) => (iso && !Number.isNaN(Date.parse(iso)) ? format(new Date(iso), 'd MMM') : '')
 
 function save(name, text) {
   const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }))
@@ -43,7 +77,11 @@ export function TransferSend({ name, onBack, onDone }) {
   const [show, setShow] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
-  const [made, setMade] = useState(null) // file name once saved
+  const [made, setMade] = useState(null) // file name once saved, or { to } once sent
+  const accountOk = canHandoff()
+  const [how, setHow] = useState('file') // 'file' | 'account'
+  const [to, setTo] = useState('')
+  const myEmail = (currentProfile()?.email || '').toLowerCase()
   const bundle = useMemo(() => buildBundle({ tasks: allTasks, settings, name, from: currentProfile()?.name || '', now }), [allTasks, settings, name, now])
   const s = summary(bundle)
   const privateCount = allTasks.filter((t) => t.client === name && t.private).length
@@ -54,8 +92,21 @@ export function TransferSend({ name, onBack, onDone }) {
     setError(null)
     if (lock && pw.length < MIN_PASSWORD) { setError(`Use a password of at least ${MIN_PASSWORD} characters.`); return }
     if (lock && pw !== pw2) { setError('The two passwords are not the same.'); return }
+    const email = to.trim().toLowerCase()
+    if (how === 'account' && !EMAIL.test(email)) { setError('Enter the email they sign in to NineFlow with.'); return }
+    if (how === 'account' && email === myEmail) { setError('That\'s your own account. Enter the next person\'s email.'); return }
     setBusy(true)
-    try { save(fileName, await makeFile(bundle, lock ? pw : '')); setMade(fileName); setPw(''); setPw2('') } catch (e) { setError(e instanceof TransferError ? e.message : 'The file could not be made. Try again.') } finally { setBusy(false) }
+    try {
+      const text = await makeFile(bundle, lock ? pw : '')
+      if (how === 'account') {
+        await sendHandoff({ toEmail: email, fromName: currentProfile()?.name || '', title: name, file: text })
+        handoffsChanged()
+        setMade({ to: email })
+      } else { save(fileName, text); setMade(fileName) }
+      setPw(''); setPw2('')
+    } catch (e) {
+      setError(e instanceof TransferError || e instanceof HandoffError ? e.message : how === 'account' ? 'It could not be sent. Check your connection and try again.' : 'The file could not be made. Try again.')
+    } finally { setBusy(false) }
   }
   const archive = () => {
     const wf = settings.workFor || {}
@@ -65,12 +116,20 @@ export function TransferSend({ name, onBack, onDone }) {
   if (made) {
     return (
       <div>
-        <p className="flex items-center gap-2 text-base font-bold"><span className="h-7 w-7 rounded-full bg-mint text-mint-fg inline-flex items-center justify-center"><Check size={15} /></span> Saved {made}</p>
-        <ol className="mt-3 space-y-1.5 text-sm text-muted list-decimal pl-5">
-          <li>Send the file to the next person however you like: email, a shared drive, a USB stick.</li>
-          {lock && <li><b className="text-ink">Tell them the password separately</b>, in person or on a call, not in the same email as the file.</li>}
-          <li>They open it in NineFlow: Settings → Who it's for → Take over work from a file.</li>
-        </ol>
+        <p className="flex items-center gap-2 text-base font-bold"><span className="h-7 w-7 rounded-full bg-mint text-mint-fg inline-flex items-center justify-center"><Check size={15} /></span> {made.to ? `Sent to ${made.to}` : `Saved ${made}`}</p>
+        {made.to ? (
+          <ol className="mt-3 space-y-1.5 text-sm text-muted list-decimal pl-5">
+            <li>It waits in their NineFlow for 14 days. They see it at the top when they sign in.</li>
+            {lock && <li><b className="text-ink">Tell them the password separately</b>, in person or on a call.</li>}
+            <li>Until they take it over you can take it back in Settings → Who it's for.</li>
+          </ol>
+        ) : (
+          <ol className="mt-3 space-y-1.5 text-sm text-muted list-decimal pl-5">
+            <li>Send the file to the next person however you like: email, a shared drive, a USB stick.</li>
+            {lock && <li><b className="text-ink">Tell them the password separately</b>, in person or on a call, not in the same email as the file.</li>}
+            <li>They open it in NineFlow: Settings → Who it's for → Take over work from a file.</li>
+          </ol>
+        )}
         <div className="mt-5 rounded-2xl border border-line bg-page p-3.5">
           {archived ? (
             <p className="text-sm text-muted inline-flex items-center gap-2"><Archive size={14} /> {name} is archived: its tasks are out of your lists, all kept.</p>
@@ -112,6 +171,28 @@ export function TransferSend({ name, onBack, onDone }) {
         </div>
       </div>
 
+      {accountOk && (
+        <fieldset className="mt-4">
+          <legend className="text-sm font-semibold">How should it reach them?</legend>
+          <div className="mt-2 grid gap-2 sm:grid-cols-2">
+            {[{ id: 'file', icon: FileDown, t: 'A file', d: 'You send it any way you like. Works with every NineFlow.' },
+              { id: 'account', icon: AtSign, t: 'Their NineFlow account', d: 'It waits for them when they sign in with their email.' }].map((o) => (
+              <label key={o.id} className={cx('rounded-xl border p-3 cursor-pointer transition', how === o.id ? 'border-brand bg-accent-soft' : 'border-line hover:border-faint')}>
+                <input type="radio" name="how" className="sr-only" checked={how === o.id} onChange={() => { setHow(o.id); setError(null) }} />
+                <span className="flex items-center gap-1.5 text-sm font-semibold"><o.icon size={14} aria-hidden="true" /> {o.t}</span>
+                <span className="block text-xs text-muted mt-0.5">{o.d}</span>
+              </label>
+            ))}
+          </div>
+          {how === 'account' && (
+            <label className="block mt-3">
+              <span className="block text-xs font-semibold text-muted mb-1">Their email (the one they sign in to NineFlow with)</span>
+              <input type="email" className="input" value={to} maxLength={254} autoComplete="off" placeholder="name@company.com" onChange={(e) => { setTo(e.target.value); setError(null) }} />
+            </label>
+          )}
+        </fieldset>
+      )}
+
       <div className="mt-4">
         <button type="button" role="switch" aria-checked={lock} onClick={() => { setLock(!lock); setError(null) }}
           className="inline-flex items-center gap-2 text-sm font-semibold">
@@ -131,7 +212,7 @@ export function TransferSend({ name, onBack, onDone }) {
       {error && <p role="alert" className="mt-3 text-sm font-semibold text-coral-fg">{error}</p>}
       <div className="mt-5 flex justify-end">
         <button type="button" className="btn-black" onClick={make} disabled={busy || (!s.open && !s.duties && !s.finished && !bundle.notes && !s.people && !s.words)}>
-          <Send size={14} /> {busy ? 'Making the file…' : `Make ${fileName}`}
+          <Send size={14} /> {how === 'account' ? (busy ? 'Sending…' : 'Send it') : busy ? 'Making the file…' : `Make ${fileName}`}
         </button>
       </div>
     </div>
@@ -139,7 +220,7 @@ export function TransferSend({ name, onBack, onDone }) {
 }
 
 // ---- receiving: Settings → Who it's for ---------------------------------------------------------------
-export function TakeOverDialog({ onClose }) {
+export function TakeOverDialog({ onClose, handoff }) {
   const { allTasks, settings, updateSettings, importTasks } = usePlanner()
   const fileRef = useRef(null)
   const [text, setText] = useState(null)
@@ -155,6 +236,20 @@ export function TakeOverDialog({ onClose }) {
   const pid = currentProfileId()
   const roomForWorkspace = pid && listWorkspaces(pid).length < WORKSPACE_LIMIT
   const existing = useMemo(() => namesIn(allTasks, settings), [allTasks, settings])
+  // Opened from a handoff: the file is fetched from the account instead of chosen.
+  useEffect(() => {
+    if (!handoff) return
+    let live = true
+    setBusy(true)
+    fetchHandoff(handoff.id).then((t) => {
+      if (!live) return
+      try { const h = readHead(t); setText(t); setHead(h); if (!h.locked) unlock(t, '') } catch (e) { setError(e instanceof TransferError ? e.message : 'This could not be read.') }
+    }).catch((e) => live && setError(e instanceof HandoffError ? e.message : 'It could not be fetched. Check your connection and try again.'))
+      .finally(() => live && setBusy(false))
+    return () => { live = false }
+  }, [handoff]) // eslint-disable-line react-hooks/exhaustive-deps
+  // Once taken over, it no longer waits for anyone.
+  const finished = () => { if (handoff) deleteHandoff(handoff.id).catch(() => {}).finally(handoffsChanged) }
 
   const pick = async (file) => {
     setError(null); setBundle(null); setHead(null); setText(null); setPw('')
@@ -186,6 +281,7 @@ export function TakeOverDialog({ onClose }) {
       importTasks(list, `Took over ${list.length} task${list.length === 1 ? '' : 's'} for ${target}`)
       updateSettings({ workFor: mergeWorkFor(settings.workFor, bundle, target) })
       setDone({ count: list.length, name: target })
+      finished()
       return
     }
     // A new workspace: its own planner, with only this work in it.
@@ -199,12 +295,13 @@ export function TakeOverDialog({ onClose }) {
       localStorage.setItem(key('settings'), JSON.stringify({ ...s, categories: s.categories || settings.categories, workFor: mergeWorkFor(s.workFor, bundle, name) }))
     } catch { /* the tasks are in; the notes can be added again from the file */ }
     setDone({ count: list.length, name, workspace: ws })
+    finished()
   }
   const openWorkspace = () => { switchWorkspace(pid, done.workspace.id); reopenPlanner() }
   const sum = bundle ? summary(bundle) : null
 
   return (
-    <Modal open onClose={onClose} title="Take over work from a file" width="max-w-xl">
+    <Modal open onClose={onClose} title={handoff ? `Take over ${handoff.title}` : 'Take over work from a file'} width="max-w-xl">
       {done ? (
         <div>
           <p className="flex items-center gap-2 text-base font-bold"><span className="h-7 w-7 rounded-full bg-mint text-mint-fg inline-flex items-center justify-center"><Check size={15} /></span> {done.count} task{done.count === 1 ? '' : 's'} for {done.name} are yours now</p>
@@ -221,9 +318,15 @@ export function TakeOverDialog({ onClose }) {
         </div>
       ) : !bundle ? (
         <div>
-          <p className="text-sm text-muted">Open the <b>{EXT}</b> file the person before you made. Their work for one company or client moves into your planner.</p>
-          <input ref={fileRef} type="file" accept={`${EXT},application/json`} hidden onChange={(e) => { pick(e.target.files?.[0]); e.target.value = '' }} />
-          <button type="button" className="btn-black mt-4" onClick={() => fileRef.current?.click()}><FileUp size={14} /> Choose the file</button>
+          {handoff ? (
+            <p className="text-sm text-muted"><b className="text-ink">{handoff.fromName || handoff.fromEmail}</b>{handoff.fromName ? ` (${handoff.fromEmail})` : ''} sent you the work for <b className="text-ink">{handoff.title}</b>{busy && !head ? '. Fetching it…' : '.'}</p>
+          ) : (
+            <>
+              <p className="text-sm text-muted">Open the <b>{EXT}</b> file the person before you made. Their work for one company or client moves into your planner.</p>
+              <input ref={fileRef} type="file" accept={`${EXT},application/json`} hidden onChange={(e) => { pick(e.target.files?.[0]); e.target.value = '' }} />
+              <button type="button" className="btn-black mt-4" onClick={() => fileRef.current?.click()}><FileUp size={14} /> Choose the file</button>
+            </>
+          )}
           {head?.locked && (
             <form className="mt-4 space-y-3" onSubmit={(e) => { e.preventDefault(); unlock() }}>
               <p className="text-sm inline-flex items-center gap-1.5 font-semibold"><Lock size={14} /> This file is locked{head.madeAt ? ` (made ${format(new Date(head.madeAt), 'd MMM yyyy')})` : ''}.</p>
@@ -268,5 +371,83 @@ export function TakeOverDialog({ onClose }) {
         </div>
       )}
     </Modal>
+  )
+}
+
+// ---- over every page: work someone sent to this account ------------------------------------------------
+export function HandoffInbox() {
+  const { incoming } = useHandoffs()
+  const [later, setLater] = useState(() => new Set())
+  const [open, setOpen] = useState(null)
+  const [declining, setDeclining] = useState(null)
+  const show = incoming.filter((h) => !later.has(h.id))
+  const decline = async (h) => { try { await deleteHandoff(h.id) } catch { /* it stays, and shows again */ } setDeclining(null); handoffsChanged() }
+  if (!show.length && !open) return null
+  return (
+    <>
+      {show.slice(0, 3).map((h) => (
+        <div key={h.id} role="status" className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl border border-mint-fg/25 bg-mint/60 px-3.5 py-2.5 text-[13px]">
+          <Inbox size={15} className="shrink-0 text-mint-fg" aria-hidden="true" />
+          <span className="min-w-0 flex-1"><b>{h.fromName || h.fromEmail}</b> sent you the work for <WorkForBadge name={h.title} className="align-middle" /> <span className="text-muted">· waits until {when(h.expiresAt)}</span></span>
+          {declining === h.id ? (
+            <span className="inline-flex items-center gap-2">
+              <span className="text-xs font-semibold">Decline it? They'd have to send it again.</span>
+              <button type="button" className="h-7 rounded-full bg-danger px-3 text-xs font-semibold text-white" onClick={() => decline(h)}>Decline</button>
+              <button type="button" className="h-7 rounded-full px-2.5 text-xs font-semibold hover:bg-card/70" onClick={() => setDeclining(null)}>Keep it</button>
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1">
+              <button type="button" className="btn-black h-8 py-0 text-xs" onClick={() => setOpen(h)}>Take it over</button>
+              <button type="button" className="h-8 rounded-full px-2.5 text-xs font-semibold hover:bg-card/70" onClick={() => setLater(new Set(later).add(h.id))}>Not now</button>
+              <button type="button" aria-label={`Decline ${h.title}`} title="Decline" className="h-8 w-8 rounded-full inline-flex items-center justify-center text-muted hover:bg-card/70 hover:text-ink" onClick={() => setDeclining(h.id)}><X size={14} /></button>
+            </span>
+          )}
+        </div>
+      ))}
+      {open && <TakeOverDialog handoff={open} onClose={() => setOpen(null)} />}
+    </>
+  )
+}
+
+// ---- Settings → Who it's for: what's waiting, both ways -------------------------------------------------
+export function HandoffList() {
+  const { incoming, sent, on, refresh } = useHandoffs()
+  const [open, setOpen] = useState(null)
+  const [busy, setBusy] = useState(null)
+  if (!on || (!incoming.length && !sent.length)) return null
+  const takeBack = async (h) => { setBusy(h.id); try { await deleteHandoff(h.id) } catch { /* shown again below */ } setBusy(null); refresh(); handoffsChanged() }
+  return (
+    <div className="mt-5 max-w-2xl space-y-3">
+      {incoming.length > 0 && (
+        <div>
+          <p className="text-sm font-semibold">Waiting for you</p>
+          <ul className="mt-1.5 space-y-1.5">
+            {incoming.map((h) => (
+              <li key={h.id} className="flex flex-wrap items-center gap-2 rounded-xl border border-line bg-page px-2.5 py-1.5 text-[13px]">
+                <WorkForBadge name={h.title} /> <span className="text-muted">from {h.fromName || h.fromEmail}, {when(h.createdAt)}</span>
+                <button type="button" className="btn-black ml-auto h-8 py-0 text-xs" onClick={() => setOpen(h)}>Take it over</button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {sent.length > 0 && (
+        <div>
+          <p className="text-sm font-semibold">Sent by you</p>
+          <ul className="mt-1.5 space-y-1.5">
+            {sent.map((h) => (
+              <li key={h.id} className="flex flex-wrap items-center gap-2 rounded-xl border border-line bg-page px-2.5 py-1.5 text-[13px]">
+                <WorkForBadge name={h.title} /> <span className="text-muted">to {h.toEmail} · {h.expired ? 'expired, not taken over' : `waiting until ${when(h.expiresAt)}`}</span>
+                <button type="button" disabled={busy === h.id} className="ml-auto h-8 rounded-full px-2.5 inline-flex items-center gap-1.5 text-xs font-semibold text-muted hover:bg-card hover:text-ink disabled:opacity-50" onClick={() => takeBack(h)}>
+                  <Undo2 size={13} aria-hidden="true" /> {h.expired ? 'Remove' : 'Take back'}
+                </button>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-1 text-xs text-muted">Once they take it over it leaves this list.</p>
+        </div>
+      )}
+      {open && <TakeOverDialog handoff={open} onClose={() => setOpen(null)} />}
+    </div>
   )
 }

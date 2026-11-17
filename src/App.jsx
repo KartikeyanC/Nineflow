@@ -43,6 +43,7 @@ import Settings from './views/Settings'
 import Work from './work/Work'
 import Ntpc from './views/Ntpc'
 import { WorkForBar } from './components/WorkFor'
+import { HandoffInbox } from './components/Transfer'
 
 const VIEWS = { dashboard: Dashboard, board: Board, week: Week, month: Month, matrix: Matrix, someday: Someday, agenda: Agenda, table: Table, notes: Notes, revise: Revise, charts: Charts, paused: Paused, work: Work, ntpc: Ntpc, settings: Settings }
 
@@ -114,6 +115,7 @@ function Shell() {
           {/* key forces the enter animation on every view change */}
           <GuestBar />
           <WorkForBar />
+          <HandoffInbox />
           <div key={view} className="h-full">
             <View />
           </div>

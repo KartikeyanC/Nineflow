@@ -99,6 +99,66 @@ Under **Authentication**:
 
 The sign-in screen now shows an email form. If `VITE_GOOGLE_CLIENT_ID` is also set, it shows **Sign up with Google** above it; leave that out to offer email accounts only.
 
+## 5. Sending work to another account (optional)
+
+NineFlow can pass one company's or client's work straight to the next person's account (Hand over → Transfer to the next person → **Send to their account**). Without this table, people can still use the transfer **file**, which needs no server. Both people need **email** accounts on this project; Google accounts keep their planner in their own Drive, so they use the file.
+
+Open **SQL Editor → New query**, paste this, and click **Run**:
+
+```sql
+-- Work waiting to be taken over. `file` is the same text as a .nineflow transfer file:
+-- locked with the sender's password unless they chose not to, so the server can't read
+-- the tasks in it. Who sent it, to whom and the company name are plain, for the inbox.
+create table public.handoffs (
+  id uuid primary key default gen_random_uuid(),
+  from_user uuid not null default auth.uid() references auth.users on delete cascade,
+  from_email text not null default '',
+  from_name text not null default '' check (char_length(from_name) <= 80),
+  to_email text not null check (char_length(to_email) between 3 and 254),
+  title text not null check (char_length(title) between 1 and 60),
+  file text not null check (octet_length(file) <= 8388608),
+  created_at timestamptz not null default now(),
+  expires_at timestamptz not null default now() + interval '14 days'
+);
+create index handoffs_to_email on public.handoffs (to_email);
+
+-- The server, not the app, says who sent it and when, and how long it waits.
+-- At most 20 waiting from one person, so the table can't be filled up.
+create function public.handoffs_stamp() returns trigger
+language plpgsql set search_path = '' as $$
+begin
+  new.from_user := auth.uid();
+  new.from_email := lower(coalesce(auth.jwt() ->> 'email', ''));
+  new.to_email := lower(trim(new.to_email));
+  new.created_at := now();
+  new.expires_at := now() + interval '14 days';
+  if (select count(*) from public.handoffs h where h.from_user = auth.uid() and h.expires_at > now()) >= 20 then
+    raise exception 'too_many_handoffs' using errcode = 'P0001';
+  end if;
+  return new;
+end $$;
+
+create trigger handoffs_stamp before insert on public.handoffs
+  for each row execute function public.handoffs_stamp();
+
+alter table public.handoffs enable row level security;
+alter table public.handoffs force row level security;
+
+-- Sender: send, see what they sent, take it back. Recipient (by their signed-in email):
+-- see it until it expires, and remove it once taken over or declined. Nobody can change one.
+create policy "Send handoffs" on public.handoffs for insert to authenticated
+  with check ((select auth.uid()) = from_user);
+create policy "See own handoffs" on public.handoffs for select to authenticated
+  using ((select auth.uid()) = from_user
+    or (to_email = lower((select auth.jwt()) ->> 'email') and expires_at > now()));
+create policy "Remove own handoffs" on public.handoffs for delete to authenticated
+  using ((select auth.uid()) = from_user or to_email = lower((select auth.jwt()) ->> 'email'));
+
+grant select, insert, delete on public.handoffs to authenticated;
+```
+
+This relies on **Confirm email** being on (step 3): the recipient is whoever signed in with that email, so it must be proven. Expired ones stay hidden from the recipient; the sender sees them as expired and can remove them.
+
 ## Trying it without a Supabase project
 
 Put `VITE_SUPABASE_MOCK=1` in `.env.local` and restart the dev server. A stand-in keeps accounts and planners in the browser's localStorage and sends no email. New sign-ups get a 6-digit code, shown on the code screen and printed in the browser console; password-reset links are printed in the console. It never runs in a production build.

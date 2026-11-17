@@ -59,6 +59,21 @@
         "scripts/serve-dist.mjs"
       ],
       "port": 4175
+    },
+    {
+      "name": "dev-supabase-mock",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "vite",
+        "--port",
+        "5182",
+        "--strictPort"
+      ],
+      "env": {
+        "VITE_SUPABASE_MOCK": "1",
+        "VITE_GOOGLE_CLIENT_ID": ""
+      },
+      "port": 5182
     }
   ]
 }
