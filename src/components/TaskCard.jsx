@@ -12,6 +12,7 @@ import RequiredBadge from './RequiredBadge'
 import { CARD_STYLE, STATUS_CARD_COLOR, cleanColumns, columnOf } from '../lib/columns'
 import { usePhone } from '../lib/usePhone'
 import { CategoryTag, CheckCircle, Menu, PriorityPill, cx } from './ui'
+import { WorkForBadge } from './WorkFor'
 
 // In dark mode a card takes the colour of the column it sits in (see CARD_STYLE).
 
@@ -131,10 +132,11 @@ export default function TaskCard({ task, tone, dragging = false, handleProps, st
         <p className="mt-1.5 text-xs font-medium text-faint">Since {format(parseISO(startDayOf(task)), 'MMM d')} · day {daysOnPlan(task, now)}</p>
       )}
 
-      {(task.tags || []).length > 0 && (
-        <p className="mt-2 flex flex-wrap gap-x-2 gap-y-0.5 text-xs font-semibold text-lav-fg">
-          {task.tags.slice(0, 3).map((t) => <span key={t}>#{t}</span>)}
-          {task.tags.length > 3 && <span className="text-faint">+{task.tags.length - 3}</span>}
+      {(task.client || (task.tags || []).length > 0) && (
+        <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-semibold text-lav-fg">
+          <WorkForBadge name={task.client} className="max-w-[12rem]" />
+          {(task.tags || []).slice(0, 3).map((t) => <span key={t}>#{t}</span>)}
+          {(task.tags || []).length > 3 && <span className="text-faint">+{task.tags.length - 3}</span>}
         </p>
       )}
 

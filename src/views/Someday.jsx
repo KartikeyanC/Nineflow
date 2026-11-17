@@ -6,6 +6,7 @@ import { usePlanner } from '../store/PlannerContext'
 import { dateKey, fmtMinutes } from '../lib/tasks'
 import { CategoryTag, CheckCircle, EmptyState, PriorityPill } from '../components/ui'
 import { DateField } from '../components/DatePicker'
+import { WorkForBadge } from '../components/WorkFor'
 
 // Open tasks with no day: ideas and "one day" work. Pull one onto a day when it's time.
 export default function Someday() {
@@ -37,6 +38,7 @@ export default function Someday() {
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold truncate">{t.title}</p>
                 <div className="flex items-center gap-1.5 mt-0.5">
+                  <WorkForBadge name={t.client} className="shrink-0 max-w-[10rem]" />
                   <CategoryTag category={categoryById(t.category)} className="text-[11px] py-0" />
                   <span className="text-[11px] text-faint">{fmtMinutes(t.durationMinutes)}</span>
                 </div>

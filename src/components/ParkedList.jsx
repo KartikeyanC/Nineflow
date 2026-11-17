@@ -8,6 +8,7 @@ import { DROP_KEEP_DAYS, dateKey } from '../lib/tasks'
 import { columnOf } from '../lib/columns'
 import { CategoryTag, cx } from './ui'
 import ParkDialog from './ParkDialog'
+import { WorkForBadge } from './WorkFor'
 
 // The paused or dropped tasks that belong to one Board column (its status, or the custom
 // column they sat in). kind: 'paused' | 'dropped'.
@@ -79,6 +80,7 @@ export function ParkedTasks({ list, kind, layout = 'cards', onBack }) {
               <button type="button" onClick={() => setSelectedId(t.id)} className="min-w-0 flex-1 text-left block w-full">
                 <span className={cx('block text-sm font-bold leading-snug', layout === 'rows' && 'truncate', kind === 'dropped' && 'line-through text-muted')}>{t.title || 'Untitled'}</span>
                 <span className="flex items-center gap-1.5 mt-1 flex-wrap">
+                  <WorkForBadge name={t.client} className="shrink-0 max-w-[10rem]" />
                   <CategoryTag category={categoryById(t.category)} className="text-[11px] py-0" />
                   <span className="text-xs text-faint">{meta}</span>
                 </span>

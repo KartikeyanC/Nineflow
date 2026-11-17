@@ -25,6 +25,7 @@ import { CategoryTag, CheckCircle, ConfirmDialog, Menu, Modal, PriorityPill, cx 
 import TaskCard from '../components/TaskCard'
 import RequiredBadge from '../components/RequiredBadge'
 import DayNav, { NARROW_HIDE } from '../components/DayNav'
+import { WorkForBadge } from '../components/WorkFor'
 
 const RECENT_COMPLETED = 8
 // Button labels hide (the icon and a tooltip stay) once the header is narrower than 1200px, so the title
@@ -586,6 +587,7 @@ function ListView({ columns, cols, shownOf, setShow, parkedOf, frozenFor }) {
                         {overdue && <span className="pill bg-page text-muted border border-line text-[11px] px-1.5 py-0 ml-2">{carriedLabel(t.date, now)}</span>}
                       </p>
                       <RequiredBadge task={t} />
+                      <WorkForBadge name={t.client} className="shrink-0 max-w-[10rem] hidden sm:inline-flex" />
                       <CategoryTag category={categoryById(t.category)} className="hidden sm:inline-flex" />
                       <PriorityPill priority={t.priority} />
                       <span className="text-xs font-medium w-28 text-right text-muted">{dueLabel(t, now) || '—'}</span>

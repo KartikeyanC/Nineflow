@@ -6,6 +6,7 @@ import { usePlanner } from '../store/PlannerContext'
 import { carriedLabel, dateKey, fmtMinutes, isOverdue, sortByTime } from '../lib/tasks'
 import { CategoryTag, CheckCircle, EmptyState, PriorityPill, Segmented } from '../components/ui'
 import RequiredBadge from '../components/RequiredBadge'
+import { WorkForBadge } from '../components/WorkFor'
 
 const RANGES = [
   { value: 7, label: '7 days' },
@@ -70,6 +71,7 @@ export default function Agenda() {
                     <p className="text-sm font-semibold truncate">{t.title}</p>
                     <div className="flex items-center gap-1.5 mt-0.5 min-w-0">
                       {t.startTime && <span className="sm:hidden text-xs font-semibold text-muted tnum shrink-0">{clock(t.startTime)}</span>}
+                      <WorkForBadge name={t.client} className="shrink-0 max-w-[10rem]" />
                       <CategoryTag category={categoryById(t.category)} className="text-[11px] py-0" />
                       {t.recurrence && <Repeat size={10} className="text-lav-fg" />}
                       <RequiredBadge task={t} className="!text-[11px]" />

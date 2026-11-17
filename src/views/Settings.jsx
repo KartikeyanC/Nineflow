@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react'
-import { Plus, Trash2, Download, Upload, Sparkles, AlertTriangle, CalendarPlus, CalendarCheck, Check, Loader2, RefreshCw, ChevronRight, UserRound, Layers, Smartphone, Tag, SlidersHorizontal, Columns3, Bookmark, Database, CalendarDays, Plug, FileSpreadsheet, HardDrive, Receipt, History, ListPlus } from 'lucide-react'
+import { Plus, Trash2, Download, Upload, Sparkles, AlertTriangle, CalendarPlus, CalendarCheck, Check, Loader2, RefreshCw, ChevronRight, UserRound, Layers, Smartphone, Tag, SlidersHorizontal, Columns3, Bookmark, Database, CalendarDays, Plug, FileSpreadsheet, HardDrive, Receipt, History, ListPlus, Briefcase } from 'lucide-react'
 import { usePhone } from '../lib/usePhone'
 import TaskImport from '../components/TaskImport'
 import HowToConnect from '../components/HowToConnect'
@@ -28,6 +28,7 @@ import { GuestAccount, isGuest } from '../features/Guest'
 import { HistorySection } from '../features/History'
 import InstallApp from '../features/InstallApp'
 import { WorkspacesSection } from '../features/Workspaces'
+import { WorkForSettings } from '../components/WorkFor'
 import { usePlanner } from '../store/PlannerContext'
 import { COLOR_IDS, colorOf } from '../lib/colors'
 import { uid, validateBackup } from '../lib/storage'
@@ -534,6 +535,7 @@ export default function Settings() {
       <div className="space-y-4 max-sm:space-y-2.5">
         <Group icon={UserRound} title="Your account" open>{isGuest() ? <GuestAccount /> : <AccountSection />}</Group>
         <Group icon={Layers} title="Workspaces"><WorkspacesSection /></Group>
+        <Group icon={Briefcase} title="Who it's for"><WorkForSettings /></Group>
         {!isNativeApp() && <Group icon={Smartphone} title="Install the app"><InstallApp /></Group>}
         {/* Categories */}
         <Group icon={Tag} title="Categories">

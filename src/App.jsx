@@ -42,6 +42,7 @@ import { NotesFolderSync } from './features/NotesFolder'
 import Settings from './views/Settings'
 import Work from './work/Work'
 import Ntpc from './views/Ntpc'
+import { WorkForBar } from './components/WorkFor'
 
 const VIEWS = { dashboard: Dashboard, board: Board, week: Week, month: Month, matrix: Matrix, someday: Someday, agenda: Agenda, table: Table, notes: Notes, revise: Revise, charts: Charts, paused: Paused, work: Work, ntpc: Ntpc, settings: Settings }
 
@@ -112,6 +113,7 @@ function Shell() {
         <main className="flex-1 min-w-0 py-1 sm:py-2 sm:pr-1 pb-24 sm:pb-2">
           {/* key forces the enter animation on every view change */}
           <GuestBar />
+          <WorkForBar />
           <div key={view} className="h-full">
             <View />
           </div>

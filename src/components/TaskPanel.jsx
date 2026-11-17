@@ -20,6 +20,7 @@ import Checklist from './Checklist'
 import { ClientField, FieldInput, RemindersField, SaveAsTemplate, TagsField } from './TaskExtras'
 import { DateField } from './DatePicker'
 import { TimeField } from './TimePicker'
+import { useWorkFor } from './WorkFor'
 
 const ESTIMATES = [15, 30, 45, 60, 90, 120, 180, 240]
 const STATUS_PILL = { todo: 'bg-todo-soft text-todo', working: 'bg-sky text-sky-fg', review: 'bg-violet text-violet-fg', completed: 'bg-mint text-mint-fg' }
@@ -28,6 +29,7 @@ const STATUS_PILL = { todo: 'bg-todo-soft text-todo', working: 'bg-sky text-sky-
 export default function TaskPanel() {
   const calendarOn = useCalendarOn()
   const { allTasks: tasks, settings, selectedId, resumeTask, restoreTask, setSelectedId, updateTask, setStatus, removeTask, removeSeries, setRecurrence, applyToUpcoming, moveToWorkspace, moveTask, focus, startFocus, categoryById, now } = usePlanner()
+  const { label: workFor } = useWorkFor() // "Company", "Client", "Project"… for this person
   const task = tasks.find((t) => t.id === selectedId)
   const [park, setPark] = useState(null) // 'pause' | 'drop'
   const cols = cleanColumns(settings.columns)
@@ -229,7 +231,7 @@ export default function TaskPanel() {
             <Row icon={Hash} label="Tags" top>
               <TagsField task={task} />
             </Row>
-            <Row icon={Briefcase} label="Client">
+            <Row icon={Briefcase} label={workFor.one}>
               <ClientField key={task.id} task={task} />
             </Row>
             {(settings.fields || []).map((f) => (

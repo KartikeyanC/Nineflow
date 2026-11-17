@@ -6,6 +6,7 @@ import { usePlanner } from '../store/PlannerContext'
 import { DROP_KEEP_DAYS, SLIP_DAYS, dateKey, fmtMinutes, slipping } from '../lib/tasks'
 import { CategoryTag, EmptyState, cx } from '../components/ui'
 import ParkDialog from '../components/ParkDialog'
+import { WorkForBadge } from '../components/WorkFor'
 
 // Tasks that stopped: ones that keep slipping (found automatically), ones you paused on
 // purpose, and ones you let go (kept DROP_KEEP_DAYS days). Paused and dropped tasks are off
@@ -32,6 +33,7 @@ export default function Paused() {
       <button type="button" onClick={() => setSelectedId(t.id)} className="min-w-0 flex-1 text-left">
         <span className="block text-sm font-semibold truncate">{t.title || 'Untitled'}</span>
         <span className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+          <WorkForBadge name={t.client} className="shrink-0 max-w-[10rem]" />
           <CategoryTag category={categoryById(t.category)} className="text-[11px] py-0" />
           <span className="text-xs text-faint">{meta}</span>
         </span>

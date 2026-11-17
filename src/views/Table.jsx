@@ -7,6 +7,7 @@ import { PRIORITIES, PRIORITY_LABEL, STATUS_LABEL, dateKey, fmtMinutes, totalMin
 import { CategoryTag, CheckCircle, ConfirmDialog, EmptyState, PriorityPill, cx } from '../components/ui'
 import { DateField } from '../components/DatePicker'
 import { cleanTaskFields, sortKeyOf, withValue } from '../lib/fields'
+import { WorkForBadge, useWorkFor } from '../components/WorkFor'
 
 // Every task as one sortable table, with filters, and ticks for changing many at once (the bulk bar:
 // complete, move to a day, priority, category, client, delete; one Undo for each). Paused and dropped
@@ -29,6 +30,7 @@ const MAX_ROWS = 400
 
 export default function Table() {
   const { tasks, now, settings, categoryById, toggleComplete, setSelectedId, updateTasks, removeTasks } = usePlanner()
+  const { label: workFor } = useWorkFor()
   const [show, setShow] = useState(settings.hideDone ? 'open' : 'all')
   const [find, setFind] = useState('')
   const [cat, setCat] = useState('all')
@@ -121,7 +123,7 @@ export default function Table() {
                 {columns.map((c) => (
                   <th key={c.id} className={cx('py-2.5 px-2 font-semibold', c.num && 'text-right')} aria-sort={sort.by === c.id ? (sort.dir > 0 ? 'ascending' : 'descending') : 'none'}>
                     <button type="button" onClick={() => sortBy(c.id)} className={cx('inline-flex items-center gap-1 hover:text-ink', sort.by === c.id && 'text-ink')}>
-                      {c.label}{sort.by === c.id && (sort.dir > 0 ? <ArrowUp size={12} /> : <ArrowDown size={12} />)}
+                      {c.id === 'client' ? workFor.one : c.label}{sort.by === c.id && (sort.dir > 0 ? <ArrowUp size={12} /> : <ArrowDown size={12} />)}
                     </button>
                   </th>
                 ))}
@@ -145,7 +147,7 @@ export default function Table() {
                     <td className={cx('py-1.5 px-2 whitespace-nowrap text-xs font-semibold', STATUS_TONE[t.status])}>{STATUS_LABEL[t.status]}</td>
                     <td className="py-1.5 px-2"><PriorityPill priority={t.priority} /></td>
                     <td className="py-1.5 px-2"><CategoryTag category={categoryById(t.category)} className="text-xs py-0" /></td>
-                    <td className="py-1.5 px-2 text-muted truncate max-w-[140px]">{t.client || '—'}{t.billable && <span className="ml-1 text-xs text-mint-fg">· billable</span>}</td>
+                    <td className="py-1.5 px-2 text-muted max-w-[180px]"><span className="inline-flex max-w-full items-center gap-1">{t.client ? <WorkForBadge name={t.client} className="min-w-0" /> : '—'}{t.billable && <span className="shrink-0 text-xs text-mint-fg">· billable</span>}</span></td>
                     {fields.map((f) => <td key={f.id} className={cx('py-1.5 px-2 text-muted whitespace-nowrap truncate max-w-[160px]', f.type === 'number' && 'text-right tnum')}>{fieldText(f, t)}</td>)}
                     <td className="py-1.5 px-2 text-right tnum text-muted">{fmtMinutes(t.durationMinutes || 0)}</td>
                     <td className="py-1.5 pr-4 pl-2 text-right tnum text-muted">{(() => { const m = totalMinutes(t, now); return m ? fmtMinutes(m) : '—' })()}</td>
@@ -174,7 +176,7 @@ function BulkBar({ ids, clear, today, now, updateTasks, removeTasks, categories,
     if (changed) clear()
   }
   const day = (key, label) => run({ date: key }, `Moved ${n} tasks to ${label}`)
-  const clients = [...new Set(tasks.map((t) => t.client).filter(Boolean))].sort()
+  const { label: workFor, names: clients } = useWorkFor()
   const sel = 'input h-8 py-0 w-auto text-xs font-semibold bg-card'
 
   return (
@@ -199,16 +201,16 @@ function BulkBar({ ids, clear, today, now, updateTasks, removeTasks, categories,
       <select className={sel} aria-label="Category" value="" onChange={(e) => e.target.value && run({ category: e.target.value }, `Moved ${n} tasks to ${categories.find((c) => c.id === e.target.value)?.name}`)}>
         <option value="">Category…</option>{categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
       </select>
-      <select className={sel} aria-label="Client" value="" onChange={(e) => {
+      <select className={sel} aria-label={workFor.one} value="" onChange={(e) => {
         const v = e.target.value
-        if (v === '__none') run({ client: null, billable: false }, `Cleared the client on ${n} tasks`)
+        if (v === '__none') run({ client: null, billable: false }, `Cleared the ${workFor.one.toLowerCase()} on ${n} tasks`)
         else if (v === '__bill') run({ billable: true }, `Marked ${n} tasks billable`)
         else if (v === '__nobill') run({ billable: false }, `Marked ${n} tasks not billable`)
         else if (v) run({ client: v }, `Set ${n} tasks to ${v}`)
       }}>
-        <option value="">Client…</option>
+        <option value="">{workFor.one}…</option>
         {clients.map((c) => <option key={c} value={c}>{c}</option>)}
-        <option value="__bill">Mark billable</option><option value="__nobill">Mark not billable</option><option value="__none">No client</option>
+        <option value="__bill">Mark billable</option><option value="__nobill">Mark not billable</option><option value="__none">{workFor.none}</option>
       </select>
       {fields.length > 0 && (
         // Dropdown and tick-box fields can be set here; any field can be cleared.

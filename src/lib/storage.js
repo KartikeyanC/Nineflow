@@ -9,6 +9,7 @@ import { cleanTags } from './taskMeta'
 import { THEMES } from './themes'
 import { cleanBilling } from './billing'
 import { cleanFields } from './fields'
+import { cleanWorkFor } from './workFor'
 import { cleanHistory } from './taskHistory'
 import { COLUMNS_VERSION, DEFAULT_COLUMNS, LEGACY_REVIEW_ID, cleanColumns, migrateColumns } from './columns'
 
@@ -51,6 +52,7 @@ export const DEFAULT_SETTINGS = {
   weather: { on: false, place: null }, // today's weather on the Dashboard (lib/weather.js); place: { name, region, country, lat, lon }
   holidays: { on: false, country: '' }, // public holidays on Week and Month (lib/holidays.js); country: ISO code, '' = from the browser
   feed: { token: '' }, // the calendar subscription link (lib/calFeed.js): its secret, '' = off
+  workFor: { label: 'auto', colors: {}, stamp: null }, // "who it's for" on tasks (lib/workFor.js)
   chat: { hooks: [], autoReport: false }, // chat webhooks (lib/notify.js): [{ id, kind, name, url }]; autoReport sends the day's report when you close the day
 }
 
@@ -166,6 +168,7 @@ export function loadSettings() {
     templates: Array.isArray(stored.templates) ? stored.templates : [],
     billing: cleanBilling(stored.billing), // rates, tax and invoice details (lib/billing.js)
     fields: cleanFields(stored.fields), // custom fields on tasks (lib/fields.js)
+    workFor: cleanWorkFor(stored.workFor), // what "who it's for" is called, its colours, what new tasks get (lib/workFor.js)
   }
   if (!Array.isArray(settings.categories) || settings.categories.length === 0) {
     settings.categories = DEFAULT_CATEGORIES

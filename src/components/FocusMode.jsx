@@ -4,6 +4,7 @@ import { usePlanner } from '../store/PlannerContext'
 import { fmtMinutes, totalMinutes } from '../lib/tasks'
 import { colorOf, cssVar } from '../lib/colors'
 import { CategoryTag, cx } from './ui'
+import { WorkForBadge } from './WorkFor'
 
 const PHASE = {
   focus: { label: 'Focus', ring: '--lav-fg', bg: 'bg-lav', text: 'text-lav-fg', dot: 'bg-lav-fg' },
@@ -80,7 +81,7 @@ export default function FocusMode() {
       <div className="flex-1 flex flex-col items-center justify-center px-6 -mt-6">
         <span className={cx('pill text-sm px-3 py-1', p.bg, p.text)}>{p.label}</span>
         <h1 className="h-display text-3xl sm:text-4xl text-center mt-4 max-w-2xl">{task.title}</h1>
-        <div className="mt-2"><CategoryTag category={categoryById(task.category)} /></div>
+        <div className="mt-2 flex flex-wrap items-center justify-center gap-2"><WorkForBadge name={task.client} /><CategoryTag category={categoryById(task.category)} /></div>
 
         <div className="relative mt-8">
           <svg width={R * 2 + 24} height={R * 2 + 24} className="-rotate-90">

@@ -15,6 +15,7 @@ import { PlanGoalButton } from './GoalPlanner'
 import { PromptListButton } from './PromptToList'
 import { AskPlannerButton } from './AskPlanner'
 import SidebarToggle from './SidebarToggle'
+import { WorkForSwitch } from './WorkFor'
 
 const NAV = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -52,6 +53,7 @@ export default function Sidebar() {
           <Wordmark className="text-[17px] hidden wide:block" />
         </div>
         <WorkspaceMenu compact />
+        <WorkForSwitch compact className="-mt-1" />
       </div>
 
       {/* Scrolls when the window is too short for everything (the toggle above hangs outside the edge, so it stays out of here) */}

@@ -23,6 +23,7 @@ import { ensureRecurrences } from '../lib/recurrence'
 import { planDay as planDayPure } from '../lib/schedule'
 import { withHistory } from '../lib/taskHistory'
 import { hhmm, toMin, workEnd } from '../lib/capacity'
+import { loadFocus as loadWorkFocus, matchesFocus, saveFocus as saveWorkFocus, stampFor } from '../lib/workFor'
 
 const PlannerContext = createContext(null)
 
@@ -102,6 +103,20 @@ export function PlannerProvider({ children }) {
   tasksRef.current = tasks
   settingsRef.current = settings
 
+  // "Work for": show only one company / client / project's tasks (null = all). Per device, like the
+  // workspace. Every plan and list reads `tasks`, so they all follow it; new tasks get it too.
+  const [workFocus, setWorkFocusState] = useState(loadWorkFocus)
+  const workFocusRef = useRef(workFocus)
+  workFocusRef.current = workFocus
+  const setWorkFocus = useCallback((v) => { setWorkFocusState(v || null); saveWorkFocus(v || null) }, [])
+  const shownTasks = useMemo(() => (workFocus ? activeTasks.filter((t) => matchesFocus(t, workFocus)) : activeTasks), [activeTasks, workFocus])
+  // A new task is for the one being shown, or the one set in Settings, unless it already says.
+  const stamped = (fields) => {
+    if (fields && fields.client !== undefined) return fields
+    const client = stampFor(workFocusRef.current, settingsRef.current)
+    return client ? { ...fields, client } : fields
+  }
+
   // A write that fails (storage full, private mode) is reported here so the
   // UI can tell the user their changes are not being kept.
   const [saveError, setSaveError] = useState(false)
@@ -141,7 +156,7 @@ export function PlannerProvider({ children }) {
   const [lastAdded, setLastAdded] = useState(null)
   const addTask = useCallback((fields) => {
     const { status, ...rest } = fields || {}
-    let task = createTask(rest)
+    let task = createTask(stamped(rest))
     if (task.recurrence) task.seriesId = task.id
     // (the day picked in the dialog stays: only finishing an existing task makes today its day)
     if (status && status !== 'todo') task = { ...withStatus(task, status), column: rest.column ?? null, date: task.date, startDate: task.startDate }
@@ -173,7 +188,7 @@ export function PlannerProvider({ children }) {
   const addTasks = useCallback((list, undoLabel) => {
     if (!list.length) return []
     offerUndo(undoLabel || `Added ${list.length} tasks`)
-    const made = list.map((fields) => { const t = createTask(fields); if (t.recurrence) t.seriesId = t.id; return t })
+    const made = list.map((fields) => { const t = createTask(stamped(fields)); if (t.recurrence) t.seriesId = t.id; return t })
     setTasks((ts) => [...ts, ...made])
     return made
   }, [offerUndo])
@@ -902,7 +917,10 @@ export function PlannerProvider({ children }) {
 
   const value = useMemo(
     () => ({
-      tasks: activeTasks, // without paused and dropped tasks: what every plan and list shows
+      tasks: shownTasks, // without paused and dropped tasks, and only the "Work for" being shown: what every plan and list shows
+      everyActiveTask: activeTasks, // the same, whoever they are for
+      workFocus,
+      setWorkFocus,
       allTasks: tasks, // everything, for the Paused screen, the task panel and search
       pauseTask,
       resumeTask,
@@ -988,7 +1006,7 @@ export function PlannerProvider({ children }) {
       dismissUndo,
     }),
     [
-      activeTasks, tasks, pauseTask, resumeTask, dropTask, restoreTask, settings, now, view, setView, selectedId, quickAdd, dashboardDate, calendarMode, openDay,
+      shownTasks, workFocus, setWorkFocus, activeTasks, tasks, pauseTask, resumeTask, dropTask, restoreTask, settings, now, view, setView, selectedId, quickAdd, dashboardDate, calendarMode, openDay,
       addTask, addTasks, removeTasks, updateTasks, gateTaskId, closeGate, finishGate, moveToWorkspace, goalPlannerOpen, promptListOpen, askOpen, updateTask, setSessions, setStatus, toggleComplete, moveTask, sortStatus,
       moveOverdueToToday, clearCompleted, removeTask, setRecurrence, removeSeries, applyToUpcoming, planDay,
       previewPlan, applyPlan, moveTasksTo,

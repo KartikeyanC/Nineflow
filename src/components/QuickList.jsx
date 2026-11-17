@@ -5,6 +5,7 @@ import { usePlanner } from '../store/PlannerContext'
 import { carriedLabel, dateKey, dueLabel, fmtMinutes, isOverdue, sortByTime } from '../lib/tasks'
 import { parseQuickAdd } from '../lib/nlp'
 import { CategoryTag, CheckCircle, cx } from './ui'
+import { WorkForBadge } from './WorkFor'
 
 const FILTERS = [
   { id: 'today', label: 'Today' },
@@ -132,6 +133,7 @@ export default function QuickList({ layout = 'column', onCollapse, collapseIcon 
                       {t.status === 'working' && <span className="text-sky-fg font-semibold"> · working</span>}
                     </p>
                   </div>
+                  <WorkForBadge name={t.client} className="shrink-0 max-w-[9rem] hidden sm:inline-flex" />
                   <CategoryTag category={categoryById(t.category)} className="text-[11px] py-0 hidden sm:inline-flex" />
                 </li>
               )

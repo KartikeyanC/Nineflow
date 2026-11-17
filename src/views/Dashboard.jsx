@@ -28,6 +28,7 @@ import { RitualPrompt } from '../features/Ritual'
 import { WorkspaceMenu } from '../features/Workspaces'
 import { openInterrupt } from '../features/Interrupt'
 import { openPalette } from '../components/MobileNav'
+import { WorkForBadge, WorkForSwitch } from '../components/WorkFor'
 
 const toMin = (hhmm) => { const [h, m] = hhmm.split(':').map(Number); return h * 60 + m }
 const hh = (min) => `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`
@@ -55,7 +56,10 @@ export default function Dashboard() {
       <header className="flex flex-wrap items-start justify-between gap-4 mb-5 max-sm:gap-3 max-sm:mb-4">
         <div className="min-w-0">
           {/* Phones have no sidebar, so the workspace switcher sits here: tap it to change workspace. */}
-          <WorkspaceMenu className="sm:hidden mb-3 w-fit max-w-[75vw]" />
+          <div className="sm:hidden mb-3 flex flex-wrap items-center gap-2">
+            <WorkspaceMenu className="w-fit max-w-[60vw]" />
+            <WorkForSwitch className="w-fit max-w-[60vw]" />
+          </div>
           <h1 className="h-display text-3xl max-sm:text-2xl">{greeting}{firstName(currentProfile()?.name) ? `, ${firstName(currentProfile().name)}` : ''} 👋</h1>
           <p className="text-sm text-muted mt-1 font-medium">{format(day, 'EEEE, MMMM d, yyyy')}</p>
           <p className="text-sm text-faint max-sm:hidden">Let's make today productive.</p>
@@ -334,6 +338,7 @@ function TaskList({ day, dayKey, isToday }) {
                 <div className="min-w-0 flex-1">
                   <p className={cx('text-sm font-semibold truncate', done && 'line-through text-muted')}>{t.title}</p>
                   <div className="flex items-center gap-1.5 mt-0.5">
+                    <WorkForBadge name={t.client} className="shrink-0 max-w-[10rem]" />
                     <CategoryTag category={categoryById(t.category)} className="text-[11px] py-0" />
                     {t.recurrence && <Repeat size={10} className="text-lav-fg" />}
                     <RequiredBadge task={t} className="!text-[11px]" />

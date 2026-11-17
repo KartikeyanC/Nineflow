@@ -7,6 +7,8 @@ import { MAX_TAGS, NAG_CHOICES, REMINDER_CHOICES, allTags, cleanTag, cleanTags, 
 import { cx } from './ui'
 import { DateField } from './DatePicker'
 import { cleanTaskFields, withValue } from '../lib/fields'
+import { cleanName } from '../lib/workFor'
+import { useWorkFor } from './WorkFor'
 
 // The "Reminders" and "Tags" rows of the task panel.
 
@@ -101,23 +103,30 @@ export function TagsField({ task }) {
   )
 }
 
-// The "Client" row: who the work is for (suggesting clients already used), and whether its time is billable.
+// The "Work for" row (called Company, Client, Project… by role): who the work is for, suggesting
+// every name already in use, and whether its time is billable. A name typed in another case
+// ("acme") becomes the one already on the list ("Acme"), so one company never turns into two.
 export function ClientField({ task }) {
-  const { tasks, updateTask } = usePlanner()
+  const { updateTask } = usePlanner()
+  const { label, names, color } = useWorkFor()
   const [text, setText] = useState(task.client || '')
   const listId = useId()
-  const clients = [...new Set(tasks.map((t) => t.client).filter(Boolean))].sort((a, b) => a.localeCompare(b))
   const save = () => {
-    const client = text.replace(/\s+/g, ' ').trim().slice(0, 60) || null
+    const typed = cleanName(text)
+    const client = (typed && names.find((n) => n.toLowerCase() === typed.toLowerCase())) || typed || null
+    if (client !== text) setText(client || '')
     if (client !== (task.client || null)) updateTask(task.id, { client, ...(client ? {} : { billable: false }) })
   }
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <input value={text} list={listId} aria-label="Client" placeholder="No client"
-        onChange={(e) => setText(e.target.value)} onBlur={save}
-        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur() } }}
-        className="input h-9 py-0 flex-1 min-w-[8rem]" />
-      <datalist id={listId}>{clients.map((c) => <option key={c} value={c} />)}</datalist>
+      <span className="relative flex-1 min-w-[8rem]">
+        {task.client && <span className={cx('pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-2.5 w-2.5 rounded-[3px]', color(task.client).dot)} aria-hidden="true" />}
+        <input value={text} list={listId} aria-label={label.one} placeholder={label.none}
+          onChange={(e) => setText(e.target.value)} onBlur={save}
+          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur() } }}
+          className={cx('input h-9 py-0 w-full', task.client && 'pl-7')} />
+      </span>
+      <datalist id={listId}>{names.map((c) => <option key={c} value={c} />)}</datalist>
       <button type="button" role="switch" aria-checked={!!task.billable} onClick={() => updateTask(task.id, { billable: !task.billable })}
         className={pill(task.billable)}>
         {task.billable && <Check size={12} />} Billable
