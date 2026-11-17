@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react'
-import { BookOpen, Check, Copy, Download, Lightbulb, Lock, NotebookPen, Plus, Printer, Trash2, Users } from 'lucide-react'
+import { BookOpen, Check, Copy, Download, Lightbulb, Lock, NotebookPen, Plus, Printer, Send, Trash2, Users } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
 import { FINISHED_CHOICES, NOTE_MAX, buildHandover, handoverHtml, handoverText } from '../lib/handover'
 import { currentProfile } from '../lib/profiles'
@@ -7,6 +7,7 @@ import { format } from '../lib/dateFormat'
 import { isNativeApp } from '../lib/platform'
 import { Modal, cx } from './ui'
 import { WorkForBadge, useWorkFor } from './WorkFor'
+import { TransferSend } from './Transfer'
 
 // "Hand over": one company's / client's work as a pack for whoever takes it over. What you write
 // here is kept (settings.workFor: notes, people, glossary), so it can be built up over weeks and the
@@ -36,6 +37,7 @@ export default function HandoverDialog({ name, onClose }) {
   const { label } = useWorkFor()
   const wf = settings.workFor || {}
   const [tab, setTab] = useState('notes')
+  const [sending, setSending] = useState(false)
   const [note, setNote] = useState(wf.notes?.[name] || '')
   const [days, setDays] = useState(90)
   const [copied, setCopied] = useState(false)
@@ -74,7 +76,8 @@ export default function HandoverDialog({ name, onClose }) {
   const openTask = (id) => { close(); setSelectedId(id) }
 
   return (
-    <Modal open onClose={close} title={`Hand over ${name}`} width="max-w-2xl">
+    <Modal open onClose={close} title={sending ? `Transfer ${name} to the next person` : `Hand over ${name}`} width="max-w-2xl">
+      {sending ? <TransferSend name={name} onBack={() => setSending(false)} onDone={close} /> : <>
       <p className="text-sm text-muted -mt-1">Everything the next person needs to pick up the work for <WorkForBadge name={name} className="align-middle" />. What you write here is kept, so add to it any time.</p>
 
       <div role="tablist" aria-label="What to write" className="mt-4 inline-flex rounded-full border border-line bg-page p-0.5">
@@ -155,6 +158,11 @@ export default function HandoverDialog({ name, onClose }) {
         {!isNativeApp() && <button type="button" className="btn-ghost" onClick={download}><Download size={14} /> Download page</button>}
         <button type="button" className="btn-black" onClick={print}><Printer size={14} /> {isNativeApp() ? 'Download handover' : 'Print or save as PDF'}</button>
       </div>
+      <div className="mt-4 pt-4 border-t border-line flex flex-wrap items-center justify-between gap-3">
+        <p className="text-xs text-muted max-w-sm">Is the next person on NineFlow too? Give them a file that moves this work into their planner.</p>
+        <button type="button" className="btn-ghost" onClick={() => { keepNote(); setSending(true) }}><Send size={14} /> Transfer to the next person</button>
+      </div>
+      </>}
     </Modal>
   )
 }

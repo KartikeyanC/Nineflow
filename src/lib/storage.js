@@ -225,6 +225,8 @@ function normalizeTask(t) {
     private: t.private === true, // personal: never in a handover (lib/handover.js)
     askedBy: typeof t.askedBy === 'string' ? t.askedBy.replace(/\s+/g, ' ').trim().slice(0, 80) : '',
     why: typeof t.why === 'string' ? t.why.replace(/\s+/g, ' ').trim().slice(0, 200) : '',
+    handedOver: t.handedOver && typeof t.handedOver === 'object' && typeof t.handedOver.from === 'string' && t.handedOver.from
+      ? { from: t.handedOver.from.slice(0, 80), at: typeof t.handedOver.at === 'string' ? t.handedOver.at : null } : null, // taken over from (lib/transfer.js)
     fields: t.fields && typeof t.fields === 'object' && !Array.isArray(t.fields) ? t.fields : {}, // custom field values; checked against the fields where shown (lib/fields.js)
     column: !wasInReview && typeof t.column === 'string' ? t.column : null,
     seriesId: t.seriesId ?? null,

@@ -112,6 +112,7 @@ export function createTask(fields = {}) {
     private: false, // personal: left out of every handover (lib/handover.js)
     askedBy: '', // who asked for it: a name, 'Priya (marketing)', an email sender
     why: '', // one line on why it matters, so it still makes sense months later
+    handedOver: null, // { from, at }: taken over from someone else's transfer file (lib/transfer.js)
     fields: {}, // custom field values: { [field id]: value } (lib/fields.js)
     seriesId: null,
     recurrence: null, // { freq, until, skip } | null

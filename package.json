@@ -21,6 +21,7 @@
     "test:voice": "rolldown -c scripts/voice-test/rolldown.config.mjs && node node_modules/.cache/voice-test.mjs",
     "test:history": "node scripts/history-test.mjs",
     "test:e2e": "playwright test",
+    "test:transfer": "rolldown -c scripts/transfer-test/rolldown.config.mjs && node node_modules/.cache/transfer-test.mjs",
     "test:import": "rolldown -c scripts/import-test/rolldown.config.mjs && node node_modules/.cache/import-test.mjs",
     "test:billing": "node scripts/billing-test.mjs",
     "test:fields": "node scripts/fields-test.mjs",

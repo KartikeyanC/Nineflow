@@ -1,11 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { Archive, ArchiveRestore, Briefcase, Check, ChevronsUpDown, Handshake, Pencil, Plus, Trash2, X } from 'lucide-react'
+import { Archive, ArchiveRestore, Briefcase, Check, ChevronsUpDown, FileUp, Handshake, Pencil, Plus, Trash2, X } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
 import { currentProfile } from '../lib/profiles'
 import { COLOR_IDS, colorOf } from '../lib/colors'
 import { LABELS, LABEL_CHOICES, NONE, autoLabelId, cleanName, colorFor, labelOf, namesIn } from '../lib/workFor'
 import { cx, useDialogFocus } from './ui'
 import HandoverDialog from './Handover'
+import { TakeOverDialog } from './Transfer'
 
 // "Work for": which company / client / project a task is for (lib/workFor.js).
 
@@ -162,6 +163,7 @@ export function WorkForSettings() {
   const save = (patch) => updateSettings({ workFor: { ...wf, ...patch } })
   const [editing, setEditing] = useState(null)
   const [handover, setHandover] = useState(null)
+  const [takeOver, setTakeOver] = useState(false)
   const [text, setText] = useState('')
   const [adding, setAdding] = useState('')
   const [error, setError] = useState(null)
@@ -293,7 +295,12 @@ export function WorkForSettings() {
         <button type="submit" className="btn-black h-9 py-0" disabled={!adding.trim()}><Plus size={14} /> Add</button>
       </form>
       {error && <p role="alert" className="mt-2 text-xs font-semibold text-coral-fg">{error}</p>}
+      <div className="mt-5 pt-4 border-t border-line flex flex-wrap items-center justify-between gap-3 max-w-2xl">
+        <p className="text-xs text-muted max-w-sm">Starting where someone else left off? Open the transfer file they made, and their work moves into your planner.</p>
+        <button type="button" className="btn-ghost" onClick={() => setTakeOver(true)}><FileUp size={14} /> Take over work from a file</button>
+      </div>
       {handover && <HandoverDialog name={handover} onClose={() => setHandover(null)} />}
+      {takeOver && <TakeOverDialog onClose={() => setTakeOver(false)} />}
     </section>
   )
 }

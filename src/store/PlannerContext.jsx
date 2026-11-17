@@ -185,6 +185,14 @@ export function PlannerProvider({ children }) {
     return true
   }, [offerUndo])
 
+  // Tasks that arrive ready-made (a transfer file, lib/transfer.js): their ids and repeat series are
+  // already set, so they go in as they are. One undo step takes them all back.
+  const importTasks = useCallback((list, undoLabel) => {
+    if (!list.length) return
+    offerUndo(undoLabel || `Added ${list.length} tasks`)
+    setTasks((ts) => [...ts, ...list])
+  }, [offerUndo])
+
   // Several tasks at once (a planned goal). One undo step takes them all back.
   const addTasks = useCallback((list, undoLabel) => {
     if (!list.length) return []
@@ -948,6 +956,7 @@ export function PlannerProvider({ children }) {
       openDay,
       addTask,
       addTasks,
+      importTasks,
       removeTasks,
       updateTasks,
       gateTaskId,
@@ -1008,7 +1017,7 @@ export function PlannerProvider({ children }) {
     }),
     [
       shownTasks, workFocus, setWorkFocus, activeTasks, tasks, pauseTask, resumeTask, dropTask, restoreTask, settings, now, view, setView, selectedId, quickAdd, dashboardDate, calendarMode, openDay,
-      addTask, addTasks, removeTasks, updateTasks, gateTaskId, closeGate, finishGate, moveToWorkspace, goalPlannerOpen, promptListOpen, askOpen, updateTask, setSessions, setStatus, toggleComplete, moveTask, sortStatus,
+      addTask, addTasks, importTasks, removeTasks, updateTasks, gateTaskId, closeGate, finishGate, moveToWorkspace, goalPlannerOpen, promptListOpen, askOpen, updateTask, setSessions, setStatus, toggleComplete, moveTask, sortStatus,
       moveOverdueToToday, clearCompleted, removeTask, setRecurrence, removeSeries, applyToUpcoming, planDay,
       previewPlan, applyPlan, moveTasksTo,
       focus, startFocus, pauseFocus, resumeFocus, advanceFocus, stopFocus, setFocusOpen,

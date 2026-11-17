@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import { differenceInCalendarDays, parseISO } from 'date-fns'
 import { format } from '../lib/dateFormat'
 import TaskHistory from './TaskHistory'
-import { Activity, CalendarCheck, CalendarDays, Clock, Timer, Tag, Flag, Trash2, X, Repeat, ArrowRight, CalendarPlus, Layers, Bell, Hash, Columns3, Video, Paperclip, MoreHorizontal, PauseCircle, XCircle, Briefcase, ListPlus, UserRound, HelpCircle, Lightbulb } from 'lucide-react'
+import { Activity, CalendarCheck, CalendarDays, Clock, Timer, Tag, Flag, Trash2, X, Repeat, ArrowRight, CalendarPlus, Layers, Bell, Hash, Columns3, Video, Paperclip, MoreHorizontal, PauseCircle, XCircle, Briefcase, ListPlus, UserRound, HelpCircle, Lightbulb, Handshake } from 'lucide-react'
 import { googleCalendarUrl } from '../lib/calendar'
 import { meetLinkFor } from '../lib/gcal'
 import { pickDriveFiles, pickerAvailable } from '../lib/picker'
@@ -123,6 +123,11 @@ export default function TaskPanel() {
             onChange={(e) => updateTask(task.id, { description: e.target.value })}
           />
 
+          {task.handedOver && (
+            <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-page px-2.5 py-1 text-[12px] font-semibold text-muted">
+              <Handshake size={12} aria-hidden="true" /> Taken over from {task.handedOver.from}{task.handedOver.at && !Number.isNaN(Date.parse(task.handedOver.at)) ? ` on ${format(new Date(task.handedOver.at), 'd MMM yyyy')}` : ''}
+            </p>
+          )}
           {isUnclear(task, now) && (
             <p className="mt-2 flex items-start gap-2 rounded-xl bg-butter/70 px-3 py-2 text-[12.5px] text-butter-fg">
               <Lightbulb size={14} className="mt-0.5 shrink-0" aria-hidden="true" />
