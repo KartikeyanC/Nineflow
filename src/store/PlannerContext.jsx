@@ -187,9 +187,9 @@ export function PlannerProvider({ children }) {
 
   // Tasks that arrive ready-made (a transfer file, lib/transfer.js): their ids and repeat series are
   // already set, so they go in as they are. One undo step takes them all back.
-  const importTasks = useCallback((list, undoLabel) => {
+  const importTasks = useCallback((list, undoLabel, onUndo) => {
     if (!list.length) return
-    offerUndo(undoLabel || `Added ${list.length} tasks`)
+    offerUndo(undoLabel || `Added ${list.length} tasks`, onUndo)
     setTasks((ts) => [...ts, ...list])
   }, [offerUndo])
 

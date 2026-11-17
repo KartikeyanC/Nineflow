@@ -305,3 +305,47 @@ export function WorkForSettings() {
     </section>
   )
 }
+
+// Choosing who a new task is for (the New task window). `value` is a name or null.
+export function WorkForPicker({ value, onChange }) {
+  const { settings } = usePlanner()
+  const { label, names, active } = useWorkFor()
+  const [adding, setAdding] = useState(false)
+  const [text, setText] = useState('')
+  const list = value && !active.includes(value) ? [...active, value] : active
+  const pill = (on) => cx('pill border transition', on ? 'border-current ring-2 ring-current/20' : 'border-transparent opacity-70 hover:opacity-100')
+  const add = () => {
+    const typed = cleanName(text)
+    if (typed) onChange(names.find((n) => n.toLowerCase() === typed.toLowerCase()) || typed)
+    setAdding(false); setText('')
+  }
+  return (
+    <div role="radiogroup" aria-label={label.one} className="flex flex-wrap items-center gap-1.5">
+      <span className="mr-0.5 inline-flex items-center gap-1 text-xs font-semibold text-muted"><Briefcase size={12} aria-hidden="true" /> {label.one}</span>
+      {list.map((n) => {
+        const c = colorOf(colorFor(settings, n))
+        return (
+          <button key={n} type="button" role="radio" aria-checked={value === n} onClick={() => onChange(n)}
+            className={cx(pill(value === n), c.bg, c.text, 'rounded-md max-w-[12rem]')}>
+            <span className={cx('h-2 w-2 shrink-0 rounded-[3px]', c.dot)} aria-hidden="true" />
+            <span className="truncate">{n}</span>
+          </button>
+        )
+      })}
+      <button type="button" role="radio" aria-checked={!value} onClick={() => onChange(null)}
+        className={cx(pill(!value), 'rounded-md bg-page text-muted', !value && 'text-ink')}>{label.none}</button>
+      {adding ? (
+        <span className="inline-flex items-center gap-1">
+          <input autoFocus value={text} maxLength={60} aria-label={`New ${label.one.toLowerCase()}`} placeholder={label.one === 'Work for' ? 'Name' : `${label.one} name`}
+            onChange={(e) => setText(e.target.value)} onBlur={add}
+            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); add() } else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); setAdding(false); setText('') } }}
+            className="input h-7 w-36 py-0 text-[12px]" />
+        </span>
+      ) : (
+        <button type="button" onClick={() => setAdding(true)} className="pill rounded-md border border-dashed border-line bg-transparent text-muted hover:text-ink hover:border-faint transition">
+          <Plus size={11} aria-hidden="true" /> New
+        </button>
+      )}
+    </div>
+  )
+}

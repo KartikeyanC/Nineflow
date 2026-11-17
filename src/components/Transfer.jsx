@@ -278,7 +278,8 @@ export function TakeOverDialog({ onClose, handoff }) {
     setError(null)
     if (where === 'here') {
       const list = tasksForPlanner(bundle, { as: target, categories: settings.categories, takenIds: new Set(allTasks.map((t) => t.id)) })
-      importTasks(list, `Took over ${list.length} task${list.length === 1 ? '' : 's'} for ${target}`)
+      const before = settings.workFor
+      importTasks(list, `Took over ${list.length} task${list.length === 1 ? '' : 's'} for ${target}`, () => updateSettings({ workFor: before }))
       updateSettings({ workFor: mergeWorkFor(settings.workFor, bundle, target) })
       setDone({ count: list.length, name: target })
       finished()

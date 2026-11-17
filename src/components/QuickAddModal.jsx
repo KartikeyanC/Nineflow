@@ -10,6 +10,8 @@ import { listen, speechKind } from '../lib/speech'
 import { cleanTemplates, taskFieldsFromTemplate } from '../lib/views'
 import { CategoryPills, Modal, PriorityPills, cx } from './ui'
 import { StepsEditor } from './Checklist'
+import { WorkForPicker } from './WorkFor'
+import { stampFor } from '../lib/workFor'
 import { DateField } from './DatePicker'
 import { TimeField } from './TimePicker'
 
@@ -23,7 +25,7 @@ const TOKEN_ICON = { date: CalendarDays, time: Clock, duration: Timer, priority:
 const EXAMPLES = ['Edit trailer tomorrow 2pm 90m #work @client-a', 'Gym every weekday 7am', 'Call mom on sat 30m', 'Invoice client friday !high']
 
 export default function QuickAddModal() {
-  const { quickAdd, setQuickAdd, addTask, settings, now, tasks, setGoalPlannerOpen } = usePlanner()
+  const { quickAdd, setQuickAdd, addTask, settings, now, tasks, setGoalPlannerOpen, workFocus } = usePlanner()
   const open = quickAdd != null
   const [draft, setDraft] = useState(blank)
   // Fields the user set by hand win over anything parsed from the title.
@@ -76,7 +78,7 @@ export default function QuickAddModal() {
       // (a day passed in, like the Board's, is only the starting point: a day typed in the title still wins)
       manual.current = new Set(Object.keys(quickAdd || {}).filter((k) => k !== 'date'))
       fromParse.current = new Set()
-      base.current = blank({ category: settings.categories[0]?.id, ...quickAdd })
+      base.current = blank({ category: settings.categories[0]?.id, client: stampFor(workFocus, settings), ...quickAdd })
       setIgnored([])
       setAi({ busy: false, note: '', error: '' })
       setDraft(base.current)
@@ -281,6 +283,7 @@ export default function QuickAddModal() {
 
         <div className="mt-4"><CategoryPills categories={settings.categories} value={draft.category} onChange={(category) => set({ category })} /></div>
         <div className="mt-3"><PriorityPills value={draft.priority} onChange={(priority) => set({ priority })} /></div>
+        <div className="mt-3"><WorkForPicker value={draft.client || null} onChange={(client) => set({ client })} /></div>
 
         <button type="button" onClick={() => { setQuickAdd(null); setGoalPlannerOpen(true) }}
           className="mt-5 text-[12px] font-semibold text-muted hover:text-ink inline-flex items-center gap-1.5 transition">
