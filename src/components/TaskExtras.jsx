@@ -1,5 +1,5 @@
-import React, { useId, useMemo, useState } from 'react'
-import { BookmarkPlus, Check, Lock, X } from 'lucide-react'
+import React, { useId, useMemo, useRef, useState } from 'react'
+import { BookmarkPlus, Check, ChevronDown, Lock, Plus, X } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
 import { uid } from '../lib/storage'
 import { MAX_TEMPLATES, cleanTemplates, templateFromTask } from '../lib/views'
@@ -139,23 +139,100 @@ export function ClientField({ task }) {
   const { updateTask } = usePlanner()
   const { label, names, active, color } = useWorkFor()
   const [text, setText] = useState(task.client || '')
+  const [open, setOpen] = useState(false)
+  const [typing, setTyping] = useState(false)
+  const [hi, setHi] = useState(0)
+  const [up, setUp] = useState(false)
+  const inputRef = useRef(null)
   const listId = useId()
-  const save = () => {
-    const typed = cleanName(text)
+
+  const commit = (raw) => {
+    const typed = cleanName(raw)
     const client = (typed && names.find((n) => n.toLowerCase() === typed.toLowerCase())) || typed || null
-    if (client !== text) setText(client || '')
+    setText(client || '')
     if (client !== (task.client || null)) updateTask(task.id, { client, ...(client ? {} : { billable: false }) })
   }
+
+  // The list: "No company", the names (narrowed by what's typed), then
+  // "Add “…”" when the typed name isn't one of them yet.
+  const typed = cleanName(text)
+  const q = typing ? typed.toLowerCase() : ''
+  const shown = q ? active.filter((n) => n.toLowerCase().includes(q)) : active
+  const isNew = typing && typed && !names.some((n) => n.toLowerCase() === typed.toLowerCase())
+  const items = [
+    ...(q ? [] : [{ kind: 'none', value: '' }]),
+    ...shown.map((n) => ({ kind: 'name', value: n })),
+    ...(isNew ? [{ kind: 'new', value: typed }] : []),
+  ]
+
+  const show = () => {
+    const r = inputRef.current?.getBoundingClientRect()
+    setUp(!!r && window.innerHeight - r.bottom < 280 && r.top > window.innerHeight - r.bottom)
+    setTyping(false)
+    setHi(Math.max(0, active.indexOf(task.client) + 1))
+    setOpen(true)
+  }
+  const pick = (item) => { commit(item.value); setOpen(false); setTyping(false) }
+
+  const onKeyDown = (e) => {
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault()
+      if (!open) { show(); return }
+      const d = e.key === 'ArrowDown' ? 1 : -1
+      setHi((h) => (items.length ? (h + d + items.length) % items.length : 0))
+    } else if (e.key === 'Enter') {
+      e.preventDefault()
+      if (open && items[hi] && (typing ? q || items[hi].kind !== 'none' : true)) pick(items[hi])
+      else { commit(text); setOpen(false); e.currentTarget.blur() }
+    } else if (e.key === 'Escape' && open) {
+      e.preventDefault(); e.stopPropagation()
+      setText(task.client || ''); setTyping(false); setOpen(false)
+    }
+  }
+
   return (
     <div className="flex flex-wrap items-center gap-2">
       <span className="relative flex-1 min-w-[8rem]">
-        {task.client && <span className={cx('pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-2.5 w-2.5 rounded-[3px]', color(task.client).dot)} aria-hidden="true" />}
-        <input value={text} list={listId} aria-label={label.one} placeholder={label.none}
-          onChange={(e) => setText(e.target.value)} onBlur={save}
-          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur() } }}
-          className={cx('input h-9 py-0 w-full', task.client && 'pl-7')} />
+        {task.client && !typing && <span className={cx('pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-2.5 w-2.5 rounded-[3px]', color(task.client).dot)} aria-hidden="true" />}
+        <input ref={inputRef} value={text} aria-label={label.one} placeholder={label.none}
+          role="combobox" aria-expanded={open} aria-controls={listId} aria-autocomplete="list"
+          aria-activedescendant={open && items[hi] ? `${listId}-${hi}` : undefined}
+          onFocus={show} onClick={() => !open && show()}
+          onChange={(e) => { setText(e.target.value); setTyping(true); setHi(0); setOpen(true) }}
+          onBlur={() => { if (open || typing) commit(text); setOpen(false); setTyping(false) }}
+          onKeyDown={onKeyDown}
+          className={cx('input h-9 py-0 w-full pr-8', task.client && !typing && 'pl-7')} />
+        <button type="button" tabIndex={-1} aria-hidden="true"
+          onMouseDown={(e) => { e.preventDefault(); if (open) setOpen(false); else { inputRef.current?.focus(); show() } }}
+          className="absolute right-1.5 top-1/2 -translate-y-1/2 grid h-6 w-6 place-items-center rounded-md text-muted hover:text-ink">
+          <ChevronDown size={14} className={cx('transition-transform duration-200', open && 'rotate-180')} />
+        </button>
+        {open && items.length > 0 && (
+          <ul id={listId} role="listbox" aria-label={label.many}
+            onMouseDown={(e) => e.preventDefault()}
+            className={cx('absolute left-0 right-0 z-50 min-w-[12rem] max-h-[260px] overflow-y-auto overscroll-contain rounded-2xl bg-card p-1.5 shadow-lift ring-hair animate-modal-in',
+              up ? 'bottom-full mb-1.5' : 'top-full mt-1.5')}>
+            {items.map((it, i) => {
+              const on = it.kind === 'none' ? !task.client : it.kind === 'name' && it.value === task.client
+              return (
+                <li key={`${it.kind}:${it.value}`} id={`${listId}-${i}`} role="option" aria-selected={on}
+                  onMouseEnter={() => setHi(i)} onClick={() => pick(it)}
+                  className={cx('flex cursor-pointer items-center gap-2.5 rounded-xl px-2.5 py-2 text-[13px] font-semibold transition-colors',
+                    on ? 'text-lav-fg' : 'text-ink', i === hi ? (on ? 'bg-accent-soft' : 'bg-subtle') : on && 'bg-accent-soft/70',
+                    it.kind === 'none' && i < items.length - 1 && 'mb-1')}>
+                  {it.kind === 'none' && <span className="h-2.5 w-2.5 shrink-0 rounded-[3px] border border-dashed border-faint" aria-hidden="true" />}
+                  {it.kind === 'name' && <span className={cx('h-2.5 w-2.5 shrink-0 rounded-[3px]', color(it.value).dot)} aria-hidden="true" />}
+                  {it.kind === 'new' && <Plus size={13} className="shrink-0 text-faint" aria-hidden="true" />}
+                  <span className={cx('flex-1 min-w-0 truncate', it.kind === 'none' && !on && 'text-muted')}>
+                    {it.kind === 'none' ? label.none : it.kind === 'new' ? <>Add “{it.value}”</> : it.value}
+                  </span>
+                  {on && <Check size={14} className="shrink-0" aria-hidden="true" />}
+                </li>
+              )
+            })}
+          </ul>
+        )}
       </span>
-      <datalist id={listId}>{active.map((c) => <option key={c} value={c} />)}</datalist>
       <button type="button" role="switch" aria-checked={!!task.billable} onClick={() => updateTask(task.id, { billable: !task.billable })}
         className={pill(task.billable)}>
         {task.billable && <Check size={12} />} Billable
