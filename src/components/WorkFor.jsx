@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { Briefcase, Check, ChevronsUpDown, Pencil, Plus, Trash2, X } from 'lucide-react'
+import { Briefcase, Check, ChevronsUpDown, Handshake, Pencil, Plus, Trash2, X } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
 import { currentProfile } from '../lib/profiles'
 import { COLOR_IDS, colorOf } from '../lib/colors'
 import { LABELS, LABEL_CHOICES, NONE, autoLabelId, cleanName, colorFor, labelOf, namesIn } from '../lib/workFor'
 import { cx, useDialogFocus } from './ui'
+import HandoverDialog from './Handover'
 
 // "Work for": which company / client / project a task is for (lib/workFor.js).
 
@@ -36,7 +37,7 @@ const Dot = ({ name, none, settings, size = 10 }) => (
 )
 
 // The list in the switch: All, each name with how many tasks, and "No company".
-function FocusList({ onPick }) {
+function FocusList({ onPick, onHandover }) {
   const { allTasks, everyActiveTask, settings, workFocus, setWorkFocus, setView } = usePlanner()
   const { label, names } = useWorkFor()
   const counts = useMemo(() => {
@@ -70,6 +71,12 @@ function FocusList({ onPick }) {
         {unset && <Row value={NONE} count={counts.get(NONE) || 0}><Dot none /><span className="flex-1 text-muted">{label.none}</span></Row>}
       </ul>
       <div className="mt-2 pt-2 border-t border-line">
+        {workFocus && workFocus !== NONE && (
+          <button type="button" onClick={() => { onPick?.(); onHandover?.(workFocus) }}
+            className="flex w-full items-center gap-2 rounded-xl px-2 py-1.5 text-[12px] font-semibold text-ink hover:bg-subtle transition">
+            <Handshake size={13} aria-hidden="true" /> <span className="min-w-0 truncate">Hand over {workFocus}…</span>
+          </button>
+        )}
         <button type="button" onClick={() => { setView('settings'); onPick?.(); requestAnimationFrame(() => document.getElementById('work-for-settings')?.scrollIntoView({ block: 'start', behavior: 'smooth' })) }}
           className="flex w-full items-center gap-2 rounded-xl px-2 py-1.5 text-[12px] font-semibold text-muted hover:bg-subtle hover:text-ink transition">
           <Pencil size={12} aria-hidden="true" /> Names, colours and new tasks
@@ -84,6 +91,7 @@ export function WorkForSwitch({ compact = false, className }) {
   const { settings, workFocus } = usePlanner()
   const { label, names } = useWorkFor()
   const [open, setOpen] = useState(false)
+  const [handover, setHandover] = useState(null)
   const root = useRef(null)
   const panel = useRef(null)
   useDialogFocus(panel, open)
@@ -112,9 +120,10 @@ export function WorkForSwitch({ compact = false, className }) {
       {open && (
         <div ref={panel} tabIndex={-1} role="dialog" aria-label={`Show tasks for one ${label.one.toLowerCase()}`}
           className="fixed inset-x-4 top-16 z-50 sm:absolute sm:inset-x-auto sm:left-0 sm:top-full sm:mt-2 sm:w-[260px] rounded-2xl bg-card p-2.5 shadow-lift ring-hair animate-modal-in outline-none">
-          <FocusList onPick={() => setOpen(false)} />
+          <FocusList onPick={() => setOpen(false)} onHandover={setHandover} />
         </div>
       )}
+      {handover && <HandoverDialog name={handover} onClose={() => setHandover(null)} />}
     </div>
   )
 }
@@ -143,9 +152,10 @@ export function WorkForBar() {
 export function WorkForSettings() {
   const { allTasks, settings, updateSettings, updateTasks, workFocus, setWorkFocus } = usePlanner()
   const { label, names } = useWorkFor()
-  const wf = settings.workFor || { label: 'auto', colors: {}, stamp: null }
+  const wf = settings.workFor || { label: 'auto', colors: {}, stamp: null, notes: {} }
   const save = (patch) => updateSettings({ workFor: { ...wf, ...patch } })
   const [editing, setEditing] = useState(null)
+  const [handover, setHandover] = useState(null)
   const [text, setText] = useState('')
   const [adding, setAdding] = useState('')
   const [error, setError] = useState(null)
@@ -173,10 +183,11 @@ export function WorkForSettings() {
     const ids = allTasks.filter((t) => t.client === from).map((t) => t.id)
     if (ids.length) updateTasks(ids, { client: to }, `Renamed ${from} to ${to}`)
     const { [from]: color, ...colors } = wf.colors
+    const { [from]: note, ...notes } = wf.notes || {}
     const billing = settings.billing
     const clients = billing?.clients?.[from] ? (({ [from]: b, ...rest }) => ({ ...rest, [to]: b }))(billing.clients) : null
     updateSettings({
-      workFor: { ...wf, colors: { ...colors, [to]: color || colorFor(settings, from) }, stamp: wf.stamp === from ? to : wf.stamp },
+      workFor: { ...wf, colors: { ...colors, [to]: color || colorFor(settings, from) }, notes: note ? { ...notes, [to]: note } : notes, stamp: wf.stamp === from ? to : wf.stamp },
       ...(clients ? { billing: { ...billing, clients } } : {}),
     })
     if (workFocus === from) setWorkFocus(to)
@@ -184,7 +195,8 @@ export function WorkForSettings() {
   }
   const remove = (n) => {
     const { [n]: _, ...colors } = wf.colors
-    save({ colors, stamp: wf.stamp === n ? null : wf.stamp })
+    const { [n]: __, ...notes } = wf.notes || {}
+    save({ colors, notes, stamp: wf.stamp === n ? null : wf.stamp })
     if (workFocus === n) setWorkFocus(null)
   }
 
@@ -242,10 +254,12 @@ export function WorkForSettings() {
                     </button>
                   ))}
                 </span>
+                <button type="button" onClick={() => setHandover(n)} aria-label={`Hand over ${n}`} title="Make a handover for the next person"
+                  className="h-8 rounded-full px-2.5 inline-flex items-center gap-1.5 text-[12px] font-semibold text-muted hover:bg-card hover:text-ink"><Handshake size={13} aria-hidden="true" /><span className="max-sm:hidden">Hand over</span></button>
                 <button type="button" onClick={() => { setEditing(n); setText(n); setError(null) }} aria-label={`Rename ${n}`} title="Rename everywhere"
                   className="h-8 w-8 rounded-full inline-flex items-center justify-center text-faint hover:bg-card hover:text-ink"><Pencil size={13} /></button>
-                <button type="button" onClick={() => remove(n)} disabled={used.get(n) > 0} aria-label={`Remove ${n}`}
-                  title={used.get(n) ? `${used.get(n)} task${used.get(n) === 1 ? ' still has' : 's still have'} it. Rename it, or change those tasks first.` : 'Remove from the list'}
+                <button type="button" onClick={() => remove(n)} disabled={used.get(n) > 0 || !!wf.notes?.[n]} aria-label={`Remove ${n}`}
+                  title={used.get(n) ? `${used.get(n)} task${used.get(n) === 1 ? ' still has' : 's still have'} it. Rename it, or change those tasks first.` : wf.notes?.[n] ? 'It has handover notes. Clear them first.' : 'Remove from the list'}
                   className="h-8 w-8 rounded-full inline-flex items-center justify-center text-faint hover:bg-coral/60 hover:text-coral-fg disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-faint"><Trash2 size={13} /></button>
               </>
             )}
@@ -257,6 +271,7 @@ export function WorkForSettings() {
         <button type="submit" className="btn-black h-9 py-0" disabled={!adding.trim()}><Plus size={14} /> Add</button>
       </form>
       {error && <p role="alert" className="mt-2 text-xs font-semibold text-coral-fg">{error}</p>}
+      {handover && <HandoverDialog name={handover} onClose={() => setHandover(null)} />}
     </section>
   )
 }

@@ -12,7 +12,7 @@ import { cleanColumns } from '../lib/columns'
 const LABEL = {
   title: 'Title', description: 'Description', status: 'Status', column: 'Board column', date: 'Date', dueDate: 'End day',
   startTime: 'Start time', durationMinutes: 'Estimate', priority: 'Priority', category: 'Category', recurrence: 'Repeat',
-  tags: 'Tags', client: 'Client', billable: 'Billable', reminders: 'Reminders', steps: 'Checklist', files: 'Files',
+  tags: 'Tags', client: 'Client', billable: 'Billable', private: 'Personal', reminders: 'Reminders', steps: 'Checklist', files: 'Files',
   hold: 'Paused', dropped: 'Dropped', fields: 'Custom fields',
 }
 
@@ -34,7 +34,7 @@ export function useHistoryText() {
       case 'priority': return PRIORITY_LABEL[v] || v
       case 'category': return settings.categories.find((c) => c.id === v)?.name || v
       case 'durationMinutes': return fmtMinutes(v)
-      case 'billable': return v ? 'Yes' : 'No'
+      case 'billable': case 'private': return v ? 'Yes' : 'No'
       case 'recurrence': { const [freq, until] = String(v).split('|'); return `${FREQ_LABEL[freq] || freq}${until ? ` until ${day(until)}` : ''}` }
       case 'reminders': return v === 'none' ? 'None' : String(v).split(',').map((m) => (Number(m) >= 1440 ? `${Number(m) / 1440} d` : Number(m) >= 60 ? `${Number(m) / 60} h` : `${m} min`)).join(', ') + ' before'
       case 'steps': { const [d, n] = String(v).split('/'); return `${d} of ${n} done` }

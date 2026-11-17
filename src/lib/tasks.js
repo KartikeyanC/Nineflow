@@ -109,6 +109,7 @@ export function createTask(fields = {}) {
     tags: [], // ['client-a', 'q4']: free labels, any number per task (up to 6)
     client: null, // who the work is for, e.g. 'Acme' (Charts: Hours by client)
     billable: false, // the time on it can be charged to the client
+    private: false, // personal: left out of every handover (lib/handover.js)
     fields: {}, // custom field values: { [field id]: value } (lib/fields.js)
     seriesId: null,
     recurrence: null, // { freq, until, skip } | null

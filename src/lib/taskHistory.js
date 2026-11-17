@@ -28,6 +28,7 @@ const TRACKED = {
   tags: (t) => ((t.tags || []).length ? t.tags.join(', ') : null),
   client: (t) => t.client || null,
   billable: (t) => !!t.billable,
+  private: (t) => !!t.private,
   reminders: (t) => (Array.isArray(t.reminders) ? (t.reminders.length ? t.reminders.join(',') : 'none') : null), // null = the Settings default
   steps: (t) => { const s = t.subtasks || []; return s.length ? `${s.filter((x) => x.done).length}/${s.length}` : null },
   files: (t) => ((t.files || []).length || null),

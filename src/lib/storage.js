@@ -52,7 +52,7 @@ export const DEFAULT_SETTINGS = {
   weather: { on: false, place: null }, // today's weather on the Dashboard (lib/weather.js); place: { name, region, country, lat, lon }
   holidays: { on: false, country: '' }, // public holidays on Week and Month (lib/holidays.js); country: ISO code, '' = from the browser
   feed: { token: '' }, // the calendar subscription link (lib/calFeed.js): its secret, '' = off
-  workFor: { label: 'auto', colors: {}, stamp: null }, // "who it's for" on tasks (lib/workFor.js)
+  workFor: { label: 'auto', colors: {}, stamp: null, notes: {} }, // "who it's for" on tasks (lib/workFor.js)
   chat: { hooks: [], autoReport: false }, // chat webhooks (lib/notify.js): [{ id, kind, name, url }]; autoReport sends the day's report when you close the day
 }
 
@@ -222,6 +222,7 @@ function normalizeTask(t) {
     tags: cleanTags(t.tags),
     client: typeof t.client === 'string' && t.client.trim() ? t.client.replace(/\s+/g, ' ').trim().slice(0, 60) : null, // who the work is for (Charts: Hours by client)
     billable: t.billable === true,
+    private: t.private === true, // personal: never in a handover (lib/handover.js)
     fields: t.fields && typeof t.fields === 'object' && !Array.isArray(t.fields) ? t.fields : {}, // custom field values; checked against the fields where shown (lib/fields.js)
     column: !wasInReview && typeof t.column === 'string' ? t.column : null,
     seriesId: t.seriesId ?? null,

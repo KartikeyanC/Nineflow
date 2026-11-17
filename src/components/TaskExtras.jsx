@@ -1,5 +1,5 @@
 import React, { useId, useState } from 'react'
-import { BookmarkPlus, Check, X } from 'lucide-react'
+import { BookmarkPlus, Check, Lock, X } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
 import { uid } from '../lib/storage'
 import { MAX_TEMPLATES, cleanTemplates, templateFromTask } from '../lib/views'
@@ -130,6 +130,10 @@ export function ClientField({ task }) {
       <button type="button" role="switch" aria-checked={!!task.billable} onClick={() => updateTask(task.id, { billable: !task.billable })}
         className={pill(task.billable)}>
         {task.billable && <Check size={12} />} Billable
+      </button>
+      <button type="button" role="switch" aria-checked={!!task.private} onClick={() => updateTask(task.id, { private: !task.private })}
+        title="Personal tasks are never put in a handover" className={pill(task.private)}>
+        <Lock size={11} aria-hidden="true" /> Personal
       </button>
     </div>
   )

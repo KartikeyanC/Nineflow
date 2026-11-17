@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { createPortal } from 'react-dom'
-import { CalendarDays, Timer, ArrowRight, Repeat, Check, ListChecks, Bell, MoreHorizontal, PauseCircle, XCircle } from 'lucide-react'
+import { CalendarDays, Timer, ArrowRight, Repeat, Check, ListChecks, Bell, Lock, MoreHorizontal, PauseCircle, XCircle } from 'lucide-react'
 import ParkDialog from './ParkDialog'
 import { usePlanner } from '../store/PlannerContext'
 import { reminderShort } from '../lib/taskMeta'
@@ -161,6 +161,7 @@ export default function TaskCard({ task, tone, dragging = false, handleProps, st
         )}
         <RequiredBadge task={task} />
         {task.recurrence && <Repeat size={12} className="text-lav-fg" title={describe(task.recurrence)} />}
+        {task.private && <Lock size={12} className="text-faint" aria-label="Personal: never in a handover" title="Personal: never in a handover" />}
         {Array.isArray(task.reminders) && task.reminders.length > 0 && <Bell size={12} className="text-faint" aria-label="Has reminders" title={`Reminders: ${task.reminders.map(reminderShort).join(', ')}`} />}
         <PriorityPill priority={task.priority} className="ml-auto shrink-0 whitespace-nowrap" />
       </div>

@@ -6,6 +6,7 @@
 //   label: 'auto' | 'company' | 'client' | 'project' | 'subject' | 'area',  what it is called
 //   colors: { [name]: colourId },  a colour picked for a name (otherwise one is chosen from the name)
 //   stamp: name | null,            put on every new task (unless one is being shown, see below)
+//   notes: { [name]: text },       notes for whoever takes the work over (lib/handover.js)
 // }
 // Which one is being shown ("only Acme") is per device and per workspace, like the workspace itself.
 import { COLOR_IDS } from './colors'
@@ -48,10 +49,18 @@ export function cleanWorkFor(v) {
       if (n && COLOR_IDS.includes(c)) colors[n] = c
     }
   }
+  const notes = {}
+  if (w.notes && typeof w.notes === 'object') {
+    for (const [name, text] of Object.entries(w.notes).slice(0, 200)) {
+      const n = cleanName(name)
+      if (n && typeof text === 'string' && text.trim()) notes[n] = text.slice(0, 4000)
+    }
+  }
   return {
     label: LABELS[w.label] && w.label !== 'work' ? w.label : 'auto',
     colors,
     stamp: cleanName(w.stamp) || null,
+    notes,
   }
 }
 
@@ -69,6 +78,7 @@ export function namesIn(tasks, settings) {
   const set = new Set()
   for (const t of tasks || []) if (t.client) set.add(t.client)
   for (const n of Object.keys(settings?.workFor?.colors || {})) set.add(n)
+  for (const n of Object.keys(settings?.workFor?.notes || {})) set.add(n)
   if (settings?.workFor?.stamp) set.add(settings.workFor.stamp)
   return [...set].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }))
 }
