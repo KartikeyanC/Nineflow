@@ -4,9 +4,23 @@ import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 
 export const here = path.dirname(fileURLToPath(import.meta.url))
-export const out = path.join(here, 'shots')
+export const out = process.env.SHOTS_DIR || path.join(here, 'shots') // SHOTS_DIR: capture somewhere else (e.g. a 4K set)
 mkdirSync(out, { recursive: true })
 export const BASE = process.argv[2] || 'http://localhost:5174'
+
+// FIX_TIME: make the app believe it is that moment (only Date moves; timers stay real).
+export async function fixClock(ctx) {
+  if (!process.env.FIX_TIME) return
+  const off = new Date(process.env.FIX_TIME).getTime() - Date.now()
+  await ctx.addInitScript((off) => {
+    const D = Date
+    window.Date = new Proxy(D, {
+      construct: (t, a, n) => Reflect.construct(t, a.length ? a : [D.now() + off], n),
+      apply: () => new D(D.now() + off).toString(),
+      get: (t, k) => (k === 'now' ? () => D.now() + off : Reflect.get(t, k)),
+    })
+  }, off)
+}
 
 const greeting = (page) => page.getByText(/Good (morning|afternoon|evening)/).first().waitFor()
 
@@ -26,6 +40,7 @@ export async function startGuest(page) {
   await page.getByRole('button', { name: /Open my planner/ }).click()
   await greeting(page)
   await page.addStyleTag({ content: '*{caret-color:transparent!important} ::-webkit-scrollbar{display:none}' })
+  if (process.env.APP_CLOCK) await patchStorage(page, { settings: { clock: process.env.APP_CLOCK } }) // '12' or '24'
 }
 
 // Sidebar on desktop; the bottom bar or its More sheet on a phone.

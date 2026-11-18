@@ -1,7 +1,7 @@
 // Captures the feature screens for the extra Behance pages (guest planner with sample data).
 //   node design/behance/capture-features.mjs [baseUrl] [onlyStep]
 import { chromium, devices } from '@playwright/test'
-import { addNotes, openTask, openView, patchStorage, settle, shot, startGuest } from './helpers.mjs'
+import { addNotes, fixClock, openTask, openView, patchStorage, settle, shot, startGuest } from './helpers.mjs'
 
 const only = process.argv[3]
 const failed = []
@@ -26,7 +26,7 @@ const BILLING = { currency: 'USD', from: 'Kartikeyan\nProduct designer', taxLabe
 
 const pickDay = async (page, daysAhead) => {
   const cal = page.getByRole('dialog', { name: 'Choose a date' })
-  const d = new Date(); d.setDate(d.getDate() + daysAhead)
+  const d = new Date(process.env.FIX_TIME || Date.now()); d.setDate(d.getDate() + daysAhead)
   const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
   for (let i = 0; i < 3 && !(await cal.locator(`button[data-date="${key}"]`).count()); i++) await cal.getByRole('button', { name: 'Next month' }).click()
   await cal.locator(`button[data-date="${key}"]`).click()
@@ -148,11 +148,12 @@ async function features(page, prefix, isPhone) {
   })
 }
 
-const browser = await chromium.launch({ channel: 'chrome' })
+const PHONE = { width: Number(process.env.PHONE_W || 390), height: Number(process.env.PHONE_H || 844) }
+const browser = await chromium.launch({ channel: process.env.PW_CHANNEL || 'chrome' })
 
 // Desktop
-{
-  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 2, colorScheme: 'light' })
+if (process.env.ONLY !== 'phone') {
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: Number(process.env.DESK_SCALE || 2), colorScheme: 'light' })
   const page = await ctx.newPage()
   await startGuest(page)
   await addNotes(page, FLASHCARDS)
@@ -171,7 +172,8 @@ const browser = await chromium.launch({ channel: 'chrome' })
 
 // Phone
 {
-  const ctx = await browser.newContext({ ...devices['Pixel 7'], viewport: { width: 390, height: 844 }, deviceScaleFactor: 3, colorScheme: 'light' })
+  const ctx = await browser.newContext({ ...devices['Pixel 7'], viewport: PHONE, bypassCSP: true, ...(process.env.PW_LOCALE ? { locale: process.env.PW_LOCALE } : {}), deviceScaleFactor: 3, colorScheme: 'light' })
+  await fixClock(ctx)
   const page = await ctx.newPage()
   await startGuest(page)
   await addNotes(page, FLASHCARDS)

@@ -1,7 +1,7 @@
 // Captures the main NineFlow screens (guest planner with sample data) for the Behance pages.
 //   node design/behance/capture.mjs [baseUrl]
 import { chromium, devices } from '@playwright/test'
-import { addNotes, openTask, openView, setTheme, shot, startGuest } from './helpers.mjs'
+import { addNotes, fixClock, openTask, openView, setTheme, shot, startGuest } from './helpers.mjs'
 
 const NOTES = [
   'Ideas for the portfolio site\n- case study for NineFlow\n- dark mode screens\n#design',
@@ -10,11 +10,13 @@ const NOTES = [
   'https://www.behance.net\nCollect references for the cover',
 ]
 
-const browser = await chromium.launch({ channel: 'chrome' })
+// Optional: ONLY=phone skips desktop; PHONE_W/PHONE_H set the phone viewport; FIX_TIME starts the clock at that moment.
+const PHONE = { width: Number(process.env.PHONE_W || 390), height: Number(process.env.PHONE_H || 844) }
+const browser = await chromium.launch({ channel: process.env.PW_CHANNEL || 'chrome' })
 
 // Desktop
-for (const theme of ['light', 'dark']) {
-  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 2, colorScheme: theme })
+for (const theme of process.env.ONLY === 'phone' ? [] : ['light', 'dark']) {
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: Number(process.env.DESK_SCALE || 2), colorScheme: theme })
   const page = await ctx.newPage()
   await startGuest(page)
   if (theme === 'dark') await setTheme(page, 'dark')
@@ -37,12 +39,13 @@ for (const theme of ['light', 'dark']) {
 
 // Phone
 for (const theme of ['light', 'dark']) {
-  const ctx = await browser.newContext({ ...devices['Pixel 7'], viewport: { width: 390, height: 844 }, deviceScaleFactor: 3, colorScheme: theme })
+  const ctx = await browser.newContext({ ...devices['Pixel 7'], viewport: PHONE, bypassCSP: true, ...(process.env.PW_LOCALE ? { locale: process.env.PW_LOCALE } : {}), deviceScaleFactor: 3, colorScheme: theme })
+  await fixClock(ctx)
   const page = await ctx.newPage()
   await startGuest(page)
   if (theme === 'dark') await setTheme(page, 'dark')
   if (theme === 'light') await addNotes(page, NOTES)
-  const views = theme === 'light' ? ['Home', 'Board', 'Week', 'Month', 'Agenda', 'Charts', 'Notes', 'Matrix'] : ['Home', 'Week', 'Board', 'Month']
+  const views = theme === 'light' ? ['Home', 'Board', 'Week', 'Month', 'Agenda', 'Charts', 'Notes', 'Matrix'] : ['Home', 'Week', 'Board', 'Month', 'Charts']
   for (const v of views) {
     await openView(page, v)
     await page.evaluate(() => window.scrollTo(0, 0))
