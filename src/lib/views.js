@@ -3,10 +3,12 @@
 import { addDays } from 'date-fns'
 import { dateKey, isOverdue, newSubtask } from './tasks'
 import { cleanTags } from './taskMeta'
+import { NONE, cleanName } from './workFor'
 
 // ---- views ---------------------------------------------------------------------------
 // A view is a name plus what to show: a text search and any of
-// When (all | today | week | overdue | nodate), Category, Priority and Tag.
+// When (all | today | week | overdue | nodate), Category, Priority, Tag and
+// Company (a name from lib/workFor.js, or NONE for tasks without one).
 export const MAX_VIEWS = 20
 export const WHEN_OPTIONS = [
   { value: 'all', label: 'Any day' },
@@ -15,9 +17,9 @@ export const WHEN_OPTIONS = [
   { value: 'overdue', label: 'Carried over' },
   { value: 'nodate', label: 'No date' },
 ]
-export const blankCrit = () => ({ when: 'all', category: '', priority: '', tag: '' })
+export const blankCrit = () => ({ when: 'all', category: '', priority: '', tag: '', client: '' })
 
-export const critCount = (c, text = '') => (c.when !== 'all' ? 1 : 0) + (c.category ? 1 : 0) + (c.priority ? 1 : 0) + (c.tag ? 1 : 0) + (text.trim() ? 1 : 0)
+export const critCount = (c, text = '') => (c.when !== 'all' ? 1 : 0) + (c.category ? 1 : 0) + (c.priority ? 1 : 0) + (c.tag ? 1 : 0) + (c.client ? 1 : 0) + (text.trim() ? 1 : 0)
 
 export function matches(task, crit, text, now) {
   const q = text.trim().toLowerCase()
@@ -25,6 +27,7 @@ export function matches(task, crit, text, now) {
   if (crit.category && task.category !== crit.category) return false
   if (crit.priority && task.priority !== crit.priority) return false
   if (crit.tag && !(task.tags || []).includes(crit.tag)) return false
+  if (crit.client && (crit.client === NONE ? !!task.client : task.client !== crit.client)) return false
   if (crit.when === 'all') return true
   const today = dateKey(now)
   if (crit.when === 'today') return task.date === today
@@ -46,6 +49,7 @@ export function cleanViews(list) {
       category: str(v.crit?.category, 40),
       priority: ['high', 'medium', 'low'].includes(v.crit?.priority) ? v.crit.priority : '',
       tag: str(v.crit?.tag, 24),
+      client: v.crit?.client === NONE ? NONE : cleanName(v.crit?.client),
     },
   }))
 }

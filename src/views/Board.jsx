@@ -25,7 +25,8 @@ import { CategoryTag, CheckCircle, ConfirmDialog, Menu, Modal, PriorityPill, cx 
 import TaskCard from '../components/TaskCard'
 import RequiredBadge from '../components/RequiredBadge'
 import DayNav, { NARROW_HIDE } from '../components/DayNav'
-import { WorkForBadge } from '../components/WorkFor'
+import { WorkForBadge, useWorkFor } from '../components/WorkFor'
+import { NONE } from '../lib/workFor'
 
 const RECENT_COMPLETED = 8
 // Button labels hide (the icon and a tooltip stay) once the header is narrower than 1200px, so the title
@@ -57,8 +58,9 @@ function collisionDetection(args) {
 
 export default function Board() {
   const { tasks, allTasks, now, settings, updateSettings, moveToWorkspace, moveTask, sortStatus, moveOverdueToToday, clearCompleted, setQuickAdd, dashboardDate, setDashboardDate } = usePlanner()
+  const { label: workLabel, active: workNames } = useWorkFor()
   const [query, setQuery] = useState('')
-  // Filters: a search plus When / Category / Priority / Tag, which can be saved as a named view.
+  // Filters: a search plus When / Category / Priority / Tag / Company, which can be saved as a named view.
   const [crit, setCrit] = useState(blankCrit)
   const [viewId, setViewId] = useState('')
   const [showFilters, setShowFilters] = useState(false)
@@ -109,7 +111,17 @@ export default function Board() {
 
   // ---- filtering ----
   const tagList = useMemo(() => allTags(tasks), [tasks])
-  const views = useMemo(() => cleanViews(settings.views), [settings.views])
+  // Only companies with tasks here, so a choice never comes up empty. A saved view's stays listed
+  // even if its tasks are gone, so the filter still says what is applied.
+  const clientOptions = useMemo(() => {
+    const inUse = new Set(tasks.map((t) => t.client).filter(Boolean))
+    const list = workNames.filter((n) => inUse.has(n)).map((n) => [n, n])
+    if (crit.client && crit.client !== NONE && !inUse.has(crit.client)) list.push([crit.client, crit.client])
+    if (!list.length && crit.client !== NONE) return []
+    if (crit.client === NONE || tasks.some((t) => !t.client)) list.push([NONE, workLabel.none])
+    return [['', workLabel.many === workLabel.one ? 'Any' : `Any ${workLabel.one.toLowerCase()}`], ...list] // "Work for" has no plural to speak of
+  }, [tasks, workNames, workLabel, crit.client])
+  const views =useMemo(() => cleanViews(settings.views), [settings.views])
   // "When" looks across days, so it only applies to "All days"; on a single day the day itself is the filter.
   const critNow = useMemo(() => (scope === 'day' ? { ...crit, when: 'all' } : crit), [scope, crit])
   const visible = useMemo(
@@ -309,7 +321,7 @@ export default function Board() {
             )}
           </select>
           <button type="button" onClick={() => setShowFilters((v) => !v)} aria-expanded={showFilters} aria-controls="board-filters"
-            aria-label="Filters" data-tip="Filters" data-tip-hint="By when, category, priority or tag"
+            aria-label="Filters" data-tip="Filters" data-tip-hint={`By when, category, priority, tag or ${workLabel.many === workLabel.one ? 'who it is for' : workLabel.one.toLowerCase()}`}
             className={cx('h-9 px-3 rounded-full border text-[13px] font-semibold inline-flex items-center gap-1.5 transition max-sm:order-6 max-sm:h-10 max-sm:min-w-10 max-sm:justify-center',
               showFilters || activeFilters ? 'bg-brand text-white border-transparent' : 'bg-card border-line text-muted hover:text-ink')}>
             <SlidersHorizontal size={14} /><span className={LABEL}>Filters</span>{activeFilters > 0 && <span className="h-5 min-w-5 px-1 rounded-full bg-page text-ink text-xs font-bold inline-flex items-center justify-center">{activeFilters}</span>}
@@ -349,6 +361,7 @@ export default function Board() {
             ['Category', 'category', [['', 'Any category'], ...settings.categories.map((c) => [c.id, c.name])]],
             ['Priority', 'priority', [['', 'Any priority'], ...PRIORITIES.map((p) => [p, PRIORITY_LABEL[p]])]],
             ['Tag', 'tag', [['', 'Any tag'], ...tagList.map(({ tag, count }) => [tag, `#${tag} (${count})`])]],
+            ...(clientOptions.length ? [[workLabel.one, 'client', clientOptions]] : []),
           ].map(([label, key, options]) => (
             <label key={key} className="flex flex-col gap-1 min-w-[8.5rem]">
               <span className="text-xs font-semibold text-muted">{label}</span>

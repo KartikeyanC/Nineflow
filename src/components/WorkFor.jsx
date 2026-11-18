@@ -201,6 +201,10 @@ export function WorkForSettings() {
         people: move(wf.people), glossary: move(wf.glossary), archived: (wf.archived || []).map((n) => (n === from ? to : n)),
       },
       ...(clients ? { billing: { ...billing, clients } } : {}),
+      // Saved board views filtering by this name keep working under the new one.
+      ...(settings.views?.some?.((v) => v?.crit?.client === from)
+        ? { views: settings.views.map((v) => (v?.crit?.client === from ? { ...v, crit: { ...v.crit, client: to } } : v)) }
+        : {}),
     })
     if (workFocus === from) setWorkFocus(to)
     setEditing(null); setError(null)
