@@ -1,7 +1,7 @@
 {
   "name": "daily-planner",
   "private": true,
-  "version": "0.1.40",
+  "version": "0.1.41",
   "description": "NineFlow: plan better, flow forward.",
   "author": "Kartikeyan",
   "main": "desktop/main.cjs",
