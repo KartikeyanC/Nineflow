@@ -387,7 +387,10 @@ function ClientChart({ now }) {
         </p>
       )}
       {data && named.length > 0 && (
-        <div className="overflow-x-auto">
+        // relative: the table scrolls sideways in here on a phone. Without it the sr-only "Invoice" heading
+        // (position: absolute) escapes this box at the table's far right and widens the whole page, so Android
+        // pans the page sideways and the fixed dock stretches past the screen.
+        <div className="relative overflow-x-auto">
           <table className="w-full text-sm tnum">
             <thead>
               <tr className="text-left text-xs text-muted border-b border-line">
