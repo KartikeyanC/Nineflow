@@ -83,7 +83,7 @@ export function MobileDock() {
   if (!open) {
     return (
       <button type="button" onClick={() => setOpen(true)}
-        className="fixed bottom-20 left-3 sm:left-auto sm:right-6 sm:bottom-24 z-30 card h-11 px-3.5 flex items-center gap-2 shadow-lift text-sm font-semibold">
+        className="fixed bottom-[calc(5.75rem+env(safe-area-inset-bottom))] left-3 sm:left-auto sm:right-6 sm:bottom-24 z-30 card h-11 px-3.5 flex items-center gap-2 shadow-lift text-sm font-semibold">
         <ListTodo size={15} className="text-lav-fg" /> List <span className="pill bg-lav text-lav-fg py-0">{count}</span>
       </button>
     )

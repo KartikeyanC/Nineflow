@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { LayoutDashboard, KanbanSquare, CalendarRange, CalendarDays, Grid2x2, Settings, Briefcase, ListTodo, Inbox, StickyNote, PauseCircle, MoreHorizontal, Search, X, Zap, GraduationCap, ChartColumn, Brain, Mic, Table2 } from 'lucide-react'
+import { LayoutDashboard, KanbanSquare, CalendarRange, CalendarDays, Grid2x2, Settings, Briefcase, ListTodo, Inbox, StickyNote, PauseCircle, MoreHorizontal, Search, X, Zap, GraduationCap, ChartColumn, Brain, Mic, Table2, Plus } from 'lucide-react'
 import { usePlanner } from '../store/PlannerContext'
 import { cx, useDialogFocus } from './ui'
 import { examById } from '../exams'
@@ -31,7 +31,7 @@ export const openPalette = () => window.dispatchEvent(new Event('nineflow:palett
 
 // Bottom tab bar, phones only (the sidebar takes over from 640px).
 export default function MobileNav() {
-  const { view, setView, settings, setPromptListOpen } = usePlanner()
+  const { view, setView, settings, setPromptListOpen, setQuickAdd } = usePlanner()
   const [sheet, setSheet] = useState(false)
   const sheetRef = useRef(null)
   useDialogFocus(sheetRef, sheet)
@@ -47,20 +47,42 @@ export default function MobileNav() {
     return () => window.removeEventListener('keydown', onKey)
   }, [sheet])
 
+  // One bead of the dock: a dark disc a little taller than the bar, so the bar's outline waves around each
+  // button. The active tab opens into a white pill with its label; the rest are icon-only discs.
   const tab = (active, Icon, label, onClick, extra = {}) => (
-    <button type="button" onClick={onClick} {...extra}
-      className={cx('flex-1 h-16 flex flex-col items-center justify-center gap-1 text-xs font-semibold transition', active ? 'text-lav-fg' : 'text-faint')}>
-      <span className={cx('h-7 w-10 rounded-full inline-flex items-center justify-center', active && 'bg-lav')}><Icon size={18} /></span>
-      {label}
-    </button>
+    <span className="relative flex-none rounded-full bg-[#141414] p-[3px]">
+      <button type="button" onClick={onClick} aria-label={label} {...extra}
+        className={cx('h-11 min-w-[44px] rounded-full inline-flex items-center justify-center text-[13px] font-semibold transition-all duration-300 active:scale-95',
+          active ? 'bg-white text-[#141414] pl-3 pr-3.5 gap-1' : 'bg-white/[0.08] text-white/65 px-0 gap-0')}>
+        <Icon size={19} strokeWidth={active ? 2.4 : 1.8} className="flex-none" />
+        <span className={cx('overflow-hidden text-ellipsis whitespace-nowrap transition-all duration-300 max-[374px]:hidden',
+          active ? 'max-w-[56px] opacity-100' : 'max-w-0 opacity-0')}>{label}</span>
+      </button>
+    </span>
+  )
+  const nav = (id, label, icon) => (
+    <React.Fragment key={id}>{tab(view === id, icon, label, () => go(id), { 'aria-current': view === id ? 'page' : undefined })}</React.Fragment>
   )
 
   return (
     <>
-      <nav className="sm:hidden fixed bottom-0 inset-x-0 z-30 bg-card border-t border-line flex" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-        {NAV.map(({ id, label, icon }) => <React.Fragment key={id}>{tab(view === id, icon, label, () => go(id), { 'aria-current': view === id ? 'page' : undefined })}</React.Fragment>)}
-        {tab(inMore || sheet, MoreHorizontal, inMore ? more.find((m) => m.id === view).label : 'More', () => setSheet((o) => !o),
-          { 'aria-expanded': sheet, 'aria-haspopup': 'dialog' })}
+      <nav aria-label="Main" className="sm:hidden fixed inset-x-3 z-30 flex justify-center pointer-events-none"
+        style={{ bottom: 'calc(0.625rem + env(safe-area-inset-bottom))' }}>
+        <div className="relative pointer-events-auto flex items-center justify-between w-full max-w-[420px] drop-shadow-[0_14px_22px_rgb(0_0_0/0.28)]">
+          {/* the bar the beads sit on: a touch shorter than they are, which gives the wavy edge */}
+          <span aria-hidden="true" className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-[42px] rounded-full bg-[#141414] ring-1 ring-white/[0.06]" />
+          {NAV.slice(0, 2).map(({ id, label, icon }) => nav(id, label, icon))}
+          {/* New task: the bright bead in the middle */}
+          <span className="relative flex-none rounded-full bg-[#141414] p-[3px]">
+            <button type="button" onClick={() => { setSheet(false); setQuickAdd({}) }} aria-label="New task"
+              className="h-11 w-11 rounded-full bg-brand text-white inline-flex items-center justify-center shadow-[inset_0_1px_0_rgb(255_255_255/0.3)] transition active:scale-90">
+              <Plus size={22} strokeWidth={2.6} />
+            </button>
+          </span>
+          {NAV.slice(2).map(({ id, label, icon }) => nav(id, label, icon))}
+          {tab(inMore || sheet, MoreHorizontal, inMore ? more.find((m) => m.id === view).label : 'More', () => setSheet((o) => !o),
+            { 'aria-expanded': sheet, 'aria-haspopup': 'dialog' })}
+        </div>
       </nav>
 
       {sheet && (
