@@ -14,10 +14,14 @@ contextBridge.exposeInMainWorld('nineflowDesktop', {
   // { ok, token: { access_token, expires_in, scope } } or { ok: false, code, message }
   getToken: (opts) => ipcRenderer.invoke('google:get-token', opts),
   signOut: () => ipcRenderer.invoke('google:sign-out'),
-  // The "today" list window (src/widget): open the planner, or hide the list.
+  // The "today" list window (src/widget): open the planner, hide the list, or
+  // minimize it to a slim bar (remembered between runs).
   widget: {
     openApp: () => ipcRenderer.send('widget:open-app'),
     hide: () => ipcRenderer.send('widget:hide'),
+    collapse: (on) => ipcRenderer.send('widget:collapse', !!on),
+    isCollapsed: () => ipcRenderer.sendSync('widget:is-collapsed'),
+    setDark: (on) => ipcRenderer.send('widget:dark', !!on),
   },
   // Reminders fired by the app itself, so they arrive with the window closed:
   // the planner sends the upcoming schedule, and a click on one opens its task.

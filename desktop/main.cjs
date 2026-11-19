@@ -194,7 +194,7 @@ function openTask(id) {
 }
 
 // ---- the "today" list ----------------------------------------------------------------
-const WIDGET = { width: 340, height: 480, margin: 16 }
+const WIDGET = { width: 340, height: 480, margin: 16, minWidth: 280, minHeight: 220, collapsed: 64 }
 
 // Where it opens: where the user last left it if that is still on a screen,
 // otherwise the top right of the main display.
@@ -207,10 +207,14 @@ function widgetBounds() {
 }
 
 function createWidget() {
+  const collapsed = !!readPrefs().widgetCollapsed
+  const bounds = widgetBounds()
   widget = new BrowserWindow({
-    ...widgetBounds(),
-    minWidth: 280,
-    minHeight: 220,
+    ...bounds,
+    ...(collapsed ? { height: WIDGET.collapsed } : {}),
+    minWidth: WIDGET.minWidth,
+    minHeight: collapsed ? WIDGET.collapsed : WIDGET.minHeight,
+    resizable: !collapsed,
     title: 'NineFlow \u00b7 Today',
     frame: false,
     alwaysOnTop: true,
@@ -233,7 +237,16 @@ function createWidget() {
   widget.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
   widget.webContents.on('will-navigate', (e) => e.preventDefault())
   let timer = null
-  const remember = () => { clearTimeout(timer); timer = setTimeout(() => { if (widget && !widget.isDestroyed()) writePrefs({ widgetBounds: widget.getBounds() }) }, 400) }
+  // While minimized only the position is new; the height kept is the open list's.
+  const remember = () => {
+    clearTimeout(timer)
+    timer = setTimeout(() => {
+      if (!widget || widget.isDestroyed()) return
+      const p = readPrefs()
+      const b = widget.getBounds()
+      writePrefs({ widgetBounds: p.widgetCollapsed ? { ...b, height: p.widgetBounds?.height || WIDGET.height } : b })
+    }, 400)
+  }
   widget.on('moved', remember)
   widget.on('resized', remember)
   widget.once('ready-to-show', () => { if (!win || !win.isVisible()) widget.showInactive() })
@@ -247,6 +260,24 @@ function showWidget() {
 }
 function hideWidget() {
   if (widget && !widget.isDestroyed()) widget.hide()
+}
+// Minimize: the list folds into a slim bar where it is (and stays that way next
+// time), and opens back to the size it had.
+function setWidgetCollapsed(on) {
+  if (!widget || widget.isDestroyed() || !!readPrefs().widgetCollapsed === on) return
+  const b = widget.getBounds()
+  if (on) {
+    writePrefs({ widgetCollapsed: true, widgetBounds: b })
+    widget.setMinimumSize(WIDGET.minWidth, WIDGET.collapsed)
+    widget.setBounds({ ...b, height: WIDGET.collapsed })
+    widget.setResizable(false)
+  } else {
+    writePrefs({ widgetCollapsed: false })
+    const height = Math.max(WIDGET.minHeight, readPrefs().widgetBounds?.height || WIDGET.height)
+    widget.setResizable(true)
+    widget.setMinimumSize(WIDGET.minWidth, WIDGET.minHeight)
+    widget.setBounds({ ...b, height })
+  }
 }
 
 // Bring the planner back (making a new window if it was closed for real).
@@ -324,6 +355,10 @@ ipcMain.on('reminders:set', (e, list) => {
 // ---- the today list's buttons (see preload.cjs) --------------------------------------
 ipcMain.on('widget:open-app', showMain)
 ipcMain.on('widget:hide', hideWidget)
+ipcMain.on('widget:collapse', (e, on) => { if (widget && e.sender === widget.webContents) setWidgetCollapsed(!!on) })
+ipcMain.on('widget:is-collapsed', (e) => { e.returnValue = !!readPrefs().widgetCollapsed })
+// The list's dark / light look, so the window behind it doesn't flash white while it resizes.
+ipcMain.on('widget:dark', (e, on) => { if (widget && e.sender === widget.webContents) widget.setBackgroundColor(on ? '#201F1C' : '#FFFFFF') })
 
 app.on('second-instance', (_e, argv) => { if (!argv.includes('--hidden')) showMain() })
 app.on('before-quit', () => { quitting = true })
