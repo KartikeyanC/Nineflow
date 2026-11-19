@@ -193,6 +193,15 @@ export function PlannerProvider({ children }) {
     setTasks((ts) => [...ts, ...list])
   }, [offerUndo])
 
+  // Changes that came from a sync (lib/gtasksSync.js): new tasks, and per task id a function from the
+  // task as it is now to what it becomes, so an edit made while the sync ran is kept. No Undo offered.
+  const applySync = useCallback(({ added = [], updates = new Map() }) => {
+    setTasks((ts) => {
+      const next = updates.size ? ts.map((t) => (updates.has(t.id) ? updates.get(t.id)(t) : t)) : ts
+      return added.length ? [...next, ...added] : next
+    })
+  }, [])
+
   // Several tasks at once (a planned goal). One undo step takes them all back.
   const addTasks = useCallback((list, undoLabel) => {
     if (!list.length) return []
@@ -957,6 +966,7 @@ export function PlannerProvider({ children }) {
       addTask,
       addTasks,
       importTasks,
+      applySync,
       removeTasks,
       updateTasks,
       gateTaskId,
@@ -1017,7 +1027,7 @@ export function PlannerProvider({ children }) {
     }),
     [
       shownTasks, workFocus, setWorkFocus, activeTasks, tasks, pauseTask, resumeTask, dropTask, restoreTask, settings, now, view, setView, selectedId, quickAdd, dashboardDate, calendarMode, openDay,
-      addTask, addTasks, importTasks, removeTasks, updateTasks, gateTaskId, closeGate, finishGate, moveToWorkspace, goalPlannerOpen, promptListOpen, askOpen, updateTask, setSessions, setStatus, toggleComplete, moveTask, sortStatus,
+      addTask, addTasks, importTasks, applySync, removeTasks, updateTasks, gateTaskId, closeGate, finishGate, moveToWorkspace, goalPlannerOpen, promptListOpen, askOpen, updateTask, setSessions, setStatus, toggleComplete, moveTask, sortStatus,
       moveOverdueToToday, clearCompleted, removeTask, setRecurrence, removeSeries, applyToUpcoming, planDay,
       previewPlan, applyPlan, moveTasksTo,
       focus, startFocus, pauseFocus, resumeFocus, advanceFocus, stopFocus, setFocusOpen,

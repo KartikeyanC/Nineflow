@@ -237,6 +237,7 @@ function normalizeTask(t) {
     hold: t.hold && typeof t.hold === 'object' ? { reason: String(t.hold.reason || 'Not now').slice(0, 120), since: typeof t.hold.since === 'string' ? t.hold.since : null, until: /^\d{4}-\d{2}-\d{2}$/.test(t.hold.until || '') ? t.hold.until : null } : null,
     files: cleanFiles(t.files), // Drive files attached to the task (lib/taskFiles.js)
     meet: t.meet === true, // add a Google Meet link to its calendar event (lib/gcal.js)
+    gtask: t.gtask && typeof t.gtask.id === 'string' && t.gtask.id ? { id: t.gtask.id.slice(0, 200), h: typeof t.gtask.h === 'string' ? t.gtask.h : '' } : null, // its twin in Google Tasks (lib/gtasksSync.js)
     dropped: t.dropped && typeof t.dropped === 'object' ? { reason: String(t.dropped.reason || 'Let go').slice(0, 120), at: typeof t.dropped.at === 'string' ? t.dropped.at : new Date().toISOString() } : null,
     exam: cleanExamLink(t.exam),
     history: cleanHistory(t.history), // every change: [{ at, field, from, to }] (lib/taskHistory.js)

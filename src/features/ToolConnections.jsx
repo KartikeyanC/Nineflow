@@ -1,14 +1,15 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { parseISO } from 'date-fns'
 import { format } from '../lib/dateFormat'
-import { Check, Download, Loader2, Send } from 'lucide-react'
+import { Check, Download, Loader2, RefreshCw, Send } from 'lucide-react'
+import { setGoogleTasksSync, syncGoogleTasksNow, useGoogleTasksStatus } from './GoogleTasksSync'
 import { usePlanner } from '../store/PlannerContext'
 import { patchConn, setConn, useConnections, wasSent } from '../lib/connections'
 import { testGithub, testTodoist, testTrello } from '../lib/importers'
 import { pending, sendToClockify, sendToToggl, sessionsForDay, testClockify, testToggl } from '../lib/timeSync'
 import { databaseIdFrom, sendTasksToNotion, testNotion } from '../lib/notion'
 import { findChat, testTelegram } from '../lib/telegram'
-import { TASKS_SCOPE, ensureExtraToken, isConfigured, rememberedAccount } from '../lib/google'
+import { TASKS_SCOPE, ensureExtraToken, isConfigured, rememberedAccount, requestExtraToken } from '../lib/google'
 import { sendTasksToGoogleTasks, testGoogleTasks } from '../lib/gtasks'
 import { connectMicrosoft, microsoftAvailable, sendTasksToOutlook } from '../lib/microsoft'
 import { fmtMinutes, tasksOn } from '../lib/tasks'
@@ -21,7 +22,7 @@ import HowToConnect from '../components/HowToConnect'
 const SERVICES = [
   {
     // Signs in with Google (no token to paste): the "tasks" permission is asked for here, not at sign-in.
-    id: 'gtasks', label: 'Google Tasks', blurb: 'Import your open tasks, or send a day’s tasks to your list.', google: true, fields: [],
+    id: 'gtasks', label: 'Google Tasks', blurb: 'Keep your tasks in sync both ways, or import and send them by hand.', google: true, fields: [],
     connect: async () => { await ensureExtraToken('tasks', TASKS_SCOPE); return { conn: {}, label: await testGoogleTasks() } },
   },
   {
@@ -152,7 +153,8 @@ function Tool({ svc, conn }) {
           }}><Download size={13} /> Import from {svc.microsoft ? 'Microsoft To Do' : svc.label}…</button>
         </div>
       )}
-      {conn && svc.id === 'gtasks' && <GoogleTasksSend setNote={setNote} />}
+      {conn && svc.id === 'gtasks' && <GoogleTasksSyncRow conn={conn} setNote={setNote} />}
+      {conn && svc.id === 'gtasks' && !conn.sync && <GoogleTasksSend setNote={setNote} />}
       {conn && svc.id === 'microsoft' && <OutlookSend setNote={setNote} />}
       {conn && ['clockify', 'toggl'].includes(svc.id) && <TimeSend svc={svc} conn={conn} setNote={setNote} />}
       {conn && svc.id === 'notion' && <NotionSend conn={conn} setNote={setNote} />}
@@ -210,6 +212,63 @@ function OutlookSend({ setNote }) {
       <span className="text-[12px] text-muted tnum">{fresh.length ? `${fresh.length} task${fresh.length === 1 ? '' : 's'} not sent yet (a one-time copy; later edits aren’t sent)` : day.length ? 'All of this day is already sent.' : 'No tasks on this day.'}</span>
     </div>
   )
+}
+
+// "Keep in sync": two-way with the default list (features/GoogleTasksSync.jsx, lib/gtasksSync.js).
+function GoogleTasksSyncRow({ conn, setNote }) {
+  const { allTasks: tasks } = usePlanner()
+  const s = useGoogleTasksStatus()
+  const [busy, setBusy] = useState(false)
+  const [, tick] = useState(0)
+  useEffect(() => { const id = setInterval(() => tick((n) => n + 1), 30_000); return () => clearInterval(id) }, [])
+  const linked = tasks.filter((t) => t.gtask?.id).length
+  const turn = async (v) => {
+    if (busy || (v === 'on') === !!conn.sync) return
+    setNote(null)
+    if (v === 'off') { setGoogleTasksSync(false); return }
+    setBusy(true)
+    try { await ensureExtraToken('tasks', TASKS_SCOPE); setGoogleTasksSync(true); setTimeout(syncGoogleTasksNow, 50) }
+    catch (e) { setNote({ ok: false, text: e.message }) } finally { setBusy(false) }
+  }
+  const reconnect = async () => {
+    setNote(null)
+    try { await requestExtraToken('tasks', TASKS_SCOPE, { hint: rememberedAccount()?.email }); syncGoogleTasksNow() } catch (e) { setNote({ ok: false, text: e.message }) }
+  }
+  const c = s.counts
+  const moved = c ? [c.created + c.pushed && `${c.created + c.pushed} sent`, c.imported + c.pulled && `${c.imported + c.pulled} brought in`, c.removed + c.dropped && `${c.removed + c.dropped} removed`].filter(Boolean).join(', ') : ''
+  const line = !conn.sync ? null
+    : s.state === 'syncing' ? 'Syncing…'
+      : s.state === 'needs-auth' ? null
+        : s.state === 'offline' || s.state === 'error' ? s.message
+          : s.last ? `Synced ${ago(s.last)}${moved ? ` · last time ${moved}` : ''}`
+            : 'Starting…'
+  return (
+    <div className="mt-2.5 rounded-xl bg-page px-3 py-2.5 space-y-1.5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-[13px] font-semibold inline-flex items-center gap-1.5"><RefreshCw size={13} aria-hidden="true" /> Keep in sync both ways</p>
+          <p className="text-[12px] text-muted max-w-md">Your default Google Tasks list and this workspace: titles, notes, days and done. New open tasks go across both ways; deleting on one side removes it on the other. Google Tasks keeps no times.</p>
+        </div>
+        <Segmented size="sm" value={conn.sync ? 'on' : 'off'} onChange={turn} options={[{ value: 'on', label: busy ? '…' : 'On' }, { value: 'off', label: 'Off' }]} />
+      </div>
+      {conn.sync && (
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px]">
+          {s.state === 'needs-auth'
+            ? <><span className="font-semibold text-butter-fg">Google asks you to reconnect about once an hour.</span><button type="button" className="font-semibold underline underline-offset-2" onClick={reconnect}>Reconnect</button></>
+            : <span className={cx('tnum', s.state === 'error' || s.state === 'offline' ? 'font-semibold text-coral-fg' : 'text-muted')} role="status">{line}</span>}
+          <span className="text-faint tnum">{linked} task{linked === 1 ? '' : 's'} linked</span>
+          {s.state !== 'syncing' && s.state !== 'needs-auth' && <button type="button" className="font-semibold text-muted hover:text-ink underline underline-offset-2" onClick={() => syncGoogleTasksNow()}>Sync now</button>}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function ago(iso) {
+  const s = Math.max(0, Math.round((Date.now() - Date.parse(iso)) / 1000))
+  if (s < 45) return 'just now'
+  const m = Math.round(s / 60)
+  return m < 60 ? `${m} min ago` : `${Math.round(m / 60)} h ago`
 }
 
 function GoogleTasksSend({ setNote }) {

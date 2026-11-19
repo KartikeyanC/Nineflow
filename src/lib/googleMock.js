@@ -35,7 +35,7 @@ function install() {
   const realFetch = window.fetch.bind(window)
   window.fetch = async (input, init = {}) => {
     const url = typeof input === 'string' ? input : input.url
-    if (!url.startsWith('https://www.googleapis.com/')) return realFetch(input, init)
+    if (!url.startsWith('https://www.googleapis.com/') && !url.startsWith('https://tasks.googleapis.com/')) return realFetch(input, init)
     const auth = (init.headers && (init.headers.Authorization || init.headers.authorization)) || ''
     // Set localStorage['mock-drive-expired'] = '1' to simulate an expired token.
     if (auth !== 'Bearer mock-token' || localStorage.getItem('mock-drive-expired') === '1') return json({ error: 'unauthorized' }, 401)
@@ -58,6 +58,41 @@ function install() {
       if (!cal[eid]) return json({ error: 'not found' }, 404)
       if (method === 'PATCH') { cal[eid] = { ...cal[eid], ...JSON.parse(init.body) }; put(); return json(cal[eid]) }
       if (method === 'DELETE') { delete cal[eid]; put(); return new Response(null, { status: 204 }) }
+    }
+
+    // Google Tasks: one list ("My Tasks"), tasks kept in localStorage['mock-gtasks'] as { [id]: task }.
+    // Deleting marks a task deleted (Google lists those with showDeleted=true).
+    if (u.hostname === 'tasks.googleapis.com') {
+      const LIST = { id: 'mocklist', title: 'My Tasks' }
+      const all = (() => { try { return JSON.parse(localStorage.getItem('mock-gtasks') || '{}') } catch { return {} } })()
+      const put = () => localStorage.setItem('mock-gtasks', JSON.stringify(all))
+      const p = u.pathname.replace(/^\/tasks\/v1/, '')
+      if (p === '/users/@me/lists' && method === 'GET') return json({ items: [LIST] })
+      if (/^\/users\/@me\/lists\/[^/]+$/.test(p) && method === 'GET') return json(LIST)
+      const m = /^\/lists\/[^/]+\/tasks(?:\/([^/]+))?$/.exec(p)
+      if (m) {
+        const tid = m[1] ? decodeURIComponent(m[1]) : null
+        const stamp = (t) => ({ ...t, updated: now(), ...(t.status === 'completed' ? { completed: t.completed || now() } : { completed: undefined }) })
+        if (!tid && method === 'GET') {
+          const q = u.searchParams
+          const items = Object.values(all).filter((t) => (q.get('showDeleted') === 'true' || !t.deleted) && (q.get('showCompleted') !== 'false' || t.status !== 'completed'))
+          return json({ items })
+        }
+        if (!tid && method === 'POST') {
+          const b = JSON.parse(init.body)
+          const t = stamp({ status: 'needsAction', ...b, id: `mockt_${Math.random().toString(36).slice(2, 10)}` })
+          all[t.id] = t; put(); return json(t)
+        }
+        if (!all[tid] || all[tid].deleted) return json({ error: 'not found' }, 404)
+        if (method === 'PATCH') {
+          const b = JSON.parse(init.body)
+          const next = { ...all[tid] }
+          for (const [k, v] of Object.entries(b)) { if (v === null) delete next[k]; else next[k] = v }
+          all[tid] = stamp(next); put(); return json(all[tid])
+        }
+        if (method === 'DELETE') { all[tid] = { ...all[tid], deleted: true, updated: now() }; put(); return new Response(null, { status: 204 }) }
+      }
+      return json({ error: 'unsupported in mock' }, 400)
     }
 
     // List / search
