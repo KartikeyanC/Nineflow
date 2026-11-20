@@ -258,9 +258,11 @@ export function PlannerProvider({ children }) {
   // Keep every series materialized for the rolling horizon. Adding instances
   // re-runs this once more, which then finds nothing to add.
   const todayStr = dateKey(now)
+  // Worked out from the latest list inside the update, so a second run (React runs effects twice in
+  // development) sees the instances the first one added and adds none again.
   useEffect(() => {
-    const extra = ensureRecurrences(tasks, now)
-    if (extra.length) setTasks((ts) => [...ts, ...extra])
+    if (!ensureRecurrences(tasks, now).length) return
+    setTasks((ts) => { const extra = ensureRecurrences(ts, now); return extra.length ? [...ts, ...extra] : ts })
   }, [tasks, todayStr]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Set, change or remove the repeat rule for a task's whole series.

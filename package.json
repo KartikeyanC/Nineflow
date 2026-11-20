@@ -25,6 +25,7 @@
     "test:import": "rolldown -c scripts/import-test/rolldown.config.mjs && node node_modules/.cache/import-test.mjs",
     "test:billing": "node scripts/billing-test.mjs",
     "test:fields": "node scripts/fields-test.mjs",
+    "test:profession": "node scripts/profession-test.mjs",
     "licence": "node scripts/licence.mjs"
   },
   "dependencies": {

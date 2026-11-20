@@ -1,10 +1,14 @@
 import React, { useEffect, useId, useMemo, useRef, useState } from 'react'
 import {
-  Sparkles, ArrowRight, ArrowLeft, Check, ListChecks, Timer, BarChart3, Briefcase, Flame, Send, GraduationCap,
+  Sparkles, ArrowRight, ArrowLeft, Check, ListChecks, Timer, BarChart3, Send, GraduationCap,
   Clock3, CalendarDays, KeyRound, Cloud, HardDrive, AlertTriangle, Loader2, FolderInput, Mail, Eye, EyeOff, MailCheck,
+  Stethoscope, HeartPulse, Scale, Calculator, Rocket, School, Handshake, House, Palette, Laptop,
 } from 'lucide-react'
+import { PROFESSIONS, professionById } from '../lib/professions'
+import { buildDailyTasks, scheduleOf } from '../lib/professionDay'
+import { createTask } from '../lib/tasks'
 import {
-  NEEDS, OCCUPATIONS, REASONS, ensureAccountProfile, accountProfileId, isEmailAccount, isEmailProfile, signIn, currentProfile, updateProfile, legacyProfiles,
+  ensureAccountProfile, accountProfileId, isEmailAccount, isEmailProfile, signIn, currentProfile, updateProfile, legacyProfiles,
   moveProfileData, checkPin, migrateLegacyInto, hasLegacyData, initials, firstName, isGuestProfile, startGuest, GUEST_ID,
 } from '../lib/profiles'
 import { needsLicence } from '../lib/licence'
@@ -16,19 +20,14 @@ import { isConfigured, isDesktop, rememberedAccount, rememberAccount, signInWith
 import * as supa from '../lib/supabase'
 import { mockEnabled as supaMockEnabled, mockCodeFor } from '../lib/supabaseMock'
 import { apply, fetchRemote, hasLocalData, markSynced } from '../lib/cloud'
-import { colorOf, cssVar } from '../lib/colors'
+import { COLOR_IDS, colorOf, cssVar } from '../lib/colors'
 import { cx } from './ui'
 import { BrandMark, Wordmark } from './Brand'
 import { TimeField } from './TimePicker'
 
-const NEED_STYLE = {
-  plan: { icon: ListChecks, tone: 'lav' }, focus: { icon: Timer, tone: 'sky' }, hours: { icon: BarChart3, tone: 'mint' },
-  habits: { icon: Flame, tone: 'peach' }, work: { icon: Briefcase, tone: 'coral' }, report: { icon: Send, tone: 'butter' },
-  exam: { icon: GraduationCap, tone: 'teal' },
-}
 const DAYS = [['Mo', 1], ['Tu', 2], ['We', 3], ['Th', 4], ['Fr', 5], ['Sa', 6], ['Su', 0]]
-const PRESETS = [['9 – 5', '09:00', '17:00'], ['9:30 – 6:30', '09:30', '18:30'], ['10 – 7', '10:00', '19:00'], ['Night 10 – 6', '22:00', '06:00']]
-const STEP_LABEL = ['Your goals', 'Your rhythm', 'About you', 'All set']
+const PRESETS = [['9 – 5', '09:00', '17:00'], ['9:30 – 6:30', '09:30', '18:30'], ['10 – 7', '10:00', '19:00'], ['Night 7 – 7', '19:00', '07:00'], ['Night 10 – 6', '22:00', '06:00']]
+const STEP_LABEL = ['What you do', 'Your setup', 'Your hours', 'Your day']
 const toMin = (t) => { const [h, m] = t.split(':').map(Number); return h * 60 + m }
 
 // Local profiles (and pre-profile data) that hold something worth bringing in.
@@ -720,86 +719,157 @@ function Import({ onFresh }) {
 }
 
 // ---- 3. Setup questions (new accounts) --------------------------------------
+// What you do → one question about how you do it → your hours → your day, built from lib/professions.js.
+const PROFESSION_ICON = {
+  stethoscope: Stethoscope, 'heart-pulse': HeartPulse, scale: Scale, calculator: Calculator, rocket: Rocket, school: School,
+  handshake: Handshake, house: House, palette: Palette, laptop: Laptop, 'graduation-cap': GraduationCap, sparkles: Sparkles,
+}
+const PROFESSION_TONE = ['coral', 'mint', 'lav', 'butter', 'peach', 'sky', 'teal', 'rose']
+// The old occupation field still names who work is for (lib/workFor.js).
+const OCCUPATION_OF = { 'it-employee': 'Developer', 'startup-founder': 'Founder', freelancer: 'Freelancer', student: 'Student' }
+const slugOf = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+
 function Setup() {
   const me = currentProfile()
-  // Sample data starts on for an empty planner (so no screen opens empty) and never replaces brought-in tasks.
+  // Sample data is offered only for a planner that stays empty (no brought-in tasks, no routine).
   const [hasTasks] = useState(() => loadTasks().length > 0)
   const [step, setStep] = useState(0)
-  const [a, setA] = useState({ needs: [], startTime: '09:30', endTime: '18:30', days: [1, 2, 3, 4, 5], saturdayRule: 'all', breakMinutes: 60, name: me?.name || '', occupation: '', occupationOther: '', reasons: [], sample: !hasTasks })
-  const set = (p) => setA((x) => ({ ...x, ...p }))
+  const [error, setError] = useState('')
+  const [a, setA] = useState({ profession: '', option: null, startTime: '09:30', endTime: '18:30', days: [1, 2, 3, 4, 5], saturdayRule: 'all', breakMinutes: 60, name: me?.name || '', skip: [], sample: false })
+  const set = (p) => { setError(''); setA((x) => ({ ...x, ...p })) }
   const toggle = (k, v) => setA((x) => ({ ...x, [k]: x[k].includes(v) ? x[k].filter((y) => y !== v) : [...x[k], v] }))
   const TOTAL = STEP_LABEL.length
-  const canNext = step === 2 ? a.name.trim().length > 0 : true
-  const optional = step === 0 || step === 1
-  const next = () => (step < TOTAL - 1 ? setStep(step + 1) : finish())
-  const back = () => step > 0 && setStep(step - 1)
+  const prof = professionById(a.profession)
+  // Each step says what is missing instead of greying out Continue.
+  const problem = step === 0 ? (!prof ? 'Choose what you do to continue.' : '')
+    : step === 1 ? (a.option === null ? 'Choose one option to continue.' : '')
+      : step === 2 ? (!a.name.trim() ? 'Add your name to continue.' : '') : ''
+  const next = () => {
+    if (problem) return setError(problem)
+    setError('')
+    return step < TOTAL - 1 ? setStep(step + 1) : finish()
+  }
+  const back = () => { setError(''); if (step > 0) setStep(step - 1) }
 
   useEffect(() => {
-    const onKey = (e) => { if (e.key === 'Enter' && canNext && e.target.tagName !== 'TEXTAREA' && e.target.tagName !== 'BUTTON') { e.preventDefault(); next() } }
+    const onKey = (e) => { if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA' && e.target.tagName !== 'BUTTON') { e.preventDefault(); next() } }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const wantsWork = a.needs.includes('work') || a.needs.includes('report') || ['Marketer', 'Content creator'].includes(a.occupation)
   // A night shift (end before start) runs past midnight into the next day.
   const startMin = toMin(a.startTime)
-  const span = ((toMin(a.endTime) - startMin) + 1440) % 1440
+  const span = ((toMin(a.endTime) - startMin) + 1440) % 1440 || 1440
   const dayHours = Math.max(0, (span - a.breakMinutes) / 60)
-  const summary = useMemo(() => [
-    a.needs.includes('plan') && ['Quick list docked on the right', ListChecks, 'lav'],
-    a.needs.includes('focus') && ['Pomodoro focus mode on every task', Timer, 'sky'],
-    a.needs.includes('hours') && ['Estimate vs actual on finished tasks', BarChart3, 'mint'],
-    a.needs.includes('habits') && ['Habit tracker on the dashboard', Flame, 'peach'],
-    wantsWork && ['Work OS: task log, social calendar, ad tracker, reports', Briefcase, 'coral'],
-    a.needs.includes('exam') && ['Exam prep (RRB NTPC, SSC CGL or IBPS PO): syllabus, 40-day plan, and Revise flashcards with an example note', GraduationCap, 'teal'],
+  const dayTasks = useMemo(() => (prof && a.option !== null ? buildDailyTasks(prof, { optionIndex: a.option, startMinutes: startMin, hours: span / 60 }) : []), [prof, a.option, startMin, span])
+  const kept = dayTasks.filter((t) => !a.skip.includes(t.key))
+  const exam = a.profession === 'student'
+  const weekdaysOnly = a.days.length === 5 && [1, 2, 3, 4, 5].every((d) => a.days.includes(d))
+
+  const pickOption = (i) => {
+    const hours = prof?.suggestedHours?.[i] // a shift pattern also sets the hours (changeable on the next step)
+    set({ option: i, skip: [], ...(hours ? { startTime: hours[0], endTime: hours[1] } : {}) })
+  }
+
+  const summary = [
+    kept.length > 0 && [`${kept.length} tasks a day, repeating ${a.days.length === 7 ? 'every day' : weekdaysOnly ? 'on weekdays' : 'on your working days'}`, ListChecks, 'lav'],
+    exam && prof && a.option !== null && [`Exam prep for ${prof.setupQuestion.options[a.option]}: syllabus, 40-day plan and Revise flashcards`, GraduationCap, 'teal'],
     [`${a.startTime}–${a.endTime}, ${a.days.length} days a week (${dayHours.toFixed(1).replace('.0', '')} h/day after breaks)${a.days.includes(6) && a.saturdayRule !== 'all' ? ` · ${SATURDAY_RULES.find((r) => r.id === a.saturdayRule)?.label}` : ''}`, Clock3, 'butter'],
     [isGuestProfile(me) ? 'Saved in this browser only, until you sign in' : `Saved to ${savedWhere(me)} automatically`, HardDrive, 'sky'],
-  ].filter(Boolean), [a, wantsWork, dayHours, me])
+  ].filter(Boolean)
 
   async function finish() {
-    updateProfile(me.id, { name: a.name.trim(), occupation: a.occupation, occupationOther: a.occupationOther, reasons: a.reasons, needs: a.needs })
+    const occupation = OCCUPATION_OF[a.profession] || 'Other'
+    updateProfile(me.id, {
+      name: a.name.trim(), profession: a.profession, professionSetup: a.option,
+      occupation, occupationOther: occupation === 'Other' ? prof.label : '', needs: exam ? ['exam'] : [],
+    })
     // Email accounts keep the name with the account, so other devices know it.
     if (isEmailProfile(me)) await Promise.race([supa.setName(a.name.trim()), new Promise((r) => setTimeout(r, 3000))]).catch(() => {})
     const s = loadSettings()
-    // Exam prep: the NTPC section, and one note showing how flashcards are written (Revise reads `question :: answer`).
-    const exam = a.needs.includes('exam')
+
+    // The day's tasks: each a repeating series, in a category named as the profession names it.
+    const categories = [...(s.categories || DEFAULT_CATEGORIES)]
+    const categoryId = (name) => {
+      let c = categories.find((x) => x.name.toLowerCase() === name.toLowerCase())
+      if (!c) { c = { id: `p-${slugOf(name)}`, name, color: COLOR_IDS[categories.length % COLOR_IDS.length] }; categories.push(c) }
+      return c.id
+    }
+    const routine = scheduleOf(kept, { today: new Date(), workingDays: a.days }).map((t) => createTask({
+      title: t.title, date: t.date, startTime: t.startTime, durationMinutes: t.durationMinutes, category: categoryId(t.category),
+      seriesId: uid(), recurrence: { freq: t.freq, until: null, skip: [] }, fields: { source: `profession:${a.profession}` },
+    }))
+
+    // Exam prep: that exam's section, and one note showing how flashcards are written (Revise reads `question :: answer`).
     const notes = exam && !(s.notes || []).length ? [{ id: uid(), text: ['How flashcards work', 'Write a question, two colons, then the answer. Revise asks them back on a schedule.', 'Capital of India :: New Delhi', '1 km is how many metres? :: 1000'].join('\n'), color: 'mint', pinned: true, createdAt: Date.now(), updatedAt: Date.now(), images: [] }] : s.notes
-    saveSettings({ ...s, notes, modules: { ...s.modules, work: wantsWork, ntpc: exam || !!s.modules?.ntpc }, quickList: { ...s.quickList, position: a.needs.includes('plan') ? 'right' : 'off' }, weekStart: a.days.includes(0) && !a.days.includes(1) ? 0 : s.weekStart, workHours: { start: a.startTime, end: a.endTime, breakMinutes: a.breakMinutes } })
+    saveSettings({
+      ...s, notes, categories,
+      modules: { ...s.modules, work: false, ntpc: exam || !!s.modules?.ntpc },
+      ...(exam ? { exam: prof.examIds[a.option] } : {}),
+      quickList: { ...s.quickList, position: a.profession === 'startup-founder' ? 'right' : 'off' },
+      weekStart: a.days.includes(0) && !a.days.includes(1) ? 0 : s.weekStart,
+      workHours: { start: a.startTime, end: a.endTime, breakMinutes: a.breakMinutes },
+    })
     const w = loadWork()
     saveWork({ ...w, settings: { ...w.settings, startTime: a.startTime, workingDays: a.days, saturdayRule: a.saturdayRule } })
-    if (a.sample && !hasTasks) { const { tasks, habits } = generateSample(s.categories || DEFAULT_CATEGORIES); saveTasks(tasks); saveHabits(habits) }
+    if (routine.length) saveTasks([...loadTasks(), ...routine])
+    else if (a.sample && !hasTasks) { const { tasks, habits } = generateSample(categories); saveTasks(tasks); saveHabits(habits) }
     markOnboarded()
     window.location.reload()
   }
 
   const titles = [
-    ['What do you want to get better at?', 'Tap everything that fits — this arranges the app for you. Change it any time.'],
-    ['When do you usually work or study?', 'Sets your time plan and how many hours a day count as capacity.'],
-    ['Tell us a little about you.', isEmailProfile(me) || isGuestProfile(me) ? 'What should the planner call you?' : 'Your name is filled in from Google; change it if you like.'],
-    [`Hi ${firstName(a.name)}, you’re all set.`, 'Here’s how your planner is arranged:'],
+    ['What do you do?', 'Pick the closest fit. Your day is built around how this work runs.'],
+    [prof?.setupQuestion.text || '', 'This adds the tasks that fit your kind of work.'],
+    ['When do you usually work?', 'Your tasks are timed from your start. Night shift? Pick a night preset.'],
+    [`Hi ${firstName(a.name)}, here’s your day.`, kept.length ? 'Untick anything you don’t do. You can edit, move or add tasks once you’re in.' : 'Your planner starts empty, ready for your own tasks.'],
   ]
 
   return (
     <Frame step={step} title={titles[step][0]} lead={titles[step][1]}>
       <div key={step} className="animate-view-in mt-6">
         {step === 0 && (
-          <>
-            <div className="grid sm:grid-cols-2 gap-2.5">
-              {NEEDS.map((n) => { const { icon: Icon, tone } = NEED_STYLE[n.id]; const c = colorOf(tone); const on = a.needs.includes(n.id); return (
-                <button key={n.id} type="button" onClick={() => toggle('needs', n.id)} aria-pressed={on}
-                  className={cx('relative flex items-start gap-3 rounded-2xl border-2 p-3.5 text-left transition-all', on ? cx('border-transparent', c.bg) : 'border-line bg-card hover:border-faint hover:-translate-y-0.5')}>
+          <div role="radiogroup" aria-label="What do you do?" className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+            {PROFESSIONS.map((p, i) => {
+              const Icon = PROFESSION_ICON[p.icon] || Sparkles
+              const c = colorOf(PROFESSION_TONE[i % PROFESSION_TONE.length])
+              const on = a.profession === p.id
+              return (
+                <button key={p.id} type="button" role="radio" aria-checked={on}
+                  onClick={() => set({ profession: p.id, option: p.id === a.profession ? a.option : null, skip: [] })}
+                  className={cx('relative flex flex-col items-start gap-2.5 rounded-2xl border-2 p-3.5 text-left transition-all', on ? cx('border-transparent', c.bg) : 'border-line bg-card hover:border-faint hover:-translate-y-0.5')}>
                   <span className={cx('h-10 w-10 rounded-xl flex items-center justify-center shrink-0 transition', on ? 'bg-card ' + c.text : cx(c.bg, c.text))}><Icon size={18} /></span>
-                  <span className="min-w-0"><span className={cx('block font-bold text-sm', on && c.text)}>{n.label}</span><span className={cx('block text-xs mt-0.5', on ? c.text + ' opacity-80' : 'text-muted')}>{n.hint}</span></span>
+                  <span className={cx('block font-bold text-sm leading-snug', on && c.text)}>{p.label}</span>
                   {on && <span className="absolute top-2.5 right-2.5 h-5 w-5 rounded-full bg-accent text-white flex items-center justify-center animate-pop"><Check size={12} strokeWidth={3} /></span>}
                 </button>
-              ) })}
-            </div>
-            <p className="text-xs text-faint mt-3">{a.needs.length ? `${a.needs.length} selected` : 'Nothing selected yet — that’s fine, you can skip.'}</p>
-          </>
+              )
+            })}
+          </div>
         )}
 
-        {step === 1 && (
+        {step === 1 && prof && (
+          <div role="radiogroup" aria-label={prof.setupQuestion.text} className="grid gap-2.5">
+            {prof.setupQuestion.options.map((o, i) => (
+              <button key={o} type="button" role="radio" aria-checked={a.option === i} onClick={() => pickOption(i)}
+                className={cx('flex items-center justify-between gap-3 rounded-2xl border-2 px-4 py-3.5 text-left font-bold text-sm transition', a.option === i ? 'border-ink bg-card' : 'border-line bg-card hover:border-faint')}>
+                {o}
+                {a.option === i && <span className="h-5 w-5 rounded-full bg-accent text-white flex items-center justify-center animate-pop"><Check size={12} strokeWidth={3} /></span>}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {step === 2 && (
           <>
+            <div className="flex items-center gap-4 mb-6">
+              {me?.picture
+                ? <img src={me.picture} alt="" referrerPolicy="no-referrer" className="h-14 w-14 rounded-2xl object-cover" />
+                : <span className={cx('h-14 w-14 rounded-2xl flex items-center justify-center font-black text-xl', colorOf(me?.color).bg, colorOf(me?.color).text)}>{a.name.trim() ? initials(a.name) : '?'}</span>}
+              <div className="flex-1">
+                <label htmlFor="setup-name" className="block text-xs font-bold text-muted mb-1">Your name <span className="text-coral-fg">*</span></label>
+                <input id="setup-name" className="input h-11 font-semibold" value={a.name} onChange={(e) => set({ name: e.target.value })} aria-invalid={!!error && !a.name.trim()} />
+              </div>
+            </div>
             <div className="flex flex-wrap gap-1.5">
               {PRESETS.map(([l, s, e]) => <button key={l} type="button" onClick={() => set({ startTime: s, endTime: e })} className={cx('pill border transition', a.startTime === s && a.endTime === e ? ORANGE_ON : 'bg-card text-muted border-line hover:text-ink')}>{l}</button>)}
             </div>
@@ -841,47 +911,32 @@ function Setup() {
           </>
         )}
 
-        {step === 2 && (
-          <div className="space-y-5">
-            <div className="flex items-center gap-4">
-              {me?.picture
-                ? <img src={me.picture} alt="" referrerPolicy="no-referrer" className="h-16 w-16 rounded-2xl object-cover" />
-                : <span className={cx('h-16 w-16 rounded-2xl flex items-center justify-center font-black text-2xl', colorOf(me?.color).bg, colorOf(me?.color).text)}>{a.name.trim() ? initials(a.name) : '?'}</span>}
-              <div className="flex-1">
-                <label htmlFor="setup-name" className="block text-xs font-bold text-muted mb-1">Your name <span className="text-coral-fg">*</span></label>
-                <input id="setup-name" autoFocus className="input h-12 text-lg font-semibold" value={a.name} onChange={(e) => set({ name: e.target.value })} />
-              </div>
-            </div>
-            {!isGuestProfile(me) && (
-              <div>
-                <span className="block text-xs font-bold text-muted mb-1">Email</span>
-                <p className="input h-11 flex items-center gap-2 bg-page text-muted">{isEmailProfile(me) ? <Mail size={16} /> : <GoogleMark />} {me?.email}</p>
-              </div>
-            )}
-            <div>
-              <span className="block text-xs font-bold text-muted mb-1.5">What do you do? <span className="text-faint font-medium">· optional</span></span>
-              <div className="flex flex-wrap gap-1.5">{OCCUPATIONS.map((o) => (
-                <button key={o} type="button" onClick={() => set({ occupation: a.occupation === o ? '' : o })} className={cx('pill border transition', a.occupation === o ? ORANGE_ON : 'bg-card text-muted border-line hover:text-ink')}>{o}</button>
-              ))}</div>
-              {a.occupation === 'Other' && <input className="input mt-2 animate-view-in" placeholder="Tell us in a word or two" value={a.occupationOther} onChange={(e) => set({ occupationOther: e.target.value })} />}
-            </div>
-            <div>
-              <span className="block text-xs font-bold text-muted mb-1.5">Why NineFlow? <span className="text-faint font-medium">· optional, tap any</span></span>
-              <div className="flex flex-wrap gap-1.5">{REASONS.map((r) => (
-                <button key={r} type="button" onClick={() => toggle('reasons', r)} className={cx('pill border transition', a.reasons.includes(r) ? 'bg-lav text-lav-fg border-lav-fg/40' : 'bg-card text-muted border-line hover:text-ink')}>{a.reasons.includes(r) && <Check size={11} />}{r}</button>
-              ))}</div>
-            </div>
-          </div>
-        )}
-
         {step === 3 && (
           <>
-            <ul className="grid sm:grid-cols-2 gap-2.5">
+            {dayTasks.length > 0 && (
+              <ul className="rounded-2xl border border-line divide-y divide-line overflow-hidden">
+                {dayTasks.map((t, i) => {
+                  const on = !a.skip.includes(t.key)
+                  return (
+                    <li key={t.key}>
+                      {t.dayOffset === 1 && (i === 0 || dayTasks[i - 1].dayOffset === 0) && <p className="px-4 pt-2.5 pb-1 text-[11px] font-bold uppercase tracking-wider text-faint bg-page">After midnight</p>}
+                      <label className="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-page transition">
+                        <input type="checkbox" checked={on} onChange={() => toggle('skip', t.key)} className="h-4 w-4 shrink-0" aria-label={`Keep ${t.title}`} />
+                        <span className={cx('w-12 shrink-0 text-sm font-semibold tabular-nums', on ? 'text-muted' : 'text-faint')}>{t.startTime}</span>
+                        <span className={cx('flex-1 min-w-0 text-sm font-semibold', on ? 'text-ink' : 'text-faint line-through')}>{t.title}</span>
+                        <span className="hidden sm:inline shrink-0 rounded-full bg-page px-2 py-0.5 text-xs font-semibold text-muted">{t.category}</span>
+                      </label>
+                    </li>
+                  )
+                })}
+              </ul>
+            )}
+            <ul className="grid sm:grid-cols-2 gap-2.5 mt-4">
               {summary.map(([text, Icon, tone]) => { const c = colorOf(tone); return (
                 <li key={text} className={cx('flex items-start gap-3 rounded-2xl p-3.5', c.bg)}><span className={cx('h-9 w-9 rounded-xl bg-card flex items-center justify-center shrink-0', c.text)}><Icon size={16} /></span><span className={cx('text-sm font-semibold', c.text)}>{text}</span></li>
               ) })}
             </ul>
-            {!hasTasks && (
+            {!hasTasks && kept.length === 0 && (
             <label className="mt-5 flex items-center gap-3 rounded-2xl border-2 border-line p-3.5 cursor-pointer hover:border-faint transition">
               <button type="button" role="switch" aria-checked={a.sample} aria-label="Start with sample data" onClick={() => set({ sample: !a.sample })}
                 className={cx('h-6 w-11 shrink-0 rounded-full p-0.5 transition', a.sample ? ORANGE_ON : 'bg-line')}><span className={cx('block h-5 w-5 rounded-full bg-card transition', a.sample && 'translate-x-5')} /></button>
@@ -892,16 +947,15 @@ function Setup() {
         )}
       </div>
 
+      {error && <p role="alert" className="mt-4 text-sm font-semibold text-coral-fg">{error}</p>}
+
       <div className="flex items-center justify-between gap-3 mt-8">
         {step > 0
           ? <button type="button" className="text-sm font-semibold text-muted hover:text-ink inline-flex items-center gap-1" onClick={back}><ArrowLeft size={14} /> Back</button>
           : <span />}
-        <div className="flex items-center gap-3">
-          {optional && <button type="button" className="text-sm font-semibold text-faint hover:text-ink" onClick={() => setStep(step + 1)}>Skip</button>}
-          <button type="button" className={cx(ORANGE_BTN, 'h-12 px-6 text-base')} disabled={!canNext} onClick={next}>
-            {step === TOTAL - 1 ? <>Open my planner <Sparkles size={16} /></> : <>Continue <ArrowRight size={16} /></>}
-          </button>
-        </div>
+        <button type="button" className={cx(ORANGE_BTN, 'h-12 px-6 text-base')} onClick={next}>
+          {step === TOTAL - 1 ? <>Start my day <Sparkles size={16} /></> : <>Continue <ArrowRight size={16} /></>}
+        </button>
       </div>
     </Frame>
   )
