@@ -6,6 +6,7 @@ import { usePlanner } from '../store/PlannerContext'
 import { dateKey, fmtMinutes } from '../lib/tasks'
 import { parseCsv, readTable, sameTask, toTask } from '../lib/taskImport'
 import { Modal, cx } from './ui'
+import { sectionOn } from '../lib/modules'
 
 // "Import tasks" (Settings → Your data): a CSV or Excel file, or rows pasted from Excel / Google
 // Sheets, become planner tasks. Everything is read first and shown with every row ticked; one press on
@@ -74,7 +75,7 @@ export default function TaskImport({ onClose }) {
     })
   }, [items, existing, skipPast, today, off, on])
   const chosen = rows.filter((r) => r.ticked)
-  const hasNtpc = settings.modules?.ntpc && items.some((it) => NTPC_SUBJECT[norm(it.subject)])
+  const hasNtpc = sectionOn(settings, 'ntpc') && items.some((it) => NTPC_SUBJECT[norm(it.subject)])
   const dates = chosen.map((r) => r.date).filter(Boolean).sort()
   const counts = { already: rows.filter((r) => r.skip === 'Already in your planner' || r.skip === 'Repeated row').length, past: rows.filter((r) => r.skip === 'Day already past').length, problems: rows.filter((r) => r.problems.length).length }
 

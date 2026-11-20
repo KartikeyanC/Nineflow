@@ -5,6 +5,7 @@ import { isDark } from '../lib/themes'
 import { examById } from '../exams'
 import { Modal, cx } from './ui'
 import { showNote } from '../views/Notes'
+import { sectionOn } from '../lib/modules'
 
 // Ctrl/Cmd+K: jump to a screen, run an action, find a task or note, or type a new task.
 export default function CommandPalette({ open, onClose }) {
@@ -30,8 +31,8 @@ export default function CommandPalette({ open, onClose }) {
       { label: 'Revise flashcards', icon: Brain, run: go('revise') },
       { label: 'Paused', icon: PauseCircle, run: go('paused') },
       { label: 'Someday', icon: Inbox, run: go('someday') },
-      ...(settings.modules?.work ? [{ label: 'Work OS', icon: Briefcase, run: go('work') }] : []),
-      ...(settings.modules?.ntpc ? [{ label: `${examById(settings.exam).name} syllabus`, icon: GraduationCap, run: go('ntpc') }] : []),
+      ...(sectionOn(settings, 'work') ? [{ label: 'Work OS', icon: Briefcase, run: go('work') }] : []),
+      ...(sectionOn(settings, 'ntpc') ? [{ label: `${examById(settings.exam).name} syllabus`, icon: GraduationCap, run: go('ntpc') }] : []),
       { label: 'Settings', icon: Settings, run: go('settings') },
     ].map((x) => ({ ...x, group: 'Go to' }))
     const actions = [

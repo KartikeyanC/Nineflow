@@ -4,6 +4,7 @@ import { usePlanner } from '../store/PlannerContext'
 import { cx, useDialogFocus } from './ui'
 import { examById } from '../exams'
 import { openInterrupt } from '../features/Interrupt'
+import { sectionOn } from '../lib/modules'
 
 const NAV = [
   { id: 'dashboard', label: 'Home', icon: LayoutDashboard },
@@ -35,7 +36,7 @@ export default function MobileNav() {
   const [sheet, setSheet] = useState(false)
   const sheetRef = useRef(null)
   useDialogFocus(sheetRef, sheet)
-  const more = MORE.filter(({ id }) => (id !== 'work' || settings.modules?.work) && (id !== 'ntpc' || settings.modules?.ntpc))
+  const more = MORE.filter(({ id }) => sectionOn(settings, id))
     .map((m) => (m.id === 'ntpc' ? { ...m, label: examById(settings.exam).short } : m)) // the exam being prepared for
   const inMore = more.some((m) => m.id === view)
   const go = (id) => { setSheet(false); setView(id) }

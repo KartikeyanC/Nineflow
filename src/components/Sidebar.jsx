@@ -16,6 +16,7 @@ import { PromptListButton } from './PromptToList'
 import { AskPlannerButton } from './AskPlanner'
 import SidebarToggle from './SidebarToggle'
 import { WorkForSwitch } from './WorkFor'
+import { sectionOn } from '../lib/modules'
 
 const NAV = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -60,7 +61,7 @@ export default function Sidebar() {
       <div className="flex flex-col flex-1 min-h-0 overflow-y-auto gap-3 overflow-x-hidden [&>*]:shrink-0 -mx-1 px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {/* Nav */}
       <nav className="flex flex-col gap-1">
-        {NAV.filter(({ id }) => (id !== 'work' || settings.modules?.work) && (id !== 'ntpc' || settings.modules?.ntpc)).map(({ id, label: name, icon: Icon }) => {
+        {NAV.filter(({ id }) => sectionOn(settings, id)).map(({ id, label: name, icon: Icon }) => {
           const label = id === 'ntpc' ? examById(settings.exam).short : name // the exam being prepared for
           const active = view === id
           const badge = id === 'revise' && cardsDue > 0 ? cardsDue : 0

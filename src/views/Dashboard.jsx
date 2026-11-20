@@ -30,6 +30,7 @@ import { openInterrupt } from '../features/Interrupt'
 import { openPalette } from '../components/MobileNav'
 import { WorkForBadge, WorkForSwitch } from '../components/WorkFor'
 import ProfessionCard from '../components/ProfessionCard'
+import ModuleChips from '../components/ModuleChips'
 
 const toMin = (hhmm) => { const [h, m] = hhmm.split(':').map(Number); return h * 60 + m }
 const hh = (min) => `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`
@@ -85,6 +86,8 @@ export default function Dashboard() {
 
       {/* Planners from before professions: one card offering a ready-made routine */}
       {isToday && <ProfessionCard />}
+      {/* Your profession's tools (lib/modules.js) */}
+      {isToday && <ModuleChips />}
 
       {/* How full the day is, and calm handling of work from earlier days */}
       <CapacityBar dayKey={dashboardDate} />
