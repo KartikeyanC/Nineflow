@@ -74,6 +74,20 @@
         "VITE_GOOGLE_CLIENT_ID": ""
       },
       "port": 5182
+    },
+    {
+      "name": "profession-todo",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "--prefix",
+        "F:/Movie/profession-todo",
+        "run",
+        "dev",
+        "--",
+        "-p",
+        "3100"
+      ],
+      "port": 3100
     }
   ]
 }
