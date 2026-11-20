@@ -4,8 +4,8 @@ import {
   Clock3, CalendarDays, KeyRound, Cloud, HardDrive, AlertTriangle, Loader2, FolderInput, Mail, Eye, EyeOff, MailCheck,
 } from 'lucide-react'
 import { professionById } from '../lib/professions'
-import { buildDailyTasks } from '../lib/professionDay'
-import { DayPreview, OptionList, ProfessionGrid, makeRoutine, profilePatchFor } from './ProfessionKit'
+import { buildDailyTasks, customiseDay } from '../lib/professionDay'
+import { DayPreview, OptionList, ProfessionGrid, makeRoutine, profilePatchFor, useDayChanges } from './ProfessionKit'
 import {
   ensureAccountProfile, accountProfileId, isEmailAccount, isEmailProfile, signIn, currentProfile, updateProfile, legacyProfiles,
   moveProfileData, checkPin, migrateLegacyInto, hasLegacyData, initials, firstName, isGuestProfile, startGuest, GUEST_ID,
@@ -753,13 +753,16 @@ function Setup() {
   const startMin = toMin(a.startTime)
   const span = ((toMin(a.endTime) - startMin) + 1440) % 1440 || 1440
   const dayHours = Math.max(0, (span - a.breakMinutes) / 60)
-  const dayTasks = useMemo(() => (prof && a.option !== null ? buildDailyTasks(prof, { optionIndex: a.option, startMinutes: startMin, hours: span / 60 }) : []), [prof, a.option, startMin, span])
+  const changes = useDayChanges() // edits and added tasks on the preview screen
+  const generated = useMemo(() => (prof && a.option !== null ? buildDailyTasks(prof, { optionIndex: a.option, startMinutes: startMin, hours: span / 60 }) : []), [prof, a.option, startMin, span])
+  const dayTasks = useMemo(() => customiseDay(generated, changes.custom, startMin, span / 60), [generated, changes.custom, startMin, span])
   const kept = dayTasks.filter((t) => !a.skip.includes(t.key))
   const exam = a.profession === 'student'
   const weekdaysOnly = a.days.length === 5 && [1, 2, 3, 4, 5].every((d) => a.days.includes(d))
 
   const pickOption = (i) => {
     const hours = prof?.suggestedHours?.[i] // a shift pattern also sets the hours (changeable on the next step)
+    changes.reset()
     set({ option: i, skip: [], ...(hours ? { startTime: hours[0], endTime: hours[1] } : {}) })
   }
 
@@ -801,13 +804,13 @@ function Setup() {
     ['What do you do?', 'Pick the closest fit. Your day is built around how this work runs.'],
     [prof?.setupQuestion.text || '', 'This adds the tasks that fit your kind of work.'],
     ['When do you usually work?', 'Your tasks are timed from your start. Night shift? Pick a night preset.'],
-    [`Hi ${firstName(a.name)}, here’s your day.`, kept.length ? 'Untick anything you don’t do. You can edit, move or add tasks once you’re in.' : 'Your planner starts empty, ready for your own tasks.'],
+    [`Hi ${firstName(a.name)}, here’s your day.`, kept.length ? 'Untick anything you don’t do, tap the pencil to change a time, or add your own.' : 'Add the tasks you do every working day, or start with an empty planner.'],
   ]
 
   return (
     <Frame step={step} title={titles[step][0]} lead={titles[step][1]}>
       <div key={step} className="animate-view-in mt-6">
-        {step === 0 && <ProfessionGrid value={a.profession} onPick={(id) => set({ profession: id, option: id === a.profession ? a.option : null, skip: [] })} />}
+        {step === 0 && <ProfessionGrid value={a.profession} onPick={(id) => { if (id !== a.profession) changes.reset(); set({ profession: id, option: id === a.profession ? a.option : null, skip: [] }) }} />}
 
         {step === 1 && prof && <OptionList prof={prof} value={a.option} onPick={pickOption} />}
 
@@ -865,7 +868,7 @@ function Setup() {
 
         {step === 3 && (
           <>
-            <DayPreview dayTasks={dayTasks} skip={a.skip} onToggle={(k) => toggle('skip', k)} />
+            <DayPreview dayTasks={dayTasks} skip={a.skip} onToggle={(k) => toggle('skip', k)} onEdit={changes.edit} onAdd={changes.add} defaultTime={a.startTime} />
             <ul className="grid sm:grid-cols-2 gap-2.5 mt-4">
               {summary.map(([text, Icon, tone]) => { const c = colorOf(tone); return (
                 <li key={text} className={cx('flex items-start gap-3 rounded-2xl p-3.5', c.bg)}><span className={cx('h-9 w-9 rounded-xl bg-card flex items-center justify-center shrink-0', c.text)}><Icon size={16} /></span><span className={cx('text-sm font-semibold', c.text)}>{text}</span></li>

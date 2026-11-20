@@ -5,12 +5,12 @@
 import React, { useMemo, useState } from 'react'
 import { ArrowLeft, ArrowRight, Sparkles } from 'lucide-react'
 import { professionById } from '../lib/professions'
-import { buildDailyTasks, fromHHMM, isRoutineTask, shiftHours } from '../lib/professionDay'
+import { buildDailyTasks, customiseDay, fromHHMM, isRoutineTask, shiftHours } from '../lib/professionDay'
 import { currentProfile, updateProfile } from '../lib/profiles'
 import { loadWork } from '../work/workStore'
 import { dateKey } from '../lib/tasks'
 import { usePlanner } from '../store/PlannerContext'
-import { DayPreview, OptionList, ProfessionGrid, makeRoutine, profilePatchFor, professionIcon } from './ProfessionKit'
+import { DayPreview, OptionList, ProfessionGrid, makeRoutine, profilePatchFor, professionIcon, useDayChanges } from './ProfessionKit'
 import { Modal } from './ui'
 
 /** Settings → Your work: what you do now, and a way to change it. */
@@ -52,7 +52,9 @@ export default function ProfessionDialog({ open, onClose, suggested, onDone }) {
 
   const { start, end } = settings.workHours
   const workingDays = loadWork().settings?.workingDays || [1, 2, 3, 4, 5]
-  const dayTasks = useMemo(() => (prof && option !== null ? buildDailyTasks(prof, { optionIndex: option, startMinutes: fromHHMM(start), hours: shiftHours(start, end) }) : []), [prof, option, start, end])
+  const changes = useDayChanges() // edits and added tasks on the preview step
+  const generated = useMemo(() => (prof && option !== null ? buildDailyTasks(prof, { optionIndex: option, startMinutes: fromHHMM(start), hours: shiftHours(start, end) }) : []), [prof, option, start, end])
+  const dayTasks = useMemo(() => customiseDay(generated, changes.custom, fromHHMM(start), shiftHours(start, end)), [generated, changes.custom, start, end])
   const kept = dayTasks.filter((t) => !skip.includes(t.key))
   const today = dateKey(new Date())
   const replacing = allTasks.filter((t) => isRoutineTask(t) && t.date >= today && t.status === 'todo').length
@@ -86,7 +88,7 @@ export default function ProfessionDialog({ open, onClose, suggested, onDone }) {
   const titles = [
     ['What do you do?', 'Pick the closest fit. Your routine is built around how this work runs.'],
     [prof?.setupQuestion.text || '', 'This adds the tasks that fit your kind of work.'],
-    ['Your day', `Timed from your working hours, ${start}–${end}. Untick anything you don’t do.`],
+    ['Your day', `Timed from your working hours, ${start}–${end}. Untick, change a time, or add your own.`],
   ]
 
   return (
@@ -96,12 +98,12 @@ export default function ProfessionDialog({ open, onClose, suggested, onDone }) {
       <p className="text-sm text-muted mt-1.5">{titles[step][1]}</p>
 
       <div key={step} className="animate-view-in mt-5 max-h-[60vh] overflow-y-auto -mx-1 px-1 pb-1">
-        {step === 0 && <ProfessionGrid value={profession} onPick={(id) => { setError(''); if (id !== profession) { setOption(null); setSkip([]) } setProfession(id) }} />}
-        {step === 1 && prof && <OptionList prof={prof} value={option} onPick={(i) => { setError(''); setOption(i); setSkip([]) }} />}
+        {step === 0 && <ProfessionGrid value={profession} onPick={(id) => { setError(''); if (id !== profession) { setOption(null); setSkip([]); changes.reset() } setProfession(id) }} />}
+        {step === 1 && prof && <OptionList prof={prof} value={option} onPick={(i) => { setError(''); if (i !== option) { setSkip([]); changes.reset() } setOption(i) }} />}
         {step === 2 && (
           <>
-            <DayPreview dayTasks={dayTasks} skip={skip} onToggle={(k) => setSkip((s) => (s.includes(k) ? s.filter((x) => x !== k) : [...s, k]))} />
-            {!dayTasks.length && <p className="text-sm text-muted">No routine tasks: your planner keeps just your own tasks.</p>}
+            <DayPreview dayTasks={dayTasks} skip={skip} onToggle={(k) => setSkip((s) => (s.includes(k) ? s.filter((x) => x !== k) : [...s, k]))}
+              onEdit={changes.edit} onAdd={changes.add} defaultTime={start} />
             <p className="mt-4 rounded-2xl bg-page p-3.5 text-sm text-muted">
               {kept.length ? <><b className="text-ink">{kept.length} tasks</b> repeat on your working days from today. </> : null}
               {replacing ? <>This replaces <b className="text-ink">{replacing} upcoming routine tasks</b> you haven’t started. </> : null}

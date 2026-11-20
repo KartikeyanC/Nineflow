@@ -1,9 +1,9 @@
 // The pieces shared by onboarding (components/Onboarding.jsx) and the change-profession dialog
 // (components/ProfessionDialog.jsx): the profession cards, the setup options, the day preview, and
 // turning the chosen day into repeating NineFlow tasks.
-import React from 'react'
+import React, { useState } from 'react'
 import {
-  Calculator, Check, GraduationCap, Handshake, HeartPulse, House, Laptop, Palette, Rocket, Scale, School, Sparkles, Stethoscope,
+  Calculator, Check, GraduationCap, Handshake, HeartPulse, House, Laptop, Palette, Pencil, Plus, Rocket, Scale, School, Sparkles, Stethoscope,
 } from 'lucide-react'
 import { PROFESSIONS } from '../lib/professions'
 import { scheduleOf } from '../lib/professionDay'
@@ -64,9 +64,35 @@ export function OptionList({ prof, value, onPick }) {
   )
 }
 
-/** The generated day, each task with a tick to keep it. */
-export function DayPreview({ dayTasks, skip, onToggle }) {
-  if (!dayTasks.length) return null
+// A time and a title, for editing a task or adding one. Enter saves, Escape cancels.
+function TaskFields({ initial, submitLabel, onSubmit, onCancel }) {
+  const [time, setTime] = useState(initial.startTime)
+  const [title, setTitle] = useState(initial.title)
+  const [error, setError] = useState('')
+  const save = () => { if (!title.trim()) return setError('Give the task a title.'); if (!time) return setError('Pick a time.'); return onSubmit({ title: title.trim(), startTime: time }) }
+  const keys = (e) => { if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); save() } if (e.key === 'Escape') { e.stopPropagation(); onCancel() } }
+  return (
+    <div className="px-4 py-3 bg-page" onKeyDown={keys}>
+      <div className="flex flex-wrap items-center gap-2">
+        <input type="time" value={time} onChange={(e) => setTime(e.target.value)} aria-label="Time" className="input h-10 w-[7.5rem] tabular-nums" />
+        <input autoFocus value={title} onChange={(e) => { setTitle(e.target.value); setError('') }} aria-label="Task" placeholder="What needs doing?" className="input h-10 flex-1 min-w-[10rem]" />
+      </div>
+      {error && <p role="alert" className="mt-1.5 text-xs font-semibold text-coral-fg">{error}</p>}
+      <div className="mt-2 flex gap-2">
+        <button type="button" className="btn-black h-8 py-0 text-xs" onClick={save}>{submitLabel}</button>
+        <button type="button" className="btn-ghost h-8 py-0 text-xs" onClick={onCancel}>Cancel</button>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * The generated day: tick to keep each task, the pencil to change its time or title, and "Add your own
+ * task" at the end. Changes are kept by the parent as { edits, added } (lib/professionDay.js customiseDay).
+ */
+export function DayPreview({ dayTasks, skip, onToggle, onEdit, onAdd, defaultTime = '09:00' }) {
+  const [editing, setEditing] = useState(null) // a task key, or 'new'
+  if (!dayTasks.length && !onAdd) return null
   return (
     <ul className="rounded-2xl border border-line divide-y divide-line overflow-hidden">
       {dayTasks.map((t, i) => {
@@ -74,17 +100,49 @@ export function DayPreview({ dayTasks, skip, onToggle }) {
         return (
           <li key={t.key}>
             {t.dayOffset === 1 && (i === 0 || dayTasks[i - 1].dayOffset === 0) && <p className="px-4 pt-2.5 pb-1 text-[11px] font-bold uppercase tracking-wider text-faint bg-page">After midnight</p>}
-            <label className="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-page transition">
-              <input type="checkbox" checked={on} onChange={() => onToggle(t.key)} className="h-4 w-4 shrink-0" aria-label={`Keep ${t.title}`} />
-              <span className={cx('w-12 shrink-0 text-sm font-semibold tabular-nums', on ? 'text-muted' : 'text-faint')}>{t.startTime}</span>
-              <span className={cx('flex-1 min-w-0 text-sm font-semibold', on ? 'text-ink' : 'text-faint line-through')}>{t.title}</span>
-              <span className="hidden sm:inline shrink-0 rounded-full bg-page px-2 py-0.5 text-xs font-semibold text-muted">{t.category}</span>
-            </label>
+            {editing === t.key ? (
+              <TaskFields initial={t} submitLabel="Save" onCancel={() => setEditing(null)} onSubmit={(v) => { onEdit(t.key, v); setEditing(null) }} />
+            ) : (
+              <div className="flex items-center gap-3 px-4 py-2.5 hover:bg-page transition">
+                <input type="checkbox" checked={on} onChange={() => onToggle(t.key)} className="h-4 w-4 shrink-0 cursor-pointer" aria-label={`Keep ${t.title}`} />
+                <span className={cx('w-12 shrink-0 text-sm font-semibold tabular-nums', on ? 'text-muted' : 'text-faint')}>{t.startTime}</span>
+                <span className={cx('flex-1 min-w-0 text-sm font-semibold', on ? 'text-ink' : 'text-faint line-through')}>{t.title}</span>
+                <span className="hidden sm:inline shrink-0 rounded-full bg-page px-2 py-0.5 text-xs font-semibold text-muted">{t.category}</span>
+                {onEdit && (
+                  <button type="button" onClick={() => setEditing(t.key)} aria-label={`Edit ${t.title}`}
+                    className="h-8 w-8 shrink-0 rounded-full inline-flex items-center justify-center text-faint hover:text-ink hover:bg-card"><Pencil size={14} /></button>
+                )}
+              </div>
+            )}
           </li>
         )
       })}
+      {onAdd && (
+        <li>
+          {editing === 'new' ? (
+            <TaskFields initial={{ startTime: defaultTime, title: '' }} submitLabel="Add" onCancel={() => setEditing(null)} onSubmit={(v) => { onAdd(v); setEditing(null) }} />
+          ) : (
+            <button type="button" onClick={() => setEditing('new')} className="w-full flex items-center gap-2 px-4 py-3 text-sm font-semibold text-muted hover:text-ink hover:bg-page transition">
+              <Plus size={15} /> Add your own task
+            </button>
+          )}
+        </li>
+      )}
     </ul>
   )
+}
+
+/** The preview's changes and how to make them: { custom, edit, add, reset } for DayPreview's onEdit / onAdd. */
+export function useDayChanges() {
+  const [custom, setCustom] = useState({ edits: {}, added: [] })
+  return {
+    custom,
+    edit: (key, patch) => setCustom((c) => (key.startsWith('added:')
+      ? { ...c, added: c.added.map((a) => (a.key === key ? { ...a, ...patch } : a)) }
+      : { ...c, edits: { ...c.edits, [key]: { ...c.edits[key], ...patch } } })),
+    add: (v) => setCustom((c) => ({ ...c, added: [...c.added, { key: `added:${Date.now()}`, ...v }] })),
+    reset: () => setCustom({ edits: {}, added: [] }),
+  }
 }
 
 const slugOf = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')

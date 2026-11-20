@@ -1,6 +1,6 @@
 // Tests for profession days (src/lib/professions.js, src/lib/professionDay.js):  npm run test:profession
 import { PROFESSIONS, professionById, professionFromOccupation } from '../src/lib/professions.js'
-import { buildDailyTasks, clockOf, isRoutineTask, replaceRoutine, scheduleOf, shiftHours } from '../src/lib/professionDay.js'
+import { buildDailyTasks, clockOf, customiseDay, isRoutineTask, replaceRoutine, scheduleOf, shiftHours } from '../src/lib/professionDay.js'
 
 let pass = 0, fail = 0
 const ok = (cond, label, extra = '') => { if (cond) pass += 1; else fail += 1; console.log(`${cond ? 'PASS' : 'FAIL'}  ${label}${!cond && extra ? `  -> ${extra}` : ''}`) }
@@ -61,6 +61,27 @@ ok(lateDays.join(',') === '2,3,4,5,6' && nightWk.filter((t) => t.title === 'Seco
 ok(nightWk.filter((t) => t.title.startsWith('Receive handoff')).length === 1 && nightWk.find((t) => t.title.startsWith('Receive handoff')).freq === 'weekdays', 'before-midnight tasks of a night shift still repeat on weekdays')
 const sched = scheduleOf(night, { today: thu, workingDays: [0, 1, 2, 3, 4, 5, 6] })
 ok(sched.find((t) => t.title === 'Second medication round').date === '2026-11-20' && sched[0].date === '2026-11-19', 'after-midnight tasks land on the next calendar day')
+
+// Editing and adding on the preview screen
+const base = day('doctor') // 9:00 start
+const custom = customiseDay(base, {
+  edits: { [base[0].key]: { title: '  Check labs  ', startTime: '13:15' } },
+  added: [{ key: 'added:1', title: 'Gym', startTime: '08:00' }, { key: 'added:2', title: '   ', startTime: '10:00' }],
+}, 9 * 60, 8)
+const lab = custom.find((t) => t.title === 'Check labs')
+ok(lab && lab.startTime === '13:15' && lab.offsetHours === 4.25, 'an edit changes the title (trimmed) and re-times the task', JSON.stringify(lab))
+ok(custom.map((t) => t.offsetHours).every((o, i, a) => i === 0 || a[i - 1] <= o), 'the list is re-sorted after an edit')
+const gym = custom.find((t) => t.title === 'Gym')
+ok(gym && gym.offsetHours === -1 && gym.dayOffset === 0 && gym.startTime === '08:00' && gym.category === 'My tasks', 'a task added before work stays that morning (8:00 on a 9:00 day)', JSON.stringify(gym))
+ok(custom[0].title === 'Gym', 'and sorts first')
+const evening = customiseDay(base, { added: [{ key: 'a', title: 'Dinner', startTime: '20:00' }] }, 540, 8).find((t) => t.title === 'Dinner')
+ok(evening.offsetHours === 11 && evening.dayOffset === 0, 'a task after work stays that evening')
+const beforeNight = customiseDay(night, { added: [{ key: 'a', title: 'School run', startTime: '08:00' }] }, 19 * 60, 12).find((t) => t.title === 'School run')
+ok(beforeNight.offsetHours === -11 && beforeNight.dayOffset === 0, 'on a 7 pm–7 am shift, 08:00 is the morning before the shift, not after it')
+ok(!custom.some((t) => t.key === 'added:2'), 'an added task with no title is ignored')
+ok(customiseDay(base, { edits: {}, added: [] }, 540).length === base.length && customiseDay(base, undefined, 540).length === base.length, 'no changes gives the same day')
+const nightEdit = customiseDay(night, { edits: { [night[0].key]: { startTime: '01:30' } } }, 19 * 60, 12).find((t) => t.key === night[0].key)
+ok(nightEdit.offsetHours === 6.5 && nightEdit.dayOffset === 1 && nightEdit.startTime === '01:30', 'on a 7 pm shift, 01:30 is after midnight (6.5 h in)')
 
 // Changing profession: swap the routine, never the user's own tasks
 const R = (id, date, status = 'todo') => ({ id, date, status, fields: { source: 'profession:nurse' } })

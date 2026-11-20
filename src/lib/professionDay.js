@@ -49,6 +49,31 @@ export function buildDailyTasks(config, setup) {
   })
 }
 
+/**
+ * The generated day after the user's changes on the preview screen.
+ * custom = { edits: { [key]: { title?, startTime? } }, added: [{ key, title, startTime }] }
+ * An edited or added time is placed in the working day from its clock time: on a night shift that
+ * starts at 19:00, 01:30 is 6.5 hours in, after midnight. A time before the start that is outside the
+ * shift stays on the same day, before work (gym at 08:00 on a 09:00 day). The list is re-sorted.
+ */
+export function customiseDay(dayTasks, custom, startMinutes, hours = 24) {
+  const place = (startTime) => {
+    const m = fromHHMM(startTime)
+    let offsetHours = ((((m - startMinutes) % DAY) + DAY) % DAY) / 60
+    if (offsetHours > hours && m < startMinutes) offsetHours = (m - startMinutes) / 60
+    return { offsetHours, ...clockOf(startMinutes, offsetHours), startTime }
+  }
+  const edited = dayTasks.map((t) => {
+    const e = custom?.edits?.[t.key]
+    if (!e) return t
+    return { ...t, ...(e.title?.trim() ? { title: e.title.trim() } : {}), ...(e.startTime && e.startTime !== t.startTime ? place(e.startTime) : {}) }
+  })
+  const added = (custom?.added || []).filter((a) => a.title?.trim() && a.startTime).map((a) => ({
+    key: a.key, title: a.title.trim(), category: 'My tasks', durationMinutes: 30, added: true, ...place(a.startTime),
+  }))
+  return [...edited, ...added].sort((a, b) => a.offsetHours - b.offsetHours)
+}
+
 /** A task that came from a profession's routine (onboarding or a profession change), not one the user made. */
 export const isRoutineTask = (t) => typeof t?.fields?.source === 'string' && t.fields.source.startsWith('profession:')
 
