@@ -20,6 +20,7 @@ import { applyTheme } from '../lib/themes'
 import { setDatePrefs } from '../lib/dateFormat'
 import { removeTasksFromWorkspace, sendTasksToWorkspace } from '../lib/workspaces'
 import { ensureRecurrences } from '../lib/recurrence'
+import { replaceRoutine } from '../lib/professionDay'
 import { planDay as planDayPure } from '../lib/schedule'
 import { withHistory } from '../lib/taskHistory'
 import { hhmm, toMin, workEnd } from '../lib/capacity'
@@ -201,6 +202,13 @@ export function PlannerProvider({ children }) {
       return added.length ? [...next, ...added] : next
     })
   }, [])
+
+  // A new profession's routine in place of the old one (lib/professionDay.js replaceRoutine): the user's own
+  // tasks, past days and anything started stay. One undo step brings the old routine back.
+  const swapRoutine = useCallback((routine, undoLabel, onUndo) => {
+    offerUndo(undoLabel || 'Changed your routine', onUndo)
+    setTasks((ts) => replaceRoutine(ts, routine, dateKey(new Date())).tasks)
+  }, [offerUndo])
 
   // Several tasks at once (a planned goal). One undo step takes them all back.
   const addTasks = useCallback((list, undoLabel) => {
@@ -968,6 +976,7 @@ export function PlannerProvider({ children }) {
       addTask,
       addTasks,
       importTasks,
+      swapRoutine,
       applySync,
       removeTasks,
       updateTasks,
@@ -1029,7 +1038,7 @@ export function PlannerProvider({ children }) {
     }),
     [
       shownTasks, workFocus, setWorkFocus, activeTasks, tasks, pauseTask, resumeTask, dropTask, restoreTask, settings, now, view, setView, selectedId, quickAdd, dashboardDate, calendarMode, openDay,
-      addTask, addTasks, importTasks, applySync, removeTasks, updateTasks, gateTaskId, closeGate, finishGate, moveToWorkspace, goalPlannerOpen, promptListOpen, askOpen, updateTask, setSessions, setStatus, toggleComplete, moveTask, sortStatus,
+      addTask, addTasks, importTasks, swapRoutine, applySync, removeTasks, updateTasks, gateTaskId, closeGate, finishGate, moveToWorkspace, goalPlannerOpen, promptListOpen, askOpen, updateTask, setSessions, setStatus, toggleComplete, moveTask, sortStatus,
       moveOverdueToToday, clearCompleted, removeTask, setRecurrence, removeSeries, applyToUpcoming, planDay,
       previewPlan, applyPlan, moveTasksTo,
       focus, startFocus, pauseFocus, resumeFocus, advanceFocus, stopFocus, setFocusOpen,

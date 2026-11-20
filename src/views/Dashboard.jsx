@@ -29,6 +29,7 @@ import { WorkspaceMenu } from '../features/Workspaces'
 import { openInterrupt } from '../features/Interrupt'
 import { openPalette } from '../components/MobileNav'
 import { WorkForBadge, WorkForSwitch } from '../components/WorkFor'
+import ProfessionCard from '../components/ProfessionCard'
 
 const toMin = (hhmm) => { const [h, m] = hhmm.split(':').map(Number); return h * 60 + m }
 const hh = (min) => `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`
@@ -81,6 +82,9 @@ export default function Dashboard() {
           <DayNav value={dashboardDate} onChange={setDashboardDate} block />
         </div>
       </header>
+
+      {/* Planners from before professions: one card offering a ready-made routine */}
+      {isToday && <ProfessionCard />}
 
       {/* How full the day is, and calm handling of work from earlier days */}
       <CapacityBar dayKey={dashboardDate} />

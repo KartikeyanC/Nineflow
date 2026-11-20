@@ -2,11 +2,10 @@ import React, { useEffect, useId, useMemo, useRef, useState } from 'react'
 import {
   Sparkles, ArrowRight, ArrowLeft, Check, ListChecks, Timer, BarChart3, Send, GraduationCap,
   Clock3, CalendarDays, KeyRound, Cloud, HardDrive, AlertTriangle, Loader2, FolderInput, Mail, Eye, EyeOff, MailCheck,
-  Stethoscope, HeartPulse, Scale, Calculator, Rocket, School, Handshake, House, Palette, Laptop,
 } from 'lucide-react'
-import { PROFESSIONS, professionById } from '../lib/professions'
-import { buildDailyTasks, scheduleOf } from '../lib/professionDay'
-import { createTask } from '../lib/tasks'
+import { professionById } from '../lib/professions'
+import { buildDailyTasks } from '../lib/professionDay'
+import { DayPreview, OptionList, ProfessionGrid, makeRoutine, profilePatchFor } from './ProfessionKit'
 import {
   ensureAccountProfile, accountProfileId, isEmailAccount, isEmailProfile, signIn, currentProfile, updateProfile, legacyProfiles,
   moveProfileData, checkPin, migrateLegacyInto, hasLegacyData, initials, firstName, isGuestProfile, startGuest, GUEST_ID,
@@ -20,7 +19,7 @@ import { isConfigured, isDesktop, rememberedAccount, rememberAccount, signInWith
 import * as supa from '../lib/supabase'
 import { mockEnabled as supaMockEnabled, mockCodeFor } from '../lib/supabaseMock'
 import { apply, fetchRemote, hasLocalData, markSynced } from '../lib/cloud'
-import { COLOR_IDS, colorOf, cssVar } from '../lib/colors'
+import { colorOf, cssVar } from '../lib/colors'
 import { cx } from './ui'
 import { BrandMark, Wordmark } from './Brand'
 import { TimeField } from './TimePicker'
@@ -720,14 +719,7 @@ function Import({ onFresh }) {
 
 // ---- 3. Setup questions (new accounts) --------------------------------------
 // What you do → one question about how you do it → your hours → your day, built from lib/professions.js.
-const PROFESSION_ICON = {
-  stethoscope: Stethoscope, 'heart-pulse': HeartPulse, scale: Scale, calculator: Calculator, rocket: Rocket, school: School,
-  handshake: Handshake, house: House, palette: Palette, laptop: Laptop, 'graduation-cap': GraduationCap, sparkles: Sparkles,
-}
-const PROFESSION_TONE = ['coral', 'mint', 'lav', 'butter', 'peach', 'sky', 'teal', 'rose']
-// The old occupation field still names who work is for (lib/workFor.js).
-const OCCUPATION_OF = { 'it-employee': 'Developer', 'startup-founder': 'Founder', freelancer: 'Freelancer', student: 'Student' }
-const slugOf = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+// The cards, options, preview and routine come from ProfessionKit, shared with the change-profession dialog.
 
 function Setup() {
   const me = currentProfile()
@@ -779,26 +771,13 @@ function Setup() {
   ].filter(Boolean)
 
   async function finish() {
-    const occupation = OCCUPATION_OF[a.profession] || 'Other'
-    updateProfile(me.id, {
-      name: a.name.trim(), profession: a.profession, professionSetup: a.option,
-      occupation, occupationOther: occupation === 'Other' ? prof.label : '', needs: exam ? ['exam'] : [],
-    })
+    updateProfile(me.id, { name: a.name.trim(), ...profilePatchFor(prof, a.option), needs: exam ? ['exam'] : [] })
     // Email accounts keep the name with the account, so other devices know it.
     if (isEmailProfile(me)) await Promise.race([supa.setName(a.name.trim()), new Promise((r) => setTimeout(r, 3000))]).catch(() => {})
     const s = loadSettings()
 
     // The day's tasks: each a repeating series, in a category named as the profession names it.
-    const categories = [...(s.categories || DEFAULT_CATEGORIES)]
-    const categoryId = (name) => {
-      let c = categories.find((x) => x.name.toLowerCase() === name.toLowerCase())
-      if (!c) { c = { id: `p-${slugOf(name)}`, name, color: COLOR_IDS[categories.length % COLOR_IDS.length] }; categories.push(c) }
-      return c.id
-    }
-    const routine = scheduleOf(kept, { today: new Date(), workingDays: a.days }).map((t) => createTask({
-      title: t.title, date: t.date, startTime: t.startTime, durationMinutes: t.durationMinutes, category: categoryId(t.category),
-      seriesId: uid(), recurrence: { freq: t.freq, until: null, skip: [] }, fields: { source: `profession:${a.profession}` },
-    }))
+    const { routine, categories } = makeRoutine({ professionId: a.profession, tasks: kept, categories: s.categories || DEFAULT_CATEGORIES, workingDays: a.days })
 
     // Exam prep: that exam's section, and one note showing how flashcards are written (Revise reads `question :: answer`).
     const notes = exam && !(s.notes || []).length ? [{ id: uid(), text: ['How flashcards work', 'Write a question, two colons, then the answer. Revise asks them back on a schedule.', 'Capital of India :: New Delhi', '1 km is how many metres? :: 1000'].join('\n'), color: 'mint', pinned: true, createdAt: Date.now(), updatedAt: Date.now(), images: [] }] : s.notes
@@ -828,36 +807,9 @@ function Setup() {
   return (
     <Frame step={step} title={titles[step][0]} lead={titles[step][1]}>
       <div key={step} className="animate-view-in mt-6">
-        {step === 0 && (
-          <div role="radiogroup" aria-label="What do you do?" className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-            {PROFESSIONS.map((p, i) => {
-              const Icon = PROFESSION_ICON[p.icon] || Sparkles
-              const c = colorOf(PROFESSION_TONE[i % PROFESSION_TONE.length])
-              const on = a.profession === p.id
-              return (
-                <button key={p.id} type="button" role="radio" aria-checked={on}
-                  onClick={() => set({ profession: p.id, option: p.id === a.profession ? a.option : null, skip: [] })}
-                  className={cx('relative flex flex-col items-start gap-2.5 rounded-2xl border-2 p-3.5 text-left transition-all', on ? cx('border-transparent', c.bg) : 'border-line bg-card hover:border-faint hover:-translate-y-0.5')}>
-                  <span className={cx('h-10 w-10 rounded-xl flex items-center justify-center shrink-0 transition', on ? 'bg-card ' + c.text : cx(c.bg, c.text))}><Icon size={18} /></span>
-                  <span className={cx('block font-bold text-sm leading-snug', on && c.text)}>{p.label}</span>
-                  {on && <span className="absolute top-2.5 right-2.5 h-5 w-5 rounded-full bg-accent text-white flex items-center justify-center animate-pop"><Check size={12} strokeWidth={3} /></span>}
-                </button>
-              )
-            })}
-          </div>
-        )}
+        {step === 0 && <ProfessionGrid value={a.profession} onPick={(id) => set({ profession: id, option: id === a.profession ? a.option : null, skip: [] })} />}
 
-        {step === 1 && prof && (
-          <div role="radiogroup" aria-label={prof.setupQuestion.text} className="grid gap-2.5">
-            {prof.setupQuestion.options.map((o, i) => (
-              <button key={o} type="button" role="radio" aria-checked={a.option === i} onClick={() => pickOption(i)}
-                className={cx('flex items-center justify-between gap-3 rounded-2xl border-2 px-4 py-3.5 text-left font-bold text-sm transition', a.option === i ? 'border-ink bg-card' : 'border-line bg-card hover:border-faint')}>
-                {o}
-                {a.option === i && <span className="h-5 w-5 rounded-full bg-accent text-white flex items-center justify-center animate-pop"><Check size={12} strokeWidth={3} /></span>}
-              </button>
-            ))}
-          </div>
-        )}
+        {step === 1 && prof && <OptionList prof={prof} value={a.option} onPick={pickOption} />}
 
         {step === 2 && (
           <>
@@ -913,24 +865,7 @@ function Setup() {
 
         {step === 3 && (
           <>
-            {dayTasks.length > 0 && (
-              <ul className="rounded-2xl border border-line divide-y divide-line overflow-hidden">
-                {dayTasks.map((t, i) => {
-                  const on = !a.skip.includes(t.key)
-                  return (
-                    <li key={t.key}>
-                      {t.dayOffset === 1 && (i === 0 || dayTasks[i - 1].dayOffset === 0) && <p className="px-4 pt-2.5 pb-1 text-[11px] font-bold uppercase tracking-wider text-faint bg-page">After midnight</p>}
-                      <label className="flex items-center gap-3 px-4 py-2.5 cursor-pointer hover:bg-page transition">
-                        <input type="checkbox" checked={on} onChange={() => toggle('skip', t.key)} className="h-4 w-4 shrink-0" aria-label={`Keep ${t.title}`} />
-                        <span className={cx('w-12 shrink-0 text-sm font-semibold tabular-nums', on ? 'text-muted' : 'text-faint')}>{t.startTime}</span>
-                        <span className={cx('flex-1 min-w-0 text-sm font-semibold', on ? 'text-ink' : 'text-faint line-through')}>{t.title}</span>
-                        <span className="hidden sm:inline shrink-0 rounded-full bg-page px-2 py-0.5 text-xs font-semibold text-muted">{t.category}</span>
-                      </label>
-                    </li>
-                  )
-                })}
-              </ul>
-            )}
+            <DayPreview dayTasks={dayTasks} skip={a.skip} onToggle={(k) => toggle('skip', k)} />
             <ul className="grid sm:grid-cols-2 gap-2.5 mt-4">
               {summary.map(([text, Icon, tone]) => { const c = colorOf(tone); return (
                 <li key={text} className={cx('flex items-start gap-3 rounded-2xl p-3.5', c.bg)}><span className={cx('h-9 w-9 rounded-xl bg-card flex items-center justify-center shrink-0', c.text)}><Icon size={16} /></span><span className={cx('text-sm font-semibold', c.text)}>{text}</span></li>

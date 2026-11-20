@@ -49,6 +49,28 @@ export function buildDailyTasks(config, setup) {
   })
 }
 
+/** A task that came from a profession's routine (onboarding or a profession change), not one the user made. */
+export const isRoutineTask = (t) => typeof t?.fields?.source === 'string' && t.fields.source.startsWith('profession:')
+
+/**
+ * Swap the routine for a new one. Taken out: routine tasks from `todayKey` on that are still to do.
+ * Kept: the user's own tasks, every past day, and routine tasks already started, in review or done.
+ * The old routine's series end at the last task kept (recurrence.until), or the app's rolling horizon
+ * (lib/recurrence.js ensureRecurrences) would grow them back from what was kept.
+ */
+export function replaceRoutine(tasks, routine, todayKey) {
+  const goes = (t) => isRoutineTask(t) && !!t.date && t.date >= todayKey && t.status === 'todo'
+  const kept = tasks.filter((t) => !goes(t))
+  const lastKept = new Map()
+  for (const t of kept) {
+    if (isRoutineTask(t) && t.seriesId && t.date && !(lastKept.get(t.seriesId) >= t.date)) lastKept.set(t.seriesId, t.date)
+  }
+  const ended = kept.map((t) => (isRoutineTask(t) && t.recurrence && lastKept.has(t.seriesId)
+    ? { ...t, recurrence: { ...t.recurrence, until: lastKept.get(t.seriesId) } }
+    : t))
+  return { tasks: [...ended, ...routine], removed: tasks.length - kept.length }
+}
+
 const keyOf = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 const plusDays = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n)
 const isWeekdaysOnly = (days) => days.length === 5 && [1, 2, 3, 4, 5].every((d) => days.includes(d))

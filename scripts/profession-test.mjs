@@ -1,6 +1,6 @@
 // Tests for profession days (src/lib/professions.js, src/lib/professionDay.js):  npm run test:profession
 import { PROFESSIONS, professionById, professionFromOccupation } from '../src/lib/professions.js'
-import { buildDailyTasks, clockOf, scheduleOf, shiftHours } from '../src/lib/professionDay.js'
+import { buildDailyTasks, clockOf, isRoutineTask, replaceRoutine, scheduleOf, shiftHours } from '../src/lib/professionDay.js'
 
 let pass = 0, fail = 0
 const ok = (cond, label, extra = '') => { if (cond) pass += 1; else fail += 1; console.log(`${cond ? 'PASS' : 'FAIL'}  ${label}${!cond && extra ? `  -> ${extra}` : ''}`) }
@@ -61,6 +61,28 @@ ok(lateDays.join(',') === '2,3,4,5,6' && nightWk.filter((t) => t.title === 'Seco
 ok(nightWk.filter((t) => t.title.startsWith('Receive handoff')).length === 1 && nightWk.find((t) => t.title.startsWith('Receive handoff')).freq === 'weekdays', 'before-midnight tasks of a night shift still repeat on weekdays')
 const sched = scheduleOf(night, { today: thu, workingDays: [0, 1, 2, 3, 4, 5, 6] })
 ok(sched.find((t) => t.title === 'Second medication round').date === '2026-11-20' && sched[0].date === '2026-11-19', 'after-midnight tasks land on the next calendar day')
+
+// Changing profession: swap the routine, never the user's own tasks
+const R = (id, date, status = 'todo') => ({ id, date, status, fields: { source: 'profession:nurse' } })
+const own = (id, date, status = 'todo') => ({ id, date, status, fields: {} })
+const before = [R('past', '2026-11-18'), R('today', '2026-11-20'), R('later', '2026-11-25'), R('done', '2026-11-20', 'completed'),
+  R('working', '2026-11-20', 'working'), own('mine', '2026-11-20'), own('mine-later', '2026-11-30'), { id: 'bare', date: '2026-11-21', status: 'todo' }]
+const swapped = replaceRoutine(before, [{ id: 'new1', fields: { source: 'profession:doctor' } }], '2026-11-20')
+const ids = swapped.tasks.map((t) => t.id)
+ok(swapped.removed === 2 && !ids.includes('today') && !ids.includes('later'), 'upcoming to-do routine tasks are replaced', ids.join(','))
+ok(['mine', 'mine-later', 'bare'].every((i) => ids.includes(i)), "the user's own tasks are untouched")
+ok(['past', 'done', 'working'].every((i) => ids.includes(i)), 'past days and routine tasks already started or done stay')
+ok(ids.at(-1) === 'new1' && swapped.tasks.length === before.length - 2 + 1, 'the new routine is added')
+const series = [
+  { id: 'a1', seriesId: 'S', date: '2026-11-19', status: 'completed', recurrence: { freq: 'daily', until: null, skip: [] }, fields: { source: 'profession:nurse' } },
+  { id: 'a2', seriesId: 'S', date: '2026-11-20', status: 'completed', recurrence: { freq: 'daily', until: null, skip: [] }, fields: { source: 'profession:nurse' } },
+  { id: 'a3', seriesId: 'S', date: '2026-11-21', status: 'todo', recurrence: { freq: 'daily', until: null, skip: [] }, fields: { source: 'profession:nurse' } },
+  { id: 'm1', seriesId: 'M', date: '2026-11-20', status: 'todo', recurrence: { freq: 'daily', until: null, skip: [] }, fields: {} },
+]
+const ended = replaceRoutine(series, [], '2026-11-20').tasks
+ok(ended.filter((t) => t.seriesId === 'S').every((t) => t.recurrence.until === '2026-11-20') && !ended.some((t) => t.id === 'a3'), "an old routine series ends at its last kept task, so it can't grow back", JSON.stringify(ended.map((t) => [t.id, t.recurrence.until])))
+ok(ended.find((t) => t.id === 'm1').recurrence.until === null, "the user's own repeating tasks keep repeating")
+ok(isRoutineTask(R('x', '2026-11-20')) && !isRoutineTask(own('y', '2026-11-20')) && !isRoutineTask({}) && !isRoutineTask(null), 'routine tasks are told apart by their source tag')
 
 // Every profession builds
 let allOk = true
